@@ -71,6 +71,9 @@ class ImportStoqsCatalog extends Command
         $errors = 0;
         $skipped = 0;
         $failed = [];
+        // barcode set actually seen per website product this run — used to prune
+        // variants deleted in StoqS (only on a --full run, see below).
+        $seenByProduct = [];
         foreach ($products as $row) {
             // The in-stock filter only gates CREATING new products (avoid importing
             // never-stocked clutter). Products that already exist locally must still
@@ -87,6 +90,12 @@ class ImportStoqsCatalog extends Command
             }
             try {
                 $product = $importer->importProduct($row);
+                foreach ($row['variants'] ?? [] as $v) {
+                    $bc = (string) ($v['barcode'] ?? $v['sku'] ?? '');
+                    if ($bc !== '') {
+                        $seenByProduct[$product->id][$bc] = true;
+                    }
+                }
                 $this->line("  ✓ {$product->name} (#{$product->stockkeeping_id}) — ".count($row['variants'] ?? [])." variants");
                 $count++;
             } catch (\Throwable $e) {
@@ -99,15 +108,39 @@ class ImportStoqsCatalog extends Command
 
         Cache::put('stockkeeping:catalog_since', $startedAt->copy()->subMinute()->toDateString(), now()->addYears(5));
 
+        // Prune variants deleted in StoqS. Only on a --full run: a full run sees
+        // EVERY published product (incl. every colour that merges into a website
+        // product), so any imported product's variant whose barcode wasn't seen
+        // no longer exists in StoqS and is removed. Incremental runs carry only a
+        // subset, so pruning there would wrongly delete untouched variants.
+        // Deleting an instance (not a mass query) fires model events so Scout drops
+        // it too; order_items.product_variant_id is nullOnDelete, so order history
+        // is preserved.
+        $pruned = 0;
+        if ($this->option('full')) {
+            foreach ($seenByProduct as $pid => $seen) {
+                $stale = \App\Models\ProductVariant::where('product_id', $pid)
+                    ->whereNotNull('sku')->where('sku', '!=', '')
+                    ->whereNotIn('sku', array_keys($seen))
+                    ->get();
+                foreach ($stale as $variant) {
+                    $this->line("  ✗ حذف تنوع حذف‌شده در StoqS: {$variant->sku} ({$variant->size} {$variant->color})");
+                    $variant->delete();
+                    $pruned++;
+                }
+            }
+        }
+
         $duration = $startedAt->diffInMilliseconds(now());
         $summary = "{$count} محصول وارد/به‌روز شد"
             .($skipped ? "، {$skipped} بدون موجودی رد شد" : '')
+            .($pruned ? "، {$pruned} تنوع حذف‌شده پاک شد" : '')
             .($errors ? "، {$errors} خطا" : '');
         $this->info($summary);
 
         StockkeeepingLog::record(
             StockkeeepingLog::TYPE_CATALOG_IMPORT, 'in', $this->option('full') ? 'full' : 'incremental',
-            null, ['imported' => $count, 'skipped_no_stock' => $skipped, 'errors' => $errors, 'total' => count($products), 'failed' => $failed],
+            null, ['imported' => $count, 'skipped_no_stock' => $skipped, 'pruned_variants' => $pruned, 'errors' => $errors, 'total' => count($products), 'failed' => $failed],
             'ok', null, null,
             source: $this->option('source'), summary: $summary, durationMs: $duration,
         );

@@ -34,6 +34,17 @@
                 همگام‌سازی خودکار موجودی و فروش غیرفعال است. کرون «هر دقیقه» زیر را در cPanel بررسی کنید
                 (مسیر دقیق php و artisan را تطبیق دهید): <code dir="ltr" class="rounded bg-white px-1.5 py-0.5 ring-1 ring-red-100">php artisan schedule:run</code>
             </p>
+            {{-- Terminal-free alternative: point the host cron at this URL (wget/curl).
+                 Runs the scheduler in the web process — the same path the manual-sync
+                 buttons use — so it works even where the CLI cron can't. --}}
+            @php($cronUrl = url('/cron/run/'.\App\Support\CronToken::value()))
+            <div class="mt-3 rounded bg-white p-2.5 ring-1 ring-red-100">
+                <p class="text-xs font-bold text-red-700">بدون ترمینال؟ به‌جای دستور php، این آدرس را در کرون «هر دقیقه» بگذارید:</p>
+                <code dir="ltr" class="mt-1 block break-all rounded bg-red-50 px-2 py-1.5 text-[11px] leading-5 text-red-800 select-all">wget -q -O /dev/null "{{ $cronUrl }}"</code>
+                <p class="mt-1.5 text-[11px] leading-5 text-brand-500">
+                    برای تست، همین حالا <a href="{{ $cronUrl }}" target="_blank" rel="noopener" class="font-medium text-red-700 underline">این لینک را باز کنید</a> — اگر «OK» دیدید، این صفحه را تازه کنید تا سبز شود.
+                </p>
+            </div>
         @endunless
     </div>
 

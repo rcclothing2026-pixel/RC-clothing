@@ -69,6 +69,23 @@ Route::post('/webhooks/stoqs', StoqsWebhookController::class)->name('webhooks.st
 // Telegram bot webhook (secret in path; CSRF-exempt — see bootstrap/app.php).
 Route::post('/webhooks/telegram/{secret}', TelegramWebhookController::class)->name('webhooks.telegram');
 
+// Terminal-free scheduler trigger. Some shared hosts (no SSH/Terminal, wrong CLI
+// PHP binary, or disabled proc_open) can't reliably run `artisan schedule:run`
+// from a CLI cron. This runs the scheduler IN-PROCESS on a plain web request —
+// the exact same working code path as the admin "manual sync" buttons — so the
+// host's cron can `wget`/`curl` this URL every minute instead. Guarded by a
+// token derived from APP_KEY (App\Support\CronToken); 404s on mismatch. The full
+// URL is shown on Admin → اتصال به StoqS when the scheduler looks stale.
+Route::get('/cron/run/{token}', function (string $token) {
+    abort_unless(hash_equals(\App\Support\CronToken::value(), $token), 404);
+    \Illuminate\Support\Facades\Artisan::call('schedule:run');
+
+    return response(
+        "OK\nheartbeat=".\Illuminate\Support\Facades\Cache::get('scheduler:last_run')."\n\n".\Illuminate\Support\Facades\Artisan::output(),
+        200,
+    )->header('Content-Type', 'text/plain; charset=utf-8');
+})->name('cron.run');
+
 // Local-only convenience: one-click admin login (never registered outside local).
 if (app()->environment('local')) {
     Route::get('/dev/login-admin', function () {
