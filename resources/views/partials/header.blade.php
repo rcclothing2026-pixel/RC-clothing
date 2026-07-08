@@ -1,7 +1,7 @@
 <header data-header
-        x-data="{ navOpen: false }"
+        x-data="{ navOpen: false, searchOpen: false }"
         x-effect="document.documentElement.style.overflow = navOpen ? 'hidden' : ''"
-        @keydown.escape.window="navOpen = false"
+        @keydown.escape.window="navOpen = false; searchOpen = false"
         class="sticky top-0 z-50 border-b border-brand-100 bg-paper/85 backdrop-blur transition-colors duration-300">
     {{-- Layout: mobile = flex row (hamburger · logo · search · actions). On lg+
          switches to a 3-column grid (nav · CENTERED wordmark · search+actions)
@@ -123,8 +123,11 @@
                                 .then(d => { this.results = Array.isArray(d) ? d : []; this.open = this.results.length > 0; })
                                 .catch(() => { this.results = []; this.open = false; });
                         } }"
-              @click.outside="open = false"
-              class="relative flex min-w-0 flex-1 max-w-xs ms-auto md:ms-0 lg:flex-initial lg:w-56 lg:ms-0">
+              @click.outside="open = false; searchOpen = false"
+              class="min-w-0 flex-1 ms-auto md:ms-0 md:relative md:flex md:max-w-xs lg:flex-initial lg:w-56 lg:ms-0"
+              :class="searchOpen
+                  ? 'flex absolute start-3 end-3 top-full z-40 mt-1 rounded-2xl bg-paper p-2 shadow-xl ring-1 ring-brand-200 md:static md:z-auto md:mt-0 md:rounded-none md:bg-transparent md:p-0 md:shadow-none md:ring-0'
+                  : 'relative hidden'">
             <div class="relative w-full">
                 <input type="search" name="q" x-model="q" autocomplete="off"
                        @input.debounce.250ms="fetchResults()" @focus="results.length && (open = true)"
@@ -155,6 +158,14 @@
 
         {{-- Actions --}}
         <div class="flex items-center gap-0.5 ms-auto md:ms-0 lg:ms-0">
+            {{-- Mobile search toggle — the inline search bar is md+ only; on
+                 phones this opens a full-width floating search below the bar.
+                 .stop keeps the open-click from hitting the form's click-outside. --}}
+            <button type="button" @click.stop="searchOpen = !searchOpen" :aria-expanded="searchOpen"
+                    aria-label="{{ __('Search') }}"
+                    class="rounded-lg p-2 text-brand-600 hover:bg-brand-100 hover:text-brand-900 md:hidden">
+                <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            </button>
             {{-- Language toggle (EN / FA) --}}
             @php($__loc = app()->getLocale())
             <div class="me-1 hidden items-center gap-1 text-xs font-semibold tracking-wide sm:flex" aria-label="{{ __('Language') }}">

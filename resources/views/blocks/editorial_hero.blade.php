@@ -162,13 +162,17 @@
                 $imgMobile  = trim((string) ($slide['image_mobile'] ?? '')) ?: $imgDesktop;
                 // Focal point — which part of the image stays in view when it is
                 // cropped to fill the banner (object-cover). Keeps faces/subjects
-                // out from under the header on tall heroes.
+                // out from under the header on tall heroes. Admin saves the 9-key
+                // grid values (tl…br); the word keys are legacy back-compat.
                 $focal = [
+                    'tl' => '0% 0%', 'tc' => '50% 0%', 'tr' => '100% 0%',
+                    'ml' => '0% 50%', 'mc' => '50% 50%', 'mr' => '100% 50%',
+                    'bl' => '0% 100%', 'bc' => '50% 100%', 'br' => '100% 100%',
                     'center' => '50% 50%', 'top' => '50% 0%', 'bottom' => '50% 100%',
                     'left' => '0% 50%', 'right' => '100% 50%',
                     'top-left' => '0% 0%', 'top-right' => '100% 0%',
                     'bottom-left' => '0% 100%', 'bottom-right' => '100% 100%',
-                ][$slide['focal'] ?? 'center'] ?? '50% 50%';
+                ][$slide['focal'] ?? 'mc'] ?? '50% 50%';
                 $kicker     = trim((string) ($slide['kicker'] ?? ''));
                 $title      = trim((string) ($slide['title'] ?? ''));
                 $subtitle   = trim((string) ($slide['subtitle'] ?? ''));

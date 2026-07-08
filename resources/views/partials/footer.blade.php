@@ -98,13 +98,15 @@
         </div>
     </div>
 
-    {{-- Oversized RACKET CLUB wordmark + the Pinyon slogan — signature brand
-         close. The slogan appears exactly once per view, here. --}}
+    {{-- Signature brand close over the club stripe. Mobile: the crest card
+         (Design System). sm+: the oversized wordmark + Pinyon slogan. The
+         slogan appears exactly once per view, here (inside the crest on mobile). --}}
     <div class="relative overflow-hidden border-t border-white/10">
         <x-brand-pattern class="pointer-events-none absolute inset-0 h-full w-full text-white" :opacity="'0.06'" />
         <div class="relative mx-auto flex max-w-7xl flex-col items-center justify-center px-4 py-12 sm:px-6 sm:py-16">
-            <x-chiaco-type text="RACKET CLUB" class="text-5xl text-cream sm:text-7xl lg:text-8xl" />
-            <p class="font-script mt-3 text-3xl leading-none text-sand sm:text-4xl">Legends &amp; Legacy</p>
+            <x-brand-crest class="w-72 max-w-[85%] drop-shadow-lg sm:hidden" />
+            <x-chiaco-type text="RACKET CLUB" class="hidden text-5xl text-cream sm:block sm:text-7xl lg:text-8xl" />
+            <p class="font-script mt-3 hidden text-3xl leading-none text-sand sm:block sm:text-4xl">Legends &amp; Legacy</p>
         </div>
     </div>
 
