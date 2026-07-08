@@ -21,6 +21,8 @@
 #
 # Flags:
 #   --pull         git pull --ff-only the current branch before building
+#   --code-only    FAST deploy: ship app code only, keep the server's vendor/
+#                  (safe UNLESS you changed composer deps — then do a full deploy)
 #   --no-build     reuse the newest RELEASE/*.zip instead of rebuilding
 #   --no-migrate   skip database migrations (files/assets only)
 #   --seed         run the production seeder after migrating (first deploy)
@@ -49,14 +51,15 @@ trap 'rm -rf "$STAGE" "$TMP_PHP" 2>/dev/null || true' EXIT
 ZIP="$HERE/RELEASE/racketclub-deploy.zip"
 
 # ----- args -----------------------------------------------------------------
-DO_BUILD=1; DO_MIGRATE=1; DO_VERIFY=1; DO_SEED=0; DO_PULL=0
+DO_BUILD=1; DO_MIGRATE=1; DO_VERIFY=1; DO_SEED=0; DO_PULL=0; DO_VENDOR=1
 for a in "$@"; do
   case "$a" in
-    --pull)       DO_PULL=1 ;;
-    --no-build)   DO_BUILD=0 ;;
-    --no-migrate) DO_MIGRATE=0 ;;
-    --no-verify)  DO_VERIFY=0 ;;
-    --seed)       DO_SEED=1 ;;
+    --pull)         DO_PULL=1 ;;
+    --no-build)     DO_BUILD=0 ;;
+    --no-migrate)   DO_MIGRATE=0 ;;
+    --no-verify)    DO_VERIFY=0 ;;
+    --seed)         DO_SEED=1 ;;
+    --code-only|--fast) DO_VENDOR=0 ;;
     --help|-h)    sed -n '2,36p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "unknown flag: $a (try --help)" ;;
   esac
@@ -134,12 +137,18 @@ if [ "$DO_BUILD" -eq 1 ]; then
     --exclude='storage' --exclude='tests' --exclude='scripts' --exclude='RELEASE' \
     --exclude='bootstrap/cache/*' --exclude='database/*.sqlite' \
     --exclude='public/storage' --exclude='public/hot' \
+    --exclude='vendor' \
     --exclude='.DS_Store' --exclude='auth.json' \
     ./ "$STAGE/"
 
-  ok "composer install --no-dev (prune dev deps, optimize autoloader)…"
-  composer install --no-dev --optimize-autoloader --no-interaction --no-scripts \
-    --working-dir="$STAGE" >/dev/null 2>&1 || die "composer --no-dev failed in stage"
+  if [ "$DO_VENDOR" -eq 1 ]; then
+    ok "composer install --no-dev (prune dev deps, optimize autoloader)…"
+    composer install --no-dev --optimize-autoloader --no-interaction --no-scripts \
+      --working-dir="$STAGE" >/dev/null 2>&1 || die "composer --no-dev failed in stage"
+  else
+    warn "code-only build: skipping vendor/ — the server keeps its existing PHP"
+    warn "deps. Do a FULL deploy (omit --code-only) whenever composer.lock changes."
+  fi
 
   mkdir -p RELEASE
   rm -f "$ZIP"
