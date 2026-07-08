@@ -136,15 +136,17 @@ try {
         }
     };
 
+    // Order matters on a FRESH DB: the database cache store's `cache` table
+    // doesn't exist until migrations create it, so migrate BEFORE cache:clear.
     $artisan('config:clear');
-    $artisan('cache:clear');
-    $artisan('storage:link');
     if ($DO_MIGRATE) {
         $artisan('migrate', ['--force' => true]);
     }
     if ($DO_SEED) {
         $artisan('db:seed', ['--class' => 'Database\\Seeders\\ProductionSeeder', '--force' => true]);
     }
+    $artisan('cache:clear');
+    $artisan('storage:link');
     $artisan('config:cache');
     $artisan('view:cache');
 } catch (\Throwable $e) {
