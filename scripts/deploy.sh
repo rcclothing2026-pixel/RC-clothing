@@ -1,0 +1,199 @@
+#!/usr/bin/env bash
+# =============================================================================
+# scripts/deploy.sh — one-command deploy for chiiaco.com (cPanel / FTP, no SSH).
+#
+#   git pull (VPN ON)  →  VPN OFF  →  bash scripts/deploy.sh
+#
+# Builds a release zip (composer --no-dev + vite build), uploads ONE zip over
+# FTP, uploads a token-guarded one-shot PHP extractor to public_html, triggers
+# it once over HTTPS (unzip → wire public_html → migrate → cache → opcache),
+# and the extractor deletes the zip + itself. Then verifies the site is up.
+#
+# FIRST TIME: do the one-time setup in scripts/DEPLOY.md (PHP 8.3, create DB,
+# upload .env once, add cron) BEFORE running this.
+#
+# Flags:
+#   --no-build     reuse the newest RELEASE/*.zip instead of rebuilding
+#   --no-migrate   skip database migrations (files/assets only)
+#   --no-verify    skip the post-deploy HTTP check
+#   --help
+# =============================================================================
+set -euo pipefail
+set -E   # functions/subshells inherit the ERR trap
+
+bold=$'\033[1m'; red=$'\033[31m'; grn=$'\033[32m'; ylw=$'\033[33m'; dim=$'\033[2m'; rst=$'\033[0m'
+hr()     { printf '%s──────────────────────────────────────────────────────────%s\n' "$dim" "$rst"; }
+header() { echo; hr; printf '  %s%s%s\n' "$bold" "$1" "$rst"; hr; }
+ok()     { printf '  %s✓%s %s\n' "$grn" "$rst" "$1"; }
+warn()   { printf '  %s⚠%s %s\n' "$ylw" "$rst" "$1"; }
+die()    { printf '  %s✗ %s%s\n' "$red" "$1" "$rst" >&2; exit 1; }
+
+# Never fail silently: report the command + exit code on any unexpected abort.
+trap 'rc=$?; [ "$rc" -ne 0 ] && printf "\n  %s✗ aborted (exit %s): %s%s\n" "$red" "$rc" "${BASH_COMMAND}" "$rst" >&2' ERR
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$HERE"
+
+# temp artefacts cleaned on exit (init empty so the trap is safe under `set -u`)
+STAGE=""; TMP_PHP=""
+trap 'rm -rf "$STAGE" "$TMP_PHP" 2>/dev/null || true' EXIT
+ZIP="$HERE/RELEASE/chiiaco-deploy.zip"
+
+# ----- args -----------------------------------------------------------------
+DO_BUILD=1; DO_MIGRATE=1; DO_VERIFY=1; DO_SEED=0
+for a in "$@"; do
+  case "$a" in
+    --no-build)   DO_BUILD=0 ;;
+    --no-migrate) DO_MIGRATE=0 ;;
+    --no-verify)  DO_VERIFY=0 ;;
+    --seed)       DO_SEED=1 ;;
+    --help|-h)    sed -n '2,28p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) die "unknown flag: $a (try --help)" ;;
+  esac
+done
+
+# ----- [1] credentials ------------------------------------------------------
+header "[1/6] Credentials"
+CREDS="${HOME}/.chiiaco-deploy"
+[ -f "$CREDS" ] || die "missing $CREDS
+     cp scripts/.chiiaco-deploy.example ~/.chiiaco-deploy && chmod 600 ~/.chiiaco-deploy
+     then fill in the FTP password."
+if stat -f '%Lp' "$CREDS" >/dev/null 2>&1; then MODE="$(stat -f '%Lp' "$CREDS")"; else MODE="$(stat -c '%a' "$CREDS")"; fi
+case "$MODE" in 600|400) ;; *) die "$CREDS is mode $MODE — too open. Run: chmod 600 $CREDS" ;; esac
+# shellcheck disable=SC1090
+source "$CREDS"
+: "${FTP_HOST:?set FTP_HOST in ~/.chiiaco-deploy}"
+: "${FTP_USER:?set FTP_USER in ~/.chiiaco-deploy}"
+: "${FTP_PASS:?set FTP_PASS in ~/.chiiaco-deploy}"
+: "${PUBLIC_HOST:?set PUBLIC_HOST in ~/.chiiaco-deploy}"
+PUBLIC_DIR="${PUBLIC_DIR-public_html}"
+APP_DIR="${APP_DIR-chiiaco_app}"
+FTP_SECURE="${FTP_SECURE-1}"        # 1 = explicit FTPS (AUTH TLS), 0 = plain FTP
+FTP_INSECURE="${FTP_INSECURE-1}"    # 1 = accept self-signed certs
+# Pre-DNS deploy: if chiiaco.com doesn't point here yet, set TRIGGER_IP=<server ip>
+# so the HTTPS trigger/verify resolve to this server (cert not valid yet → -k).
+WEB_OPTS=()
+if [ -n "${TRIGGER_IP-}" ]; then
+  WEB_OPTS+=(--resolve "${PUBLIC_HOST}:443:${TRIGGER_IP}" -k)
+fi
+ok "loaded creds for ${FTP_USER}@${FTP_HOST} → https://${PUBLIC_HOST}"
+[ -n "${TRIGGER_IP-}" ] && warn "pre-DNS mode: web requests resolve ${PUBLIC_HOST} → ${TRIGGER_IP} (insecure TLS)"
+[ -n "$(git status --porcelain 2>/dev/null)" ] && warn "working tree has uncommitted changes — they WILL ship in this zip."
+
+# ----- [2] build release zip ------------------------------------------------
+header "[2/6] Build release zip"
+if [ "$DO_BUILD" -eq 1 ]; then
+  command -v composer >/dev/null || die "composer not found in PATH"
+  command -v npm >/dev/null      || die "npm not found in PATH"
+  command -v rsync >/dev/null    || die "rsync not found in PATH"
+  command -v zip >/dev/null      || die "zip not found in PATH"
+
+  # Preflight: a merge-conflict marker or PHP parse error ships as an HTTP 500
+  # storm on production. Refuse to build if either is present. Cheap; catches
+  # the tonight-of-2026-07-05 class of accident.
+  if grep -rHnE '^(<<<<<<<|=======|>>>>>>>) ?' app config routes bootstrap 2>/dev/null; then
+    die "unresolved merge conflict markers above — resolve before deploying"
+  fi
+  while IFS= read -r f; do
+    php -l "$f" >/dev/null 2>&1 || { php -l "$f"; die "PHP syntax error in $f"; }
+  done < <(find app config routes bootstrap -name '*.php' 2>/dev/null)
+  ok "preflight: no merge markers, no PHP syntax errors"
+
+  ok "vite build (production assets)…"
+  npm run build >/dev/null 2>&1 || die "npm run build failed — run it manually to see the error"
+
+  STAGE="$(mktemp -d)"
+  ok "staging app (excluding dev/local files)…"
+  rsync -a \
+    --exclude='.git' --exclude='.github' --exclude='node_modules' \
+    --exclude='.claude' --exclude='.cursor' \
+    --exclude='.env' --exclude='.env.*' \
+    --exclude='storage' --exclude='tests' --exclude='scripts' --exclude='RELEASE' \
+    --exclude='bootstrap/cache/*' --exclude='database/*.sqlite' \
+    --exclude='public/storage' --exclude='public/hot' \
+    --exclude='.DS_Store' --exclude='auth.json' \
+    ./ "$STAGE/"
+
+  ok "composer install --no-dev (prune dev deps, optimize autoloader)…"
+  composer install --no-dev --optimize-autoloader --no-interaction --no-scripts \
+    --working-dir="$STAGE" >/dev/null 2>&1 || die "composer --no-dev failed in stage"
+
+  mkdir -p RELEASE
+  rm -f "$ZIP"
+  ( cd "$STAGE" && zip -rqX "$ZIP" . )
+  ok "built $ZIP ($(du -h "$ZIP" | cut -f1))"
+else
+  [ -f "$ZIP" ] || die "no $ZIP to reuse — drop --no-build"
+  ok "reusing $ZIP ($(du -h "$ZIP" | cut -f1))"
+fi
+
+# ----- FTP helper -----------------------------------------------------------
+ftp_put() { # $1 = local file, $2 = remote path under FTP root
+  local args=(--ftp-pasv --connect-timeout 20 --max-time 900 -fsS)
+  [ "$FTP_SECURE" = "1" ] && args+=(--ssl-reqd)
+  [ "$FTP_INSECURE" = "1" ] && args+=(-k)
+  local attempt rc
+  for attempt in 1 2 3 4; do
+    if curl "${args[@]}" -T "$1" -u "${FTP_USER}:${FTP_PASS}" "ftp://${FTP_HOST}/${2}"; then return 0; fi
+    rc=$?
+    [ "$attempt" -lt 4 ] && { warn "upload attempt $attempt failed (curl $rc) — retry in $((attempt*3))s"; sleep $((attempt*3)); }
+  done
+  return 1
+}
+
+# ----- [3] upload release zip → account home --------------------------------
+header "[3/6] Upload release zip (FTP)"
+ftp_put "$ZIP" "chiiaco-deploy.zip" || die "zip upload failed.
+     Check: VPN OFF · $FTP_HOST reachable · password current · try FTP_SECURE=0 in ~/.chiiaco-deploy"
+ok "uploaded chiiaco-deploy.zip → account home"
+
+# ----- [4] upload + trigger the one-shot extractor --------------------------
+header "[4/6] Extract + migrate (server-side)"
+# A URL-safe single-use token (openssl avoids the tr|head SIGPIPE under pipefail).
+TOKEN="$(openssl rand -hex 20)"
+TMP_PHP="$(mktemp)"
+sed -e "s/__DEPLOY_TOKEN__/${TOKEN}/g" -e "s/__APP_DIR__/${APP_DIR}/g" \
+    scripts/server/deploy.php > "$TMP_PHP"
+ftp_put "$TMP_PHP" "${PUBLIC_DIR}/deploy.php" || die "extractor upload failed"
+ok "uploaded one-shot extractor → ${PUBLIC_DIR}/deploy.php"
+
+MIG=0; [ "$DO_MIGRATE" -eq 1 ] && MIG=1
+SEEDV=0; [ "$DO_SEED" -eq 1 ] && SEEDV=1
+TRIGGER="https://${PUBLIC_HOST}/deploy.php?token=${TOKEN}&migrate=${MIG}&seed=${SEEDV}"
+ok "triggering: ${dim}https://${PUBLIC_HOST}/deploy.php?token=…&migrate=${MIG}&seed=${SEEDV}${rst}"
+RESP="$(curl ${WEB_OPTS[@]+"${WEB_OPTS[@]}"} -sS --max-time 900 "$TRIGGER" || true)"
+if echo "$RESP" | grep -q '"ok":true'; then
+  ok "server reported success${DO_MIGRATE:+ (migrate=$MIG)}"
+  echo "$RESP" | sed 's/.*"log":\[//; s/\].*//; s/","/"\n        "/g; s/^/        /' | sed 's/^/  /' || true
+else
+  warn "server reported FAILURE — errors below:"
+  # Surface the server-side errors array (migrate/cache failures) clearly.
+  ERRS="$(echo "$RESP" | sed -n 's/.*"errors":\[\(.*\)\],"log".*/\1/p; s/.*"errors":\[\(.*\)\]}.*/\1/p' | head -1)"
+  if [ -n "$ERRS" ]; then
+    # split the JSON array on "," and print each as its own ✗ line (portable awk)
+    echo "$ERRS" | awk -F'","' '{for(i=1;i<=NF;i++){gsub(/^"|"$/,"",$i); print "    ✗ " $i}}'
+  else
+    echo "${dim}${RESP}${rst}" | sed 's/^/    /'
+  fi
+  die "deploy trigger failed — code may be live but migrations/caches did NOT all succeed.
+     Fix the cause above and re-run. (Missing-.env message? upload your production .env once — see scripts/DEPLOY.md.)"
+fi
+
+# ----- [5] verify -----------------------------------------------------------
+header "[5/6] Verify"
+if [ "$DO_VERIFY" -eq 1 ]; then
+  CODE="$(curl ${WEB_OPTS[@]+"${WEB_OPTS[@]}"} -s -o /dev/null -w '%{http_code}' --max-time 60 "https://${PUBLIC_HOST}/" || echo 000)"
+  case "$CODE" in
+    200|301|302) ok "https://${PUBLIC_HOST}/ → HTTP $CODE" ;;
+    *) warn "https://${PUBLIC_HOST}/ → HTTP $CODE (check the site + storage/logs/laravel.log)" ;;
+  esac
+  HEALTH="$(curl ${WEB_OPTS[@]+"${WEB_OPTS[@]}"} -s -o /dev/null -w '%{http_code}' --max-time 60 "https://${PUBLIC_HOST}/up" || echo 000)"
+  [ "$HEALTH" = "200" ] && ok "/up health check → 200" || warn "/up → $HEALTH"
+else
+  warn "verify skipped (--no-verify)"
+fi
+
+# ----- [6] done -------------------------------------------------------------
+header "[6/6] Done"
+ok "deployed to https://${PUBLIC_HOST}"
+echo "  ${dim}The release zip and the extractor were removed from the server.${rst}"

@@ -1,0 +1,26 @@
+# Chiaco deploy credentials — copy to ~/.chiiaco-deploy and chmod 600.
+#   cp scripts/.chiiaco-deploy.example ~/.chiiaco-deploy
+#   chmod 600 ~/.chiiaco-deploy
+# This file is sourced by scripts/deploy.sh. Never commit the real one.
+
+# --- FTP (cPanel / ParsPack) ---
+FTP_HOST=764087185.cloudylink.com
+FTP_USER=chiiac@chiiaco.com
+FTP_PASS=                       # <-- your FTP password (the chiiac@chiiaco.com account)
+
+# Explicit FTPS (AUTH TLS) on port 21. If uploads fail with a TLS error,
+# set FTP_SECURE=0 to fall back to plain FTP (password sent in cleartext).
+FTP_SECURE=1
+FTP_INSECURE=1                  # accept the host's cert (shared hosts often self-sign)
+
+# --- Site / layout ---
+PUBLIC_HOST=chiiaco.com         # the live domain (https:// is assumed)
+PUBLIC_DIR=public_html          # web root, relative to the FTP root (account home)
+APP_DIR=chiiaco_app             # Laravel app dir, sibling of public_html (above web root)
+
+# --- Pre-DNS deploy (optional) ---
+# If chiiaco.com's DNS doesn't point to this hosting yet, set TRIGGER_IP to the
+# server's IP so the deploy can reach/trigger the extractor by IP (with insecure
+# TLS, since the cert isn't issued yet). Remove this line once DNS is pointed.
+#   ParsPack server IP (764087185.cloudylink.com): 45.139.11.145
+# TRIGGER_IP=45.139.11.145

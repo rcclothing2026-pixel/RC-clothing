@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 && CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/plugins/ponytail\" node \"$CLAUDE_PROJECT_DIR/.claude/plugins/ponytail/hooks/ponytail-activate.js\" || exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 && CLAUDE_PLUGIN_ROOT=\"$CLAUDE_PROJECT_DIR/.claude/plugins/ponytail\" node \"$CLAUDE_PROJECT_DIR/.claude/plugins/ponytail/hooks/ponytail-mode-tracker.js\" || exit 0",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

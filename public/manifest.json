@@ -1,0 +1,17 @@
+{
+  "name": "چیاکو | فروشگاه پوشاک",
+  "short_name": "چیاکو",
+  "description": "فروشگاه آنلاین پوشاک چیاکو",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#e0d5d9",
+  "theme_color": "#282828",
+  "lang": "fa",
+  "dir": "rtl",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon", "purpose": "any" }
+  ],
+  "categories": ["shopping", "lifestyle"]
+}

@@ -1,0 +1,373 @@
+@import 'tailwindcss';
+
+/* Display face (Latin: Jost) + code face (JetBrains Mono) are loaded from
+   Google Fonts — proven reachable from the Iran host. Vazirmatn stays
+   self-hosted because it's heavier and used on every page. These two are
+   light and only render inside display lockups / code chips, so the CDN
+   cost is negligible. */
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Alpine x-cloak — REQUIRED, or every x-cloak element (mini-cart drawer,
+   cookie bar, alerts) renders visible on load until Alpine hydrates and then
+   animates *closed* — the "basket opens then closes" flash. This rule keeps
+   them hidden until Alpine removes the attribute. */
+[x-cloak] { display: none !important; }
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views';
+
+/* ---------------------------------------------------------------------------
+   Vazirmatn — self-hosted (CDNs can be blocked in Iran). Files in public/fonts.
+--------------------------------------------------------------------------- */
+@font-face {
+    font-family: 'Vazirmatn';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/vazirmatn/Vazirmatn-Regular.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Vazirmatn';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/vazirmatn/Vazirmatn-Medium.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Vazirmatn';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/vazirmatn/Vazirmatn-SemiBold.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Vazirmatn';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/vazirmatn/Vazirmatn-Bold.woff2') format('woff2');
+}
+
+/* ---------------------------------------------------------------------------
+   DESIGN TOKENS — the theming layer.
+   When the new CI (visual identity) arrives, the design drops in by editing
+   ONLY the values below. Nothing else in the app references raw colors.
+--------------------------------------------------------------------------- */
+@theme {
+    --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;
+    /* Latin display lockups (Brand kit): eyebrows, CHIACO wordmarks, kicker
+       labels. Use the `font-display` utility. */
+    --font-display: 'Jost', ui-sans-serif, system-ui, sans-serif;
+    /* Code chips / token labels in the brand kit. Use the `font-mono` utility. */
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    /* -----------------------------------------------------------------------
+       CHIACO visual identity (BrandBook v01).
+       Official palette: Persian Red #CC3333, Chiaco Dark #282828,
+       Chiaco Light #E0D5D9, White, Black. No off-palette colours.
+       The neutral "brand" scale is a charcoal anchored on Chiaco Dark and
+       tinted toward Chiaco Light at the soft end; "accent" is Persian Red.
+    ----------------------------------------------------------------------- */
+
+    /* Official brand colours (raw) */
+    --color-persian-red: #cc3333;
+    --color-chiaco-dark: #282828;
+    --color-chiaco-light: #e0d5d9;
+
+    /* Neutral scale — Chiaco Dark → Chiaco Light, for text/surfaces/borders */
+    --color-brand-50: #faf8f9;
+    --color-brand-100: #f1ecee;
+    --color-brand-200: #e0d5d9; /* Chiaco Light (secondary colour) */
+    --color-brand-300: #c5b9bd;
+    --color-brand-400: #9c9296;
+    --color-brand-500: #726b6e;
+    --color-brand-600: #524d4f;
+    --color-brand-700: #3c393a;
+    --color-brand-800: #2f2c2d;
+    --color-brand-900: #282828; /* Chiaco Dark (primary colour) */
+    --color-brand-950: #161616;
+
+    /* Accent — Persian Red (call-to-action, links, sale) */
+    --color-accent-400: #e36a6a;
+    --color-accent-500: #d94f4f;
+    --color-accent-600: #cc3333; /* Persian Red (primary accent) */
+    --color-accent-700: #a82a2a; /* darker, for hover/pressed */
+
+    --color-ink: #282828; /* Chiaco Dark */
+    --color-paper: #faf8f9;
+
+    --radius-card: 1rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------------- */
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+    body {
+        background-color: var(--color-paper);
+        color: var(--color-ink);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* Text selection highlight */
+    ::selection {
+        background-color: var(--color-accent-600);
+        color: #fff;
+    }
+
+    /* Brand-coloured focus ring for keyboard nav */
+    :focus-visible {
+        outline: 2px solid var(--color-accent-600);
+        outline-offset: 2px;
+        border-radius: 0.375rem;
+    }
+
+    /* Thin scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-brand-200); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-brand-400); }
+    * { scrollbar-width: thin; scrollbar-color: var(--color-brand-200) transparent; }
+
+    /* Eliminate 300ms tap delay on all mobile clickable elements */
+    a, button, [role="button"], label[for], summary {
+        touch-action: manipulation;
+    }
+
+    /* Smooth base transitions for interactive elements */
+    a, button { transition-property: color, background-color, border-color, box-shadow, opacity, transform; transition-duration: 150ms; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+
+    /* Input baseline */
+    input, textarea, select {
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Accessibility — visible keyboard focus. `:where()` keeps specificity 0 so
+   any element's own focus-visible style still wins; this is the sitewide
+   fallback so keyboard users always see where they are. Mouse clicks don't
+   trigger :focus-visible, so it never shows on tap/click. Persian-red ring.
+--------------------------------------------------------------------------- */
+@layer base {
+    :where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
+        outline: 2px solid var(--color-persian-red);
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Editorial typography polish — balance heading line lengths (no lonely
+   one-word last line) and avoid paragraph orphans. Pure line-breaking hints,
+   direction-agnostic (safe for Persian/RTL), and silently ignored by browsers
+   that don't support them. Gives the luxury-editorial feel without touching
+   any component markup.
+--------------------------------------------------------------------------- */
+@layer base {
+    h1, h2, h3 { text-wrap: balance; }
+    p { text-wrap: pretty; }
+
+    /* Crisper text rendering — the single biggest "premium" tell, and safe
+       for Persian/RTL (rendering hints only, no metrics change). */
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+
+    /* Tighten large headings a touch for editorial density. Line-height only —
+       NO letter-spacing on Persian, which would break the connected script.
+       Tailwind leading-* utilities still override this per-heading. */
+    h1, h2 { line-height: 1.15; }
+
+    /* Letter-spacing is applied ONLY to Latin display lockups (Jost
+       wordmarks/eyebrows), where negative tracking reads tighter and there's
+       no Persian shaping to harm. */
+    .font-display { letter-spacing: -0.01em; }
+
+    /* Prices/quantities align in columns with tabular figures. */
+    .fa-num { font-variant-numeric: tabular-nums; }
+}
+
+/* ---------------------------------------------------------------------------
+   Scroll-reveal animation utility (driven by JS IntersectionObserver)
+--------------------------------------------------------------------------- */
+@layer utilities {
+    .reveal {
+        opacity: 0;
+        transform: translateY(28px);
+        transition:
+            opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+            transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+    }
+    .reveal.is-visible {
+        opacity: 1;
+        transform: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .reveal {
+            opacity: 1;
+            transform: none;
+            transition: none;
+        }
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Brand gradients — the ONLY sanctioned gradients (BrandBook: Color Palette).
+   Red→Light, Dark→Light, Dark→Red, and Black&White.
+--------------------------------------------------------------------------- */
+@layer utilities {
+    .bg-grad-red-light {
+        background-image: linear-gradient(120deg, var(--color-persian-red), var(--color-chiaco-light));
+    }
+    .bg-grad-dark-light {
+        background-image: linear-gradient(120deg, var(--color-chiaco-dark), var(--color-chiaco-light));
+    }
+    .bg-grad-dark-red {
+        background-image: linear-gradient(120deg, var(--color-chiaco-dark), var(--color-persian-red));
+    }
+    .bg-grad-bw {
+        background-image: linear-gradient(120deg, #000, #fff);
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Chiaco display type (BrandBook: CHIACO TYPE DESIGN).
+   Geometric monoline emulation — uppercase, wide-tracked, with the ⊙ bullseye
+   replacing every "O". Words stay whole and wrap as units (phone-first).
+   When the real Chiaco webfont lands, drop its family at the front of --stack.
+--------------------------------------------------------------------------- */
+@layer components {
+    .type-chiaco {
+        --type-chiaco-stack: 'Futura', 'Century Gothic', 'Avenir Next', 'Avenir',
+            'Twentieth Century', var(--font-sans);
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.1em 0.4em; /* row-gap, word-gap */
+        font-family: var(--type-chiaco-stack);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        line-height: 1.05;
+        direction: ltr; /* Latin display always reads left-to-right, even on RTL pages */
+        unicode-bidi: isolate;
+    }
+    .type-chiaco-word {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.08em; /* letter tracking inside a word */
+        white-space: nowrap;
+    }
+    .type-chiaco svg.type-chiaco-o {
+        width: 0.78em; /* match cap height of the geometric letters */
+        height: 0.78em;
+        flex: none;
+        transform: translateY(-0.02em);
+    }
+}
+
+/* Marquee (promo strip / marquee block) */
+@keyframes marquee {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(50%);
+    }
+}
+.animate-marquee {
+    animation: marquee 28s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .animate-marquee {
+        animation: none;
+    }
+}
+
+/* Transparent header overlay — applied by initTransparentHeader() in app.js
+   when the first content block on the page is an editorial_hero. The header
+   floats over the hero with white text; on scroll past the hero, the JS
+   removes the class and the header reverts to its solid default. */
+.header-over-hero {
+    position: absolute !important;
+    inset-inline: 0;
+    top: 0;
+    background: transparent !important;
+    border-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #fff;
+}
+.header-over-hero a,
+.header-over-hero button,
+.header-over-hero svg {
+    color: #fff;
+}
+.header-over-hero a:hover,
+.header-over-hero button:hover {
+    background: rgba(255, 255, 255, 0.10);
+}
+.header-over-hero [ring-1],
+.header-over-hero .ring-brand-200,
+.header-over-hero .ring-brand-100 {
+    --tw-ring-color: rgba(255, 255, 255, 0.25);
+}
+.header-over-hero input[type="search"] {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.20);
+    color: #fff;
+}
+.header-over-hero input[type="search"]::placeholder {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+/* Prevent pull-to-refresh on scrollable drawers/sidebars */
+.overscroll-contain {
+    overscroll-behavior: contain;
+}
+
+/* RTL prose for product descriptions and CMS content */
+.prose-sm {
+    line-height: 2;
+    text-align: justify;
+}
+.prose-sm p {
+    margin-bottom: 0.75rem;
+}
+.prose-sm ul,
+.prose-sm ol {
+    padding-right: 1.25rem;
+    padding-left: 0;
+    margin-bottom: 0.75rem;
+}
+.prose-sm li {
+    margin-bottom: 0.25rem;
+}
+.prose-sm ul {
+    list-style-type: disc;
+}
+.prose-sm ol {
+    list-style-type: decimal;
+}
+
+@keyframes float-slow {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-12px);
+    }
+}
+.animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+}
