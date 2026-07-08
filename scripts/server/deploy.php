@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Chiaco one-shot deployer — token-guarded, self-deleting.
+ * Racket Club one-shot deployer — token-guarded, self-deleting.
  *
  * scripts/deploy.sh uploads this file fresh to public_html on every deploy (with
  * a random token + the app-dir name baked in), uploads the release zip to the
@@ -59,8 +59,8 @@ $fail = function (string $msg) use (&$log): void {
 
 $public = __DIR__;                  // .../public_html
 $home   = dirname($public);         // .../<account home>
-$appDir = $home.'/'.$APP_DIR;       // .../chiiaco_app
-$zip    = $home.'/chiiaco-deploy.zip';
+$appDir = $home.'/'.$APP_DIR;       // .../racketclub_app
+$zip    = $home.'/racketclub-deploy.zip';
 
 if (! is_file($zip)) {
     $fail("release zip not found: $zip");

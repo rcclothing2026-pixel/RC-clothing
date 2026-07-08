@@ -1,20 +1,29 @@
 #!/usr/bin/env bash
 # =============================================================================
-# scripts/deploy.sh — one-command deploy for chiiaco.com (cPanel / FTP, no SSH).
+# scripts/deploy.sh — one-command deploy for racketclub.ir (cPanel / FTP, no SSH).
 #
-#   git pull (VPN ON)  →  VPN OFF  →  bash scripts/deploy.sh
+#   bash scripts/deploy.sh --pull        # pull latest, then build + deploy
+#   bash scripts/deploy.sh               # build + deploy the current checkout
 #
 # Builds a release zip (composer --no-dev + vite build), uploads ONE zip over
 # FTP, uploads a token-guarded one-shot PHP extractor to public_html, triggers
 # it once over HTTPS (unzip → wire public_html → migrate → cache → opcache),
 # and the extractor deletes the zip + itself. Then verifies the site is up.
+# Every run ships code + runs pending migrations + rebuilds caches, so future
+# updates (new features, DB/schema changes) go live the same way.
 #
-# FIRST TIME: do the one-time setup in scripts/DEPLOY.md (PHP 8.3, create DB,
-# upload .env once, add cron) BEFORE running this.
+# NOTE (Iran network): GitHub is blocked, the cPanel host wants VPN OFF. So the
+# usual flow is: VPN ON → `git pull` → VPN OFF → `bash scripts/deploy.sh`.
+# Use `--pull` only when GitHub is reachable without blocking the FTP host.
+#
+# FIRST TIME: do the one-time setup in scripts/DEPLOY-RACKETCLUB.md (PHP 8.3,
+# create DB, upload .env once, add cron) BEFORE running this.
 #
 # Flags:
+#   --pull         git pull --ff-only the current branch before building
 #   --no-build     reuse the newest RELEASE/*.zip instead of rebuilding
 #   --no-migrate   skip database migrations (files/assets only)
+#   --seed         run the production seeder after migrating (first deploy)
 #   --no-verify    skip the post-deploy HTTP check
 #   --help
 # =============================================================================
@@ -37,40 +46,50 @@ cd "$HERE"
 # temp artefacts cleaned on exit (init empty so the trap is safe under `set -u`)
 STAGE=""; TMP_PHP=""
 trap 'rm -rf "$STAGE" "$TMP_PHP" 2>/dev/null || true' EXIT
-ZIP="$HERE/RELEASE/chiiaco-deploy.zip"
+ZIP="$HERE/RELEASE/racketclub-deploy.zip"
 
 # ----- args -----------------------------------------------------------------
-DO_BUILD=1; DO_MIGRATE=1; DO_VERIFY=1; DO_SEED=0
+DO_BUILD=1; DO_MIGRATE=1; DO_VERIFY=1; DO_SEED=0; DO_PULL=0
 for a in "$@"; do
   case "$a" in
+    --pull)       DO_PULL=1 ;;
     --no-build)   DO_BUILD=0 ;;
     --no-migrate) DO_MIGRATE=0 ;;
     --no-verify)  DO_VERIFY=0 ;;
     --seed)       DO_SEED=1 ;;
-    --help|-h)    sed -n '2,28p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --help|-h)    sed -n '2,36p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "unknown flag: $a (try --help)" ;;
   esac
 done
 
+# ----- [0] optional git pull ------------------------------------------------
+if [ "$DO_PULL" -eq 1 ]; then
+  header "[0] Pull latest"
+  command -v git >/dev/null || die "git not found in PATH"
+  BR="$(git rev-parse --abbrev-ref HEAD)"
+  git pull --ff-only origin "$BR" || die "git pull failed (GitHub reachable? on branch $BR?)"
+  ok "pulled origin/$BR"
+fi
+
 # ----- [1] credentials ------------------------------------------------------
 header "[1/6] Credentials"
-CREDS="${HOME}/.chiiaco-deploy"
+CREDS="${HOME}/.racketclub-deploy"
 [ -f "$CREDS" ] || die "missing $CREDS
-     cp scripts/.chiiaco-deploy.example ~/.chiiaco-deploy && chmod 600 ~/.chiiaco-deploy
+     cp scripts/.racketclub-deploy.example ~/.racketclub-deploy && chmod 600 ~/.racketclub-deploy
      then fill in the FTP password."
 if stat -f '%Lp' "$CREDS" >/dev/null 2>&1; then MODE="$(stat -f '%Lp' "$CREDS")"; else MODE="$(stat -c '%a' "$CREDS")"; fi
 case "$MODE" in 600|400) ;; *) die "$CREDS is mode $MODE — too open. Run: chmod 600 $CREDS" ;; esac
 # shellcheck disable=SC1090
 source "$CREDS"
-: "${FTP_HOST:?set FTP_HOST in ~/.chiiaco-deploy}"
-: "${FTP_USER:?set FTP_USER in ~/.chiiaco-deploy}"
-: "${FTP_PASS:?set FTP_PASS in ~/.chiiaco-deploy}"
-: "${PUBLIC_HOST:?set PUBLIC_HOST in ~/.chiiaco-deploy}"
+: "${FTP_HOST:?set FTP_HOST in ~/.racketclub-deploy}"
+: "${FTP_USER:?set FTP_USER in ~/.racketclub-deploy}"
+: "${FTP_PASS:?set FTP_PASS in ~/.racketclub-deploy}"
+: "${PUBLIC_HOST:?set PUBLIC_HOST in ~/.racketclub-deploy}"
 PUBLIC_DIR="${PUBLIC_DIR-public_html}"
-APP_DIR="${APP_DIR-chiiaco_app}"
+APP_DIR="${APP_DIR-racketclub_app}"
 FTP_SECURE="${FTP_SECURE-1}"        # 1 = explicit FTPS (AUTH TLS), 0 = plain FTP
 FTP_INSECURE="${FTP_INSECURE-1}"    # 1 = accept self-signed certs
-# Pre-DNS deploy: if chiiaco.com doesn't point here yet, set TRIGGER_IP=<server ip>
+# Pre-DNS deploy: if racketclub.ir doesn't point here yet, set TRIGGER_IP=<server ip>
 # so the HTTPS trigger/verify resolve to this server (cert not valid yet → -k).
 WEB_OPTS=()
 if [ -n "${TRIGGER_IP-}" ]; then
@@ -143,9 +162,9 @@ ftp_put() { # $1 = local file, $2 = remote path under FTP root
 
 # ----- [3] upload release zip → account home --------------------------------
 header "[3/6] Upload release zip (FTP)"
-ftp_put "$ZIP" "chiiaco-deploy.zip" || die "zip upload failed.
-     Check: VPN OFF · $FTP_HOST reachable · password current · try FTP_SECURE=0 in ~/.chiiaco-deploy"
-ok "uploaded chiiaco-deploy.zip → account home"
+ftp_put "$ZIP" "racketclub-deploy.zip" || die "zip upload failed.
+     Check: VPN OFF · $FTP_HOST reachable · password current · try FTP_SECURE=0 in ~/.racketclub-deploy"
+ok "uploaded racketclub-deploy.zip → account home"
 
 # ----- [4] upload + trigger the one-shot extractor --------------------------
 header "[4/6] Extract + migrate (server-side)"

@@ -51,16 +51,34 @@ Upload + extract into `racketclub_app/`, then run migrations once. Two ways:
   + `scripts/server/deploy.php`) — it unzips, wires `public_html`, migrates, and
   caches over HTTPS. Retarget it to racketclub.ir (see below).
 
-## Ongoing deploys — `scripts/deploy.sh`
+## Ongoing deploys — one command, `scripts/deploy.sh`
 
-The bundled FTP deployer works here with three retargets (currently chiiaco.com):
-1. Its config domain/host → `racketclub.ir`, app dir → `racketclub_app`.
-2. Credentials file `~/.chiiaco-deploy` → FTP host `ftp.racketclub.ir`, user
-   `chiiac`, the FTP password, and a `DEPLOY_TOKEN` you also set on the server.
-3. On the server, `racketclub_app/.env` must exist first (step 4 above).
+The deployer is already retargeted to racketclub.ir. Set up credentials once on
+your Mac, then every future update (code, migrations, DB/schema changes, cache
+rebuilds) ships with a single command.
 
-Then: `bash scripts/deploy.sh` builds a release zip, uploads it, a one-shot
-server script unzips + migrates + caches + busts opcache, and self-deletes.
+**One-time (local):**
+```
+cp scripts/.racketclub-deploy.example ~/.racketclub-deploy
+chmod 600 ~/.racketclub-deploy
+# edit ~/.racketclub-deploy → fill FTP_PASS (and FTP_HOST/PUBLIC_HOST if different)
+```
+
+**Every deploy (local):**
+```
+# VPN ON:  git pull            (GitHub is blocked in Iran)
+# VPN OFF: bash scripts/deploy.sh          # build + upload + migrate + cache
+#          bash scripts/deploy.sh --seed   # first deploy only: also seed shipping/payments/pages/menus
+```
+It builds a release zip (`composer --no-dev` + `vite build`), uploads it over
+FTP, uploads a token-guarded one-shot `deploy.php` to `public_html`, triggers it
+once over HTTPS (unzip → wire `public_html` → `migrate --force` → `config:cache`
++ `view:cache` → opcache reset), then the server script deletes the zip + itself
+and the command verifies the site responds. Flags: `--no-migrate` (assets only),
+`--no-build` (reuse last zip), `--pull` (git pull first, if GitHub is reachable).
+
+If `racketclub.ir` DNS isn't pointed at this server yet, add
+`TRIGGER_IP=45.139.11.145` to `~/.racketclub-deploy` for the first deploys.
 
 ## Queue worker (for order emails / SMS retries)
 

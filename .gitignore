@@ -36,3 +36,6 @@ Thumbs.db
 
 # HTTPS deploy receiver token (server-only, never commit)
 deploy-token.php
+
+# Local deploy credentials (never commit)
+.racketclub-deploy
