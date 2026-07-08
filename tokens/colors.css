@@ -1,0 +1,137 @@
+/* ============================================================
+   RACKET CLUB — Color tokens
+   Palette from the CI identity guide:
+   Navy 18234F · Forest 034326 · Clay A72F23 · Brown 672C24
+   Beige C6AF92 · Cream ECE7D0  (+ white)
+   Base values are the CI hexes; ramps are tints/shades of each.
+   Balance follows the CI 60-30-10 rule:
+     60% cream surface · 30% navy text/structure · 10% accents
+     (clay + beige ≈7.5% each; forest + brown ≈2.5% each detail).
+   ============================================================ */
+:root {
+  /* --- Navy (primary) --- */
+  --navy-50:  #edeef3;
+  --navy-100: #d5d8e4;
+  --navy-200: #a6abc4;
+  --navy-300: #6e77a0;
+  --navy-400: #3a4680;
+  --navy-500: #232f63;
+  --navy-600: #18234f; /* CI base */
+  --navy-700: #141e45;
+  --navy-800: #10173a;
+  --navy-900: #0b1024;
+
+  /* --- Green (deep forest — primary #2) --- */
+  --green-50:  #eef6f1;
+  --green-100: #d3e5da;
+  --green-200: #9cc3ac;
+  --green-300: #5a9a72;
+  --green-400: #1c7146;
+  --green-500: #0a5733;
+  --green-600: #034326; /* CI base — dark forest green */
+  --green-700: #02341e;
+  --green-800: #012616;
+  --green-900: #011a0f;
+
+  /* --- Clay (accent / highlight) --- */
+  --clay-50:  #fcf1ef;
+  --clay-100: #f8e1de;
+  --clay-200: #f0c2bc;
+  --clay-300: #e4948a;
+  --clay-400: #d46456;
+  --clay-500: #c13e30;
+  --clay-600: #a72f23; /* CI base */
+  --clay-700: #8a251a;
+  --clay-800: #6e1d14;
+  --clay-900: #4a130d;
+
+  /* --- Brown (secondary accent) --- */
+  --brown-50:  #f7efed;
+  --brown-100: #eededa;
+  --brown-200: #dbb8b2;
+  --brown-300: #c08a82;
+  --brown-400: #9e574c;
+  --brown-500: #7f3a31;
+  --brown-600: #672c24; /* CI base */
+  --brown-700: #55221b;
+  --brown-800: #431a14;
+  --brown-900: #2e120e;
+
+  /* --- Sand (warm neutral) --- */
+  --sand-50:  #faf7f2;
+  --sand-100: #f5f0e9;
+  --sand-200: #ece3d8;
+  --sand-300: #e0d3c2;
+  --sand-400: #d3c1aa;
+  --sand-500: #c6af92; /* CI base */
+  --sand-600: #a88f6e;
+  --sand-700: #937b54;
+  --sand-800: #74603f;
+  --sand-900: #55462f;
+
+  /* --- Cream (paper / page) --- */
+  --cream-50:  #fefdfa;
+  --cream-100: #fcfbf6;
+  --cream-200: #f9f7ee;
+  --cream-300: #f5f2e4;
+  --cream-400: #f1edda;
+  --cream-500: #ece7d0; /* CI base */
+  --cream-600: #d9d4bb;
+  --cream-700: #c7c1a6;
+  --cream-800: #a9a488;
+  --cream-900: #857f63;
+
+  --white: #ffffff;
+  --black: #0b0d13;
+
+  /* Studio / photography backdrops (set-design colours from the shoot,
+     for editorial fills that sit alongside imagery — not core UI) */
+  --terracotta: #a8492c;
+  --terracotta-deep: #8f3c23;
+  --petrol: #1e3d46;
+
+  /* =========================================================
+     SIGNATURE GRADIENTS (from the CI colour guide)
+     Primary  — hero/header/catalog-cover backgrounds.
+     Accent   — CTA buttons, ribbons, promo banners.
+     ========================================================= */
+  --gradient-primary: linear-gradient(225deg, var(--navy-600) 0%, var(--green-600) 100%);
+  --gradient-accent:  linear-gradient(180deg, var(--clay-600) 0%, var(--brown-600) 100%);
+
+  /* =========================================================
+     SEMANTIC ALIASES — reference these in product/UI code
+     ========================================================= */
+  --brand-primary:        var(--navy-600);
+  --brand-primary-hover:  var(--navy-700);
+  --brand-primary-active: var(--navy-800);
+  --brand-secondary:      var(--green-600);
+  --brand-secondary-hover:var(--green-700);
+  --brand-accent:         var(--clay-600); /* clay — CTAs, highlights */
+  --brand-accent-hover:   var(--clay-700);
+  --brand-accent-2:       var(--brown-600); /* brown — rare, special */
+
+  /* Surfaces */
+  --surface-page:      var(--cream-500);
+  --surface-page-alt:  var(--cream-300);
+  --surface-card:      var(--white);
+  --surface-sunken:    var(--cream-600);
+  --surface-inverse:   var(--navy-600);
+  --surface-inverse-2: var(--green-700);
+
+  /* Text — body sits in deep green or navy on cream (per CI) */
+  --text-primary:   var(--navy-600);
+  --text-body:      var(--green-600);
+  --text-secondary: var(--navy-400);
+  --text-muted:     var(--sand-700);
+  --text-inverse:   var(--cream-500);
+  --text-on-accent: var(--white);
+  --text-link:      var(--clay-600);
+  --text-link-hover:var(--sand-500);
+
+  /* Lines & focus */
+  --border-subtle:  color-mix(in srgb, var(--navy-600) 12%, transparent);
+  --border-default: color-mix(in srgb, var(--navy-600) 22%, transparent);
+  --border-strong:  var(--navy-600);
+  --border-on-dark: color-mix(in srgb, var(--cream-500) 24%, transparent);
+  --ring:           color-mix(in srgb, var(--clay-600) 55%, transparent);
+}

@@ -1,0 +1,45 @@
+<!-- @dsCard group="Components" viewport="700x460" name="Brand — Logo & Eyebrow" subtitle="Mark, wordmark, lockups & overline label" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; background: var(--surface-page); font-family: var(--font-body); color: var(--text-primary); padding: 28px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 640px; }
+  .tile { border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 22px; display: flex; align-items: center; justify-content: center; min-height: 120px; }
+  .tile.dark { background: var(--surface-inverse); }
+  .tile.cream { background: var(--surface-card); }
+  .cap { grid-column: 1 / -1; font-size: var(--text-xs); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--text-muted); margin-top: 6px; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Logo, Eyebrow } = window.RacketClubDesignSystem_3c2e87;
+function Demo() {
+  return (
+    <div className="grid">
+      <div className="tile cream"><Logo layout="horizontal" tone="navy" size={38} /></div>
+      <div className="tile dark"><Logo layout="horizontal" tone="cream" size={38} /></div>
+      <div className="tile cream"><Logo layout="stacked" tone="navy" size={48} showSlogan /></div>
+      <div className="tile dark"><Logo layout="mark" tone="cream" size={64} /></div>
+      <div className="tile cream" style={{ gap: 24 }}>
+        <Logo layout="mark" tone="navy" size={44} />
+        <Logo layout="mark" tone="green" size={44} />
+      </div>
+      <div className="tile cream" style={{ flexDirection: 'column', gap: 14, alignItems: 'flex-start' }}>
+        <Eyebrow>Membership</Eyebrow>
+        <Eyebrow tone="primary" rule={false}>Est. 1998</Eyebrow>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Radius" subtitle="Sharp & geometric — pills for tags only" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>
+  body{margin:0;background:var(--surface-page);font-family:var(--font-body);color:var(--text-primary);padding:24px;}
+  .row{display:flex;gap:22px;align-items:flex-end;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .sq{width:64px;height:52px;background:var(--navy-600);}
+  .l{font-size:10px;color:var(--text-muted);font-family:ui-monospace,monospace;}
+</style></head>
+<body>
+  <div class="row">
+    <div class="col"><div class="sq" style="border-radius:var(--radius-none)"></div><div class="l">none·0</div></div>
+    <div class="col"><div class="sq" style="border-radius:var(--radius-xs)"></div><div class="l">xs·2</div></div>
+    <div class="col"><div class="sq" style="border-radius:var(--radius-sm)"></div><div class="l">sm·4</div></div>
+    <div class="col"><div class="sq" style="border-radius:var(--radius-md)"></div><div class="l">md·6</div></div>
+    <div class="col"><div class="sq" style="border-radius:var(--radius-lg)"></div><div class="l">lg·10</div></div>
+    <div class="col"><div class="sq" style="border-radius:var(--radius-pill);width:52px"></div><div class="l">pill</div></div>
+  </div>
+</body></html>

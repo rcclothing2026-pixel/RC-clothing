@@ -1,0 +1,57 @@
+/* ============================================================
+   RACKET CLUB — Typography tokens
+   Primary: Mansory — an elegant, high-contrast sans (all UI +
+   display). Accent: Pinyon Script — the slogan / flourish only.
+   ============================================================ */
+:root {
+  /* Families — per CI: Mansory sets headings/logo/quotes; Helvetica Neue is body.
+     Persian body is IranSharp (not shipped here — see readme). */
+  --font-display: 'Mansory', 'Archivo', Georgia, serif;
+  --font-heading: 'Mansory', 'Archivo', Georgia, serif;
+  --font-body:    'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+  --font-script:  'Pinyon Script', 'Snell Roundhand', cursive;
+
+  /* Weights (Mansory ships 400 / 500 / 600 / 700) */
+  --fw-regular:  400; /* @kind font */
+  --fw-medium:   500; /* @kind font */
+  --fw-semibold: 600; /* @kind font */
+  --fw-bold:     700; /* @kind font */
+
+  /* Type scale — 1.250 major-third, 16px base */
+  --text-xs:   0.75rem;   /* 12 */
+  --text-sm:   0.875rem;  /* 14 */
+  --text-base: 1rem;      /* 16 */
+  --text-lg:   1.125rem;  /* 18 */
+  --text-xl:   1.375rem;  /* 22 */
+  --text-2xl:  1.75rem;   /* 28 */
+  --text-3xl:  2.25rem;   /* 36 */
+  --text-4xl:  3rem;      /* 48 */
+  --text-5xl:  4rem;      /* 64 */
+  --text-6xl:  5.5rem;    /* 88 */
+  --text-7xl:  7.5rem;    /* 120 */
+
+  /* Line heights */
+  --leading-none:  1;
+  --leading-tight: 1.1;
+  --leading-snug:  1.25;
+  --leading-normal:1.5;
+  --leading-relaxed:1.7;
+
+  /* Tracking — Mansory is wide; display + UI caps get air */
+  --tracking-tight:  -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-wider:  0.08em;   /* wordmark / eyebrow caps */
+  --tracking-widest: 0.16em;   /* small overline labels */
+
+  /* Semantic roles (CI type ramp) */
+  --heading-family: var(--font-heading);
+  --body-family:    var(--font-body);
+  /* H1 48 Bold UPPERCASE · H2 36 SemiBold Title · H3 24 Medium Title
+     Body 16 Regular sentence · Caption 12 Regular */
+  --h1-size: var(--text-4xl);   --h1-weight: var(--fw-bold);     --h1-leading: 1.2;
+  --h2-size: var(--text-3xl);   --h2-weight: var(--fw-semibold); --h2-leading: 1.2;
+  --h3-size: 1.5rem;            --h3-weight: var(--fw-medium);   --h3-leading: 1.2;
+  --body-size: var(--text-base); --body-weight: var(--fw-regular); --body-leading: 1.4;
+  --caption-size: var(--text-xs); --caption-leading: 1.3;
+}

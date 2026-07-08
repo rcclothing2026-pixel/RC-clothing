@@ -1,0 +1,102 @@
+<!-- @dsCard group="Components" viewport="700x760" name="Core UI" subtitle="Buttons, inputs, badges, tags, cards, stats, tabs, dialog" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; background: var(--surface-page); font-family: var(--font-body); color: var(--text-primary); padding: 28px; }
+  .wrap { display: flex; flex-direction: column; gap: 26px; max-width: 640px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .sec-label { font-size: var(--text-xs); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-widest); text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Button, IconButton, Input, Badge, Tag, Card, Stat, Tabs, Dialog } = window.RacketClubDesignSystem_3c2e87;
+const Ic = ({ n, s = 18 }) => {
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    if (ref.current && window.lucide) window.lucide.createIcons({ attrs: { width: s, height: s }, nameAttr: 'data-lucide', root: ref.current });
+  });
+  return <span ref={ref} style={{ display: 'inline-flex' }}><i data-lucide={n}></i></span>;
+};
+
+function Demo() {
+  const [tab, setTab] = React.useState('book');
+  const [open, setOpen] = React.useState(false);
+  const Sec = ({ label, children }) => (<div><div className="sec-label">{label}</div>{children}</div>);
+  return (
+    <div className="wrap">
+      <Sec label="Buttons">
+        <div className="row" style={{ marginBottom: 12 }}>
+          <Button variant="primary">Shop the edit</Button>
+          <Button variant="secondary">Lookbook</Button>
+          <Button variant="accent">Add to bag</Button>
+          <Button variant="gradient">Discover</Button>
+          <Button variant="outline">Details</Button>
+          <Button variant="ghost">Cancel</Button>
+        </div>
+        <div className="row">
+          <Button size="sm" variant="accent">Small</Button>
+          <Button size="md" variant="accent">Medium</Button>
+          <Button size="lg" variant="accent">Large</Button>
+          <Button variant="primary" disabled>Disabled</Button>
+          <IconButton label="Menu" variant="solid"><Ic n="menu"/></IconButton>
+          <IconButton label="Search" variant="outline"><Ic n="search"/></IconButton>
+          <IconButton label="More"><Ic n="more-horizontal"/></IconButton>
+        </div>
+      </Sec>
+
+      <Sec label="Inputs">
+        <div className="row" style={{ alignItems: 'flex-start' }}>
+          <Input label="Email" placeholder="you@club.com" containerStyle={{ width: 240 }} leftIcon={<Ic n="mail" s={16}/>} />
+          <Input label="Member ID" defaultValue="RC-0042" error="That ID wasn't found." containerStyle={{ width: 200 }} />
+        </div>
+      </Sec>
+
+      <Sec label="Badges & tags">
+        <div className="row" style={{ marginBottom: 12 }}>
+          <Badge tone="green" dot>In stock</Badge>
+          <Badge tone="clay" variant="solid">Limited drop</Badge>
+          <Badge tone="navy">Autumn 2026</Badge>
+          <Badge tone="brown">Last few</Badge>
+          <Badge tone="sand">New</Badge>
+        </div>
+        <div className="row">
+          <Tag selected>Polos</Tag>
+          <Tag>Knitwear</Tag>
+          <Tag>Trousers</Tag>
+          <Tag onRemove={() => {}}>Beige</Tag>
+        </div>
+      </Sec>
+
+      <Sec label="Cards & stats">
+        <div className="row" style={{ alignItems: 'stretch' }}>
+          <Card style={{ width: 190 }}><div style={{ fontWeight: 600, marginBottom: 4 }}>The Terrace Polo</div><div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Piqué cotton · €145</div></Card>
+          <Card variant="inverse" style={{ width: 150 }}><Stat value="12" label="Pieces" tone="inverse" /></Card>
+          <Card variant="court" style={{ width: 150 }}><Stat value="1998" label="Est." tone="inverse" /></Card>
+        </div>
+      </Sec>
+
+      <Sec label="Tabs & dialog">
+        <Tabs items={[{id:'book',label:'Details'},{id:'events',label:'Sizing'},{id:'league',label:'Care'}]} value={tab} onChange={setTab} style={{ marginBottom: 14, maxWidth: 360 }} />
+        <Button variant="accent" onClick={() => setOpen(true)}>Open dialog</Button>
+        <Dialog open={open} onClose={() => setOpen(false)} title="Added to your bag"
+          footer={<><Button variant="ghost" onClick={() => setOpen(false)}>Keep shopping</Button><Button variant="accent" onClick={() => setOpen(false)}>Checkout</Button></>}>
+          The Terrace Polo · Ecru · Size M. Complimentary shipping on orders over €200.
+        </Dialog>
+      </Sec>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script>
+</body>
+</html>

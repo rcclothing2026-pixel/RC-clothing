@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3000 3000">
+  <defs>
+    
+  </defs>
+  <g id="Layer_4" data-name="Layer 4">
+    <rect class="cls-3" x="1178.25" y="437.69" width="280" height="280"></rect>
+    <rect class="cls-5" x="1290.25" y="577.69" width="56" height="141.13"></rect>
+    <rect class="cls-5" x="1290.32" y="464.57" width="56" height="280" transform="translate(713.7528 1922.8961) rotate(-90)"></rect>
+    <circle class="cls-5" cx="1385.66" cy="524.18" r="14.38"></circle>
+  </g>
+  <g id="Layer_6" data-name="Layer 6">
+    <rect class="cls-4" x="1.12" y="1.12" width="2997.77" height="2997.77"></rect>
+    <text class="cls-2" transform="translate(446.0889 1559.7781)"><tspan x="0" y="0">R</tspan><tspan class="cls-8" x="209.72" y="0">A</tspan><tspan x="405.72" y="0">CK</tspan><tspan class="cls-7" x="830.19" y="0">E</tspan><tspan x="1010.8" y="0">T C</tspan><tspan class="cls-6" x="1527.39" y="0">L</tspan><tspan class="cls-9" x="1685.59" y="0">U</tspan><tspan class="cls-1" x="1896.99" y="0">B</tspan></text>
+    <rect class="cls-3" x="1361.12" y="809.02" width="280" height="280"></rect>
+    <rect class="cls-5" x="1473.12" y="949.02" width="56" height="141.13"></rect>
+    <rect class="cls-5" x="1473.19" y="830.9" width="56" height="290" transform="translate(525.2906 2477.0903) rotate(-90)"></rect>
+    <circle class="cls-5" cx="1568.53" cy="895.51" r="14.38"></circle>
+  </g>
+</svg>

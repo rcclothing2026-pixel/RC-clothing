@@ -1,0 +1,273 @@
+<!-- @dsCard group="Brand Book" viewport="1123x794" name="Brand Book — A4 pages" subtitle="Paged A4-landscape edition (1 page = 1 sheet)" -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Racket Club — Brand Book (A4)</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  :root { --pw: 297mm; --ph: 210mm; --pad: 15mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #b9b3a3; font-family: var(--font-body); color: var(--navy-600); -webkit-font-smoothing: antialiased; }
+
+  .page { width: var(--pw); height: var(--ph); background: var(--cream-500); position: relative; overflow: hidden; }
+  .pad { position: absolute; inset: 0; padding: var(--pad); display: flex; flex-direction: column; }
+
+  @media screen { body { padding: 28px 0; } .page { margin: 0 auto 28px; box-shadow: 0 10px 34px rgba(11,16,36,.28); } }
+  @page { size: A4 landscape; margin: 0; }
+  @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { background: none; padding: 0; }
+    .page { margin: 0; box-shadow: none; break-after: page; }
+    .page:last-child { break-after: auto; }
+  }
+
+  .display { font-family: var(--font-display); font-weight: var(--fw-bold); letter-spacing: -0.01em; line-height: 0.94; text-transform: uppercase; }
+  .serif { font-family: var(--font-display); font-weight: var(--fw-medium); letter-spacing: -0.01em; line-height: 1.02; }
+  .script { font-family: var(--font-script); }
+  .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; }
+  .body { font-size: 13.5px; line-height: 1.6; }
+  .lead { font-size: 18px; line-height: 1.45; color: var(--green-600); }
+  .num { font-family: var(--font-display); font-weight: 600; font-size: 12px; letter-spacing: 0.1em; color: var(--clay-600); }
+  .cap { font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sand-700); }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 100%; height: 100%; }
+  .split > * { min-height: 0; min-width: 0; overflow: hidden; }
+  .cover-img, .half-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .fill-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+  .footline { margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+
+<!-- P1 · COVER -->
+<section class="page">
+  <div class="split">
+    <div style="background:var(--navy-600); color:var(--cream-500); padding:var(--pad); display:flex; flex-direction:column; justify-content:space-between;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <img src="../assets/logo/mark-cream.svg" alt="" style="width:52px;height:52px">
+        <span class="eyebrow">Corporate Identity</span>
+      </div>
+      <div>
+        <span class="eyebrow" style="color:var(--sand-400)">Brand Book · Est. 2025</span>
+        <h1 class="display" style="font-size:74px; margin:14px 0 0">Racket<br>Club</h1>
+        <p class="script" style="font-size:44px; color:var(--sand-400); margin:2px 0 0">Legends &amp; Legacy</p>
+      </div>
+      <p class="body" style="max-width:36ch; color:color-mix(in srgb,var(--cream-500) 82%,transparent)">The art of leisure, dressed. A field guide to who we are, how we speak, and how we look — on the court and long after the match.</p>
+    </div>
+    <div style="position:relative; background:var(--terracotta)"><img class="cover-img" src="../assets/photography/rc-solo-terracotta.jpg" alt="Racket Club campaign"></div>
+  </div>
+</section>
+
+<!-- P2 · CONTENTS -->
+<section class="page">
+  <div class="pad">
+    <div style="display:flex; align-items:baseline; gap:20px; margin-bottom:28px"><span class="num">00</span><h2 class="serif" style="font-size:46px">Contents</h2></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 64px; column-gap:64px">
+      <div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(24,35,79,.16);padding:14px 0"><span class="body" style="font-size:16px">The Brand — The Art of Leisure</span><span class="num">01</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(24,35,79,.16);padding:14px 0"><span class="body" style="font-size:16px">Archetype — The Sovereign</span><span class="num">02</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(24,35,79,.16);padding:14px 0"><span class="body" style="font-size:16px">The Modern Classicist</span><span class="num">03</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(24,35,79,.16);padding:14px 0"><span class="body" style="font-size:16px">Voice &amp; Tone</span><span class="num">04</span></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(24,35,79,.16);padding:14px 0"><span class="body" style="font-size:16px">The Mark &amp; Logo System</span><span class="num">05</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(24,35,79,.16);padding:14px 0"><span class="body" style="font-size:16px">Colour</span><span class="num">06</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(24,35,79,.16);padding:14px 0"><span class="body" style="font-size:16px">Typography</span><span class="num">07</span></div>
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(24,35,79,.16);padding:14px 0"><span class="body" style="font-size:16px">Photography &amp; The Collection</span><span class="num">08</span></div>
+      </div>
+    </div>
+    <div class="footline"><span class="script" style="font-size:30px; color:var(--clay-600)">Legends &amp; Legacy</span><span class="cap">Racket Club · Est 2025</span></div>
+  </div>
+</section>
+
+<!-- P3 · 01 THE BRAND -->
+<section class="page">
+  <div class="split">
+    <div style="padding:var(--pad); display:flex; flex-direction:column;">
+      <div style="display:flex; align-items:baseline; gap:16px"><span class="num">01</span><span class="eyebrow" style="color:var(--clay-600)">The Brand</span></div>
+      <h2 class="serif" style="font-size:44px; margin:12px 0 18px">The Art of Leisure</h2>
+      <p class="lead" style="margin:0 0 14px">More than a clothing label — the embodiment of a lifestyle, lived in the moments away from the court.</p>
+      <p class="body" style="margin:0 0 12px">We are not about the sweat; we are about the style. Not about the competition; about the community. We make considered essentials for the life that happens off the court — the long brunch, the coastal walk, the golden hour before dusk.</p>
+      <p class="body" style="margin:0">Ours is a quiet luxury: felt in the hand, never shouted from the chest. Timeless pieces for people who invest in a feeling.</p>
+      <p class="script" style="font-size:34px; color:var(--clay-600); margin-top:auto">Legends &amp; Legacy</p>
+    </div>
+    <div style="position:relative; background:var(--navy-700)"><img class="half-img" src="../assets/photography/rc-trio-navy.jpg" alt="The club"></div>
+  </div>
+</section>
+
+<!-- P4 · 02 ARCHETYPE -->
+<section class="page">
+  <img class="fill-photo" src="../assets/photography/rc-couple-terracotta.jpg" alt="Editorial">
+  <div style="position:absolute; inset:0; background:linear-gradient(90deg, rgba(11,16,36,.72) 0%, rgba(11,16,36,.30) 42%, transparent 68%)"></div>
+  <div class="pad" style="color:var(--cream-500)">
+    <div style="display:flex; align-items:baseline; gap:16px"><span class="num" style="color:var(--sand-400)">02</span><span class="eyebrow" style="color:var(--sand-400)">Archetype</span></div>
+    <h2 class="serif" style="font-size:48px; margin:12px 0 16px; max-width:12ch">The Sovereign</h2>
+    <p class="lead" style="color:var(--cream-500); max-width:34ch; margin:0 0 12px">Leadership, control, and order drawn from chaos — but never the rule of others.</p>
+    <p class="body" style="max-width:44ch; color:color-mix(in srgb,var(--cream-500) 88%,transparent)">For Racket Club, the Sovereign is mastery over one's own life and leisure. We define our exclusive "club" by taste and quality, value heritage and tradition, and present a confident, classic, controlled image to the world.</p>
+  </div>
+</section>
+
+<!-- P5 · 03 AUDIENCE -->
+<section class="page">
+  <div class="pad">
+    <div style="display:flex; align-items:baseline; gap:16px"><span class="num">03</span><span class="eyebrow" style="color:var(--clay-600)">The Audience</span></div>
+    <h2 class="serif" style="font-size:40px; margin:10px 0 6px">The Modern Classicist</h2>
+    <p class="body" style="max-width:80ch; margin:0 0 20px">Discerning, quality-conscious, aged 20–45. Wealthy but never showy — they don't just buy clothes, they invest in a feeling.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:28px; flex:1; min-height:0">
+      <div style="display:grid; grid-template-columns:96px 1fr; gap:16px; align-items:start">
+        <img src="../assets/photography/rc-portrait-cream.jpg" alt="Sara" style="width:96px;height:130px;object-fit:cover;border-radius:4px">
+        <div>
+          <span class="eyebrow" style="color:var(--clay-600)">Persona · She</span>
+          <h3 class="serif" style="font-size:22px; margin:4px 0 6px">Sara</h3>
+          <p class="body" style="margin:0">Creative director in a coastal city. Weekend padel then a long brunch; galleries, indie cinema, art markets. Buys timeless, well-made pieces; quietly supports limited, sustainable production.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:96px 1fr; gap:16px; align-items:start">
+        <img src="../assets/photography/rc-kneel-tote.jpg" alt="Arin" style="width:96px;height:130px;object-fit:cover;border-radius:4px">
+        <div>
+          <span class="eyebrow" style="color:var(--clay-600)">Persona · He</span>
+          <h3 class="serif" style="font-size:22px; margin:4px 0 6px">Arin</h3>
+          <p class="body" style="margin:0">Investment advisor or tech founder, 30–40. Evening tennis, weekend padel; reads long-form, collects vintage rackets. Seeks understated status — no loud logos — and lasting quality.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- P6 · 04 VOICE -->
+<section class="page" style="background:var(--navy-600)">
+  <div class="pad" style="color:var(--cream-500)">
+    <div style="display:flex; align-items:baseline; gap:16px"><span class="num" style="color:var(--sand-400)">04</span><span class="eyebrow" style="color:var(--sand-400)">Voice &amp; Tone</span></div>
+    <h2 class="serif" style="font-size:40px; margin:12px 0 20px; color:var(--cream-500)">Refined. Confident. Evocative.</h2>
+    <div style="display:grid; grid-template-columns:1fr 1.15fr; gap:40px; flex:1">
+      <div style="display:flex; flex-direction:column; gap:14px">
+        <p class="body" style="margin:0; color:color-mix(in srgb,var(--cream-500) 88%,transparent)"><strong style="color:var(--cream-500)">Refined.</strong> Elegant, measured language. Our typography does the same — chic and strong, never aggressive.</p>
+        <p class="body" style="margin:0; color:color-mix(in srgb,var(--cream-500) 88%,transparent)"><strong style="color:var(--cream-500)">Confident.</strong> The calm authority of an expert. No need to shout; quality speaks for itself.</p>
+        <p class="body" style="margin:0; color:color-mix(in srgb,var(--cream-500) 88%,transparent)"><strong style="color:var(--cream-500)">Evocative.</strong> We paint a picture — we sell the moment, not just the product.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; align-content:start">
+        <div style="background:rgba(236,231,208,.10); padding:16px; border-radius:4px"><span class="eyebrow" style="opacity:.7">Instead of</span><p class="serif" style="font-size:17px; margin:8px 0 0; opacity:.7">"Buy our new t-shirt."</p></div>
+        <div style="background:var(--green-600); padding:16px; border-radius:4px"><span class="eyebrow" style="opacity:.8">We say</span><p class="serif" style="font-size:17px; margin:8px 0 0">"Style for your leisure moments."</p></div>
+        <div style="background:rgba(236,231,208,.10); padding:16px; border-radius:4px"><span class="eyebrow" style="opacity:.7">Instead of</span><p class="serif" style="font-size:17px; margin:8px 0 0; opacity:.7">"High-quality shorts."</p></div>
+        <div style="background:var(--green-600); padding:16px; border-radius:4px"><span class="eyebrow" style="opacity:.8">We say</span><p class="serif" style="font-size:17px; margin:8px 0 0">"Designed for the life after the match."</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- P7 · 05 LOGO -->
+<section class="page">
+  <div class="split">
+    <div style="position:relative; background:var(--cream-600)"><img class="half-img" src="../assets/photography/rc-towel-logo.jpg" alt="Logo lockup"></div>
+    <div style="padding:var(--pad); display:flex; flex-direction:column">
+      <div style="display:flex; align-items:baseline; gap:16px"><span class="num">05</span><span class="eyebrow" style="color:var(--clay-600)">Identity</span></div>
+      <h2 class="serif" style="font-size:30px; margin:8px 0 10px">The Mark &amp; Logo System</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); grid-auto-rows:72px; gap:8px">
+        <div style="height:64px;background:var(--cream-300);border:1px solid rgba(24,35,79,.12);border-radius:4px;display:flex;align-items:center;justify-content:center"><img src="../assets/logo/mark-navy.svg" style="width:42%"></div>
+        <div style="height:64px;background:var(--navy-600);border-radius:4px;display:flex;align-items:center;justify-content:center"><img src="../assets/logo/mark-cream.svg" style="width:42%"></div>
+        <div style="height:64px;background:var(--green-600);border-radius:4px;display:flex;align-items:center;justify-content:center"><img src="../assets/logo/mark-cream.svg" style="width:42%"></div>
+        <div style="height:64px;background:var(--cream-300);border:1px solid rgba(24,35,79,.12);border-radius:4px;display:flex;align-items:center;justify-content:center"><span class="display" style="font-size:15px;letter-spacing:.03em;color:var(--navy-600)">Racket Club</span></div>
+        <div style="height:64px;background:var(--cream-300);border:1px solid rgba(24,35,79,.12);border-radius:4px;display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center"><img src="../assets/logo/mark-navy.svg" style="width:22%"><span class="display" style="font-size:11px;color:var(--navy-600)">Racket Club</span><span class="script" style="font-size:15px;color:var(--clay-600);line-height:.7">Legends &amp; Legacy</span></div>
+        <div style="height:64px;background:var(--terracotta);border-radius:4px;display:flex;align-items:center;justify-content:center"><img src="../assets/logo/mark-cream.svg" style="width:42%"></div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:14px">
+        <p class="body" style="margin:0"><strong>Clear space.</strong> Keep a protected zone on all sides equal to the height of one square in the mark.</p>
+        <p class="body" style="margin:0"><strong>Minimum size.</strong> Print ≥ 25&nbsp;mm wide; digital ≥ 120&nbsp;px. Below this, use the mark alone.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- P8 · 06 COLOUR -->
+<section class="page">
+  <div class="pad">
+    <div style="display:flex; align-items:baseline; gap:16px"><span class="num">06</span><span class="eyebrow" style="color:var(--clay-600)">Palette</span></div>
+    <h2 class="serif" style="font-size:40px; margin:10px 0 18px">Colour</h2>
+    <div style="display:grid; grid-template-columns:repeat(8,1fr); gap:2px; border-radius:4px; overflow:hidden">
+      <div style="aspect-ratio:1/1.15;background:#18234F;color:#ECE7D0;padding:10px;display:flex;flex-direction:column;justify-content:flex-end"><span style="font-weight:600;font-size:12px">Navy</span><span style="font-family:ui-monospace,monospace;font-size:9px;opacity:.82">18234F</span></div>
+      <div style="aspect-ratio:1/1.15;background:#034326;color:#ECE7D0;padding:10px;display:flex;flex-direction:column;justify-content:flex-end"><span style="font-weight:600;font-size:12px">Forest</span><span style="font-family:ui-monospace,monospace;font-size:9px;opacity:.82">034326</span></div>
+      <div style="aspect-ratio:1/1.15;background:#A72F23;color:#ECE7D0;padding:10px;display:flex;flex-direction:column;justify-content:flex-end"><span style="font-weight:600;font-size:12px">Clay</span><span style="font-family:ui-monospace,monospace;font-size:9px;opacity:.82">A72F23</span></div>
+      <div style="aspect-ratio:1/1.15;background:#672C24;color:#ECE7D0;padding:10px;display:flex;flex-direction:column;justify-content:flex-end"><span style="font-weight:600;font-size:12px">Brown</span><span style="font-family:ui-monospace,monospace;font-size:9px;opacity:.82">672C24</span></div>
+      <div style="aspect-ratio:1/1.15;background:#C6AF92;color:#18234F;padding:10px;display:flex;flex-direction:column;justify-content:flex-end"><span style="font-weight:600;font-size:12px">Beige</span><span style="font-family:ui-monospace,monospace;font-size:9px;opacity:.82">C6AF92</span></div>
+      <div style="aspect-ratio:1/1.15;background:#ECE7D0;color:#18234F;padding:10px;display:flex;flex-direction:column;justify-content:flex-end;box-shadow:inset 0 0 0 1px rgba(24,35,79,.12)"><span style="font-weight:600;font-size:12px">Cream</span><span style="font-family:ui-monospace,monospace;font-size:9px;opacity:.82">ECE7D0</span></div>
+      <div style="aspect-ratio:1/1.15;background:#a8492c;color:#ECE7D0;padding:10px;display:flex;flex-direction:column;justify-content:flex-end"><span style="font-weight:600;font-size:12px">Terracotta</span><span style="font-family:ui-monospace,monospace;font-size:9px;opacity:.82">A8492C</span></div>
+      <div style="aspect-ratio:1/1.15;background:#FFFFFF;color:#18234F;padding:10px;display:flex;flex-direction:column;justify-content:flex-end;box-shadow:inset 0 0 0 1px rgba(24,35,79,.12)"><span style="font-weight:600;font-size:12px">White</span><span style="font-family:ui-monospace,monospace;font-size:9px;opacity:.82">FFFFFF</span></div>
+    </div>
+    <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:36px; margin-top:24px; flex:1">
+      <div>
+        <span class="eyebrow" style="color:var(--clay-600)">The 60 · 30 · 10 rule</span>
+        <div style="display:flex; height:56px; border-radius:4px; overflow:hidden; margin-top:10px">
+          <div style="flex:60;background:var(--cream-600);color:var(--navy-600);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase">60 · Cream</div>
+          <div style="flex:30;background:var(--navy-600);color:var(--cream-500);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase">30 · Navy</div>
+          <div style="flex:7.5;background:var(--clay-600)"></div>
+          <div style="flex:7.5;background:var(--sand-500)"></div>
+          <div style="flex:5;background:var(--brown-600)"></div>
+        </div>
+        <p class="body" style="margin:12px 0 0">60% cream surface, 30% navy for text and structure, 10% accents — clay and beige leading, forest and brown for the finest details.</p>
+      </div>
+      <div>
+        <span class="eyebrow" style="color:var(--clay-600)">Colour pairings</span>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px">
+          <div style="height:88px;background:var(--navy-600);color:var(--cream-500);border-radius:4px;padding:12px;display:flex;flex-direction:column;justify-content:flex-end"><span style="font-weight:600">Navy &amp; Forest</span><span style="font-size:10px;opacity:.85">Dark grounds</span></div>
+          <div style="height:88px;background:var(--clay-600);color:var(--cream-500);border-radius:4px;padding:12px;display:flex;flex-direction:column;justify-content:flex-end"><span style="font-weight:600">Clay &amp; Brown</span><span style="font-size:10px;opacity:.85">Accent moments</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- P9 · 07 TYPE -->
+<section class="page">
+  <div class="pad">
+    <div style="display:flex; align-items:baseline; gap:16px"><span class="num">07</span><span class="eyebrow" style="color:var(--clay-600)">Type</span></div>
+    <h2 class="serif" style="font-size:40px; margin:10px 0 16px">Typography</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:36px; flex:1">
+      <div style="display:flex; flex-direction:column; gap:16px">
+        <div style="border-top:1px solid rgba(24,35,79,.16); padding-top:12px"><div class="cap" style="margin-bottom:6px">Mansory · Display, Headings, Logo</div><div class="display" style="font-size:44px">Art Made<br>On The Court</div></div>
+        <div style="border-top:1px solid rgba(24,35,79,.16); padding-top:12px"><div class="cap" style="margin-bottom:6px">Helvetica Neue · Body &amp; UI</div><p class="body" style="margin:0">The perfect crew-neck for a cool evening by the sea. Considered essentials, cut for the hours off the court and built to outlast the season.</p></div>
+        <div style="border-top:1px solid rgba(24,35,79,.16); padding-top:12px"><div class="cap" style="margin-bottom:2px">Pinyon Script · Slogan only</div><span class="script" style="font-size:40px; color:var(--clay-600)">Legends &amp; Legacy</span></div>
+      </div>
+      <div>
+        <div class="cap" style="margin-bottom:10px">The scale</div>
+        <div class="body">
+          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(24,35,79,.18);padding:8px 0"><span>H1 · Bold · UPPERCASE</span><span class="cap">48 / 36pt</span></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(24,35,79,.18);padding:8px 0"><span>H2 · SemiBold · Title Case</span><span class="cap">36 / 24pt</span></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(24,35,79,.18);padding:8px 0"><span>H3 · Medium · Title Case</span><span class="cap">24 / 18pt</span></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed rgba(24,35,79,.18);padding:8px 0"><span>Body · Regular · Sentence</span><span class="cap">16 / 12pt</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span>Caption · Regular</span><span class="cap">12 / 9pt</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- P10 · 08 PHOTOGRAPHY & COLLECTION -->
+<section class="page">
+  <div class="pad">
+    <div style="display:flex; align-items:baseline; gap:16px"><span class="num">08</span><span class="eyebrow" style="color:var(--clay-600)">Art Direction</span></div>
+    <h2 class="serif" style="font-size:34px; margin:10px 0 6px">Photography &amp; The Collection</h2>
+    <p class="body" style="max-width:80ch; margin:0 0 16px">Warm, film-grained, golden-hour light. Terracotta and petrol grounds; vintage wood rackets meeting modern padel. Nostalgic, but current — foregrounding piqué, terry, aged wood and tonal embroidery.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:1fr; gap:8px; flex:1; min-height:0">
+      <figure style="margin:0;position:relative;border-radius:4px;overflow:hidden"><img src="../assets/photography/rc-padel-back.jpg" style="width:100%;height:100%;object-fit:cover"></figure>
+      <figure style="margin:0;position:relative;border-radius:4px;overflow:hidden"><img src="../assets/photography/rc-kneel-tote.jpg" style="width:100%;height:100%;object-fit:cover"></figure>
+      <figure style="margin:0;position:relative;border-radius:4px;overflow:hidden"><img src="../assets/photography/rc-socks-stack.jpg" style="width:100%;height:100%;object-fit:cover"></figure>
+      <figure style="margin:0;position:relative;border-radius:4px;overflow:hidden"><img src="../assets/photography/rc-portrait-cream.jpg" style="width:100%;height:100%;object-fit:cover"></figure>
+    </div>
+  </div>
+</section>
+
+<!-- P11 · CLOSING -->
+<section class="page" style="background:var(--green-600)">
+  <div class="pad" style="align-items:center; justify-content:center; text-align:center; color:var(--cream-500)">
+    <img src="../assets/logo/mark-cream.svg" alt="" style="width:64px;height:64px">
+    <h2 class="display" style="font-size:72px; margin:22px 0 0">Legends<br>&amp; Legacy</h2>
+    <p class="script" style="font-size:34px; color:var(--sand-400); margin:8px 0 0">Art made on the court</p>
+    <span class="eyebrow" style="color:color-mix(in srgb,var(--cream-500) 66%,transparent); margin-top:18px">Racket Club · Est. 2025</span>
+  </div>
+</section>
+
+</body>
+</html>
