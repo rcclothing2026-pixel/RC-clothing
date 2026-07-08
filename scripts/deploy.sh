@@ -20,11 +20,12 @@
 # create DB, upload .env once, add cron) BEFORE running this.
 #
 # Flags:
+#   (default)      AUTO: ships app code always, and only re-ships vendor/ or
+#                  images+fonts when they actually changed since the last deploy.
+#                  So a normal deploy is a few MB — no flag needed.
 #   --pull         git pull --ff-only the current branch before building
-#   --code-only    FAST deploy: ship app code only; keep the server's vendor/,
-#                  campaign images (public/img) and fonts (public/fonts). Safe
-#                  unless you changed composer deps, images, or fonts — then run
-#                  a full deploy (omit this flag) once.
+#   --full         force-ship everything (vendor + images + fonts)
+#   --code-only    force app-code-only (skip vendor + images + fonts)
 #   --no-build     reuse the newest RELEASE/*.zip instead of rebuilding
 #   --no-migrate   skip database migrations (files/assets only)
 #   --seed         run the production seeder after migrating (first deploy)
@@ -53,7 +54,11 @@ trap 'rm -rf "$STAGE" "$TMP_PHP" 2>/dev/null || true' EXIT
 ZIP="$HERE/RELEASE/racketclub-deploy.zip"
 
 # ----- args -----------------------------------------------------------------
-DO_BUILD=1; DO_MIGRATE=1; DO_VERIFY=1; DO_SEED=0; DO_PULL=0; DO_VENDOR=1
+# DO_VENDOR / DO_ASSETS default to 'auto': the build decides from a content hash
+# whether PHP deps (composer.lock) or static assets (public/img, public/fonts)
+# actually changed since the last successful deploy, and only ships them if so.
+# So `bash scripts/deploy.sh` is always minimal AND correct — no flag needed.
+DO_BUILD=1; DO_MIGRATE=1; DO_VERIFY=1; DO_SEED=0; DO_PULL=0; DO_VENDOR=auto; DO_ASSETS=auto
 for a in "$@"; do
   case "$a" in
     --pull)         DO_PULL=1 ;;
@@ -61,7 +66,8 @@ for a in "$@"; do
     --no-migrate)   DO_MIGRATE=0 ;;
     --no-verify)    DO_VERIFY=0 ;;
     --seed)         DO_SEED=1 ;;
-    --code-only|--fast) DO_VENDOR=0 ;;
+    --full)         DO_VENDOR=1; DO_ASSETS=1 ;;
+    --code-only|--fast) DO_VENDOR=0; DO_ASSETS=0 ;;
     --help|-h)    sed -n '2,36p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "unknown flag: $a (try --help)" ;;
   esac
@@ -104,6 +110,26 @@ ok "loaded creds for ${FTP_USER}@${FTP_HOST} → https://${PUBLIC_HOST}"
 [ -n "${TRIGGER_IP-}" ] && warn "pre-DNS mode: web requests resolve ${PUBLIC_HOST} → ${TRIGGER_IP} (insecure TLS)"
 [ -n "$(git status --porcelain 2>/dev/null)" ] && warn "working tree has uncommitted changes — they WILL ship in this zip."
 
+# ----- resolve auto vendor/assets from a content-hash of the last deploy -----
+SHA=shasum; command -v shasum >/dev/null 2>&1 || SHA=sha1sum
+STATE="$HERE/RELEASE/.deploy-state"
+CUR_COMPOSER="$($SHA composer.lock 2>/dev/null | awk '{print $1}')"
+# hash the CONTENTS of every image/font so a same-name replacement is caught too
+CUR_ASSETS="$(find public/img public/fonts -type f -exec $SHA {} + 2>/dev/null | sort | $SHA 2>/dev/null | awk '{print $1}')"
+LAST_COMPOSER=""; LAST_ASSETS=""
+# shellcheck disable=SC1090
+[ -f "$STATE" ] && source "$STATE"
+if [ "$DO_VENDOR" = auto ]; then
+  { [ -n "$LAST_COMPOSER" ] && [ "$LAST_COMPOSER" = "$CUR_COMPOSER" ]; } && DO_VENDOR=0 || DO_VENDOR=1
+fi
+if [ "$DO_ASSETS" = auto ]; then
+  { [ -n "$LAST_ASSETS" ] && [ "$LAST_ASSETS" = "$CUR_ASSETS" ]; } && DO_ASSETS=0 || DO_ASSETS=1
+fi
+[ "$DO_VENDOR" -eq 1 ] && ok "PHP deps: shipping vendor/ (composer.lock changed or first deploy)" \
+                       || ok "PHP deps unchanged → keeping the server's vendor/"
+[ "$DO_ASSETS" -eq 1 ] && ok "static assets: shipping public/img + public/fonts (changed or first deploy)" \
+                       || ok "images/fonts unchanged → keeping the server's copies"
+
 # ----- [2] build release zip ------------------------------------------------
 header "[2/6] Build release zip"
 if [ "$DO_BUILD" -eq 1 ]; then
@@ -145,10 +171,9 @@ if [ "$DO_BUILD" -eq 1 ]; then
     --exclude='design-system'
     --exclude='.DS_Store' --exclude='auth.json'
   )
-  # Fast (code-only) also skips the big STATIC assets the server already has —
-  # campaign photos + self-hosted fonts don't change between code deploys. Do a
-  # full deploy when you add/change images or fonts.
-  if [ "$DO_VENDOR" -eq 0 ]; then
+  # Static assets (campaign photos + self-hosted fonts) only ship when they
+  # actually changed (auto-detected above) — otherwise the server keeps them.
+  if [ "$DO_ASSETS" -eq 0 ]; then
     RSYNC_EXCLUDES+=( --exclude='public/img' --exclude='public/fonts' )
   fi
   rsync -a "${RSYNC_EXCLUDES[@]}" ./ "$STAGE/"
@@ -157,9 +182,6 @@ if [ "$DO_BUILD" -eq 1 ]; then
     ok "composer install --no-dev (prune dev deps, optimize autoloader)…"
     composer install --no-dev --optimize-autoloader --no-interaction --no-scripts \
       --working-dir="$STAGE" >/dev/null 2>&1 || die "composer --no-dev failed in stage"
-  else
-    warn "code-only build: skipping vendor/ — the server keeps its existing PHP"
-    warn "deps. Do a FULL deploy (omit --code-only) whenever composer.lock changes."
   fi
 
   mkdir -p RELEASE
@@ -242,5 +264,11 @@ fi
 
 # ----- [6] done -------------------------------------------------------------
 header "[6/6] Done"
+# Record what this deploy shipped so the next run's auto mode can skip unchanged
+# vendor/assets. Only written on success (set -e aborts earlier on failure).
+mkdir -p "$HERE/RELEASE"
+{ if [ "$DO_VENDOR" -eq 1 ]; then printf 'LAST_COMPOSER=%s\n' "$CUR_COMPOSER"; else printf 'LAST_COMPOSER=%s\n' "${LAST_COMPOSER:-$CUR_COMPOSER}"; fi
+  if [ "$DO_ASSETS" -eq 1 ]; then printf 'LAST_ASSETS=%s\n' "$CUR_ASSETS"; else printf 'LAST_ASSETS=%s\n' "${LAST_ASSETS:-$CUR_ASSETS}"; fi
+} > "$STATE"
 ok "deployed to https://${PUBLIC_HOST}"
 echo "  ${dim}The release zip and the extractor were removed from the server.${rst}"
