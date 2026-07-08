@@ -74,6 +74,9 @@ class ImportStoqsCatalog extends Command
         // barcode set actually seen per website product this run — used to prune
         // variants deleted in StoqS (only on a --full run, see below).
         $seenByProduct = [];
+        // website product ids touched this run — used to deactivate products that
+        // vanished from StoqS entirely (only on a --full run, see below).
+        $importedIds = [];
         foreach ($products as $row) {
             // The in-stock filter only gates CREATING new products (avoid importing
             // never-stocked clutter). Products that already exist locally must still
@@ -90,6 +93,7 @@ class ImportStoqsCatalog extends Command
             }
             try {
                 $product = $importer->importProduct($row);
+                $importedIds[$product->id] = true;
                 foreach ($row['variants'] ?? [] as $v) {
                     $bc = (string) ($v['barcode'] ?? $v['sku'] ?? '');
                     if ($bc !== '') {
@@ -131,16 +135,38 @@ class ImportStoqsCatalog extends Command
             }
         }
 
+        // Deactivate products that vanished from StoqS entirely (deleted, or
+        // "Send to website" unchecked). Deactivate — never delete — so it's
+        // reversible and reappears if StoqS sends it again. Guarded hard: only on
+        // a --full run AND only when the feed came back non-empty with at least
+        // one successful import, so a truncated/failed feed can never mass-hide
+        // the catalogue. A product absent from a healthy full feed is not for sale
+        // in StoqS, so it must not be buyable on the site.
+        $deactivated = 0;
+        if ($this->option('full') && count($products) > 0 && $count > 0) {
+            $missing = Product::whereNotNull('stockkeeping_id')
+                ->where('is_active', true)
+                ->whereNotIn('id', array_keys($importedIds))
+                ->get();
+            foreach ($missing as $p) {
+                $p->is_active = false;
+                $p->save();
+                $this->line("  ✗ غیرفعال شد (در StoqS نیست): {$p->name} (#{$p->stockkeeping_id})");
+                $deactivated++;
+            }
+        }
+
         $duration = $startedAt->diffInMilliseconds(now());
         $summary = "{$count} محصول وارد/به‌روز شد"
             .($skipped ? "، {$skipped} بدون موجودی رد شد" : '')
             .($pruned ? "، {$pruned} تنوع حذف‌شده پاک شد" : '')
+            .($deactivated ? "، {$deactivated} محصول حذف‌شده غیرفعال شد" : '')
             .($errors ? "، {$errors} خطا" : '');
         $this->info($summary);
 
         StockkeeepingLog::record(
             StockkeeepingLog::TYPE_CATALOG_IMPORT, 'in', $this->option('full') ? 'full' : 'incremental',
-            null, ['imported' => $count, 'skipped_no_stock' => $skipped, 'pruned_variants' => $pruned, 'errors' => $errors, 'total' => count($products), 'failed' => $failed],
+            null, ['imported' => $count, 'skipped_no_stock' => $skipped, 'pruned_variants' => $pruned, 'deactivated_products' => $deactivated, 'errors' => $errors, 'total' => count($products), 'failed' => $failed],
             'ok', null, null,
             source: $this->option('source'), summary: $summary, durationMs: $duration,
         );
