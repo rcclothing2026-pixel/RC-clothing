@@ -168,8 +168,11 @@ ok "uploaded racketclub-deploy.zip → account home"
 
 # ----- [4] upload + trigger the one-shot extractor --------------------------
 header "[4/6] Extract + migrate (server-side)"
-# A URL-safe single-use token (openssl avoids the tr|head SIGPIPE under pipefail).
-TOKEN="$(openssl rand -hex 20)"
+# A URL-safe single-use token. Prefer PHP (always present for a Laravel build);
+# fall back to openssl, then /dev/urandom — so no single tool is required.
+if TOKEN="$(php -r 'echo bin2hex(random_bytes(20));' 2>/dev/null)" && [ -n "$TOKEN" ]; then :;
+elif command -v openssl >/dev/null 2>&1; then TOKEN="$(openssl rand -hex 20)";
+else TOKEN="$(head -c 20 /dev/urandom | od -An -tx1 | tr -d ' \n')"; fi
 TMP_PHP="$(mktemp)"
 sed -e "s/__DEPLOY_TOKEN__/${TOKEN}/g" -e "s/__APP_DIR__/${APP_DIR}/g" \
     scripts/server/deploy.php > "$TMP_PHP"
