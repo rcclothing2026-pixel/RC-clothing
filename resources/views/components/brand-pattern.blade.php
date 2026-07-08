@@ -1,27 +1,17 @@
 {{--
-    Chiaco Gate pattern (REAL book geometry) — the outlined motif extracted 1:1 from the brand
-    book vector (public/img/brand/brandbook-pattern-page.svg) as a seamless
-    51.9×51.9 stroked tile. Inherits colour via currentColor.
-    Props: class, color, opacity, stroke (outline weight in tile units, book = 0.5).
+    Racket Club awning stripe (Design System 1: assets/crest/racket-club-stripe).
+    The signature club stripe — 66-unit repeat, equal 33/33 bars — drawn as a
+    single-colour bar over a transparent ground so it tints via currentColor (or
+    the color prop) and layers over any surface at low opacity, exactly like the
+    pattern it replaces.
+    Props: class, color, opacity. (stroke accepted for back-compat, unused.)
 --}}
-@props(['class' => '', 'color' => 'currentColor', 'opacity' => '0.5', 'stroke' => '0.5'])
-@php($pid = 'chiaco-gate-'.\Illuminate\Support\Str::random(6))
+@props(['class' => '', 'color' => 'currentColor', 'opacity' => '0.5', 'stroke' => null])
+@php($pid = 'rc-stripe-'.\Illuminate\Support\Str::random(6))
 <svg {{ $attributes->merge(['class' => $class]) }} aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
     <defs>
-        <pattern id="{{ $pid }}" width="51.9" height="51.9" patternUnits="userSpaceOnUse">
-            <g fill="none" stroke="{{ $color }}" stroke-width="{{ $stroke }}" stroke-miterlimit="10" opacity="{{ $opacity }}">
-            <path d="M9.31,51.85c0-2.04,1.66-3.7,3.71-3.7s3.71,1.66,3.71,3.71v1.85h7.41v-7.41h-7.41v-7.41h-7.41v7.41h-7.41v7.41h7.41v-1.86Z"/>
-            <path d="M25.99,9.22c2.04,0,3.7,1.66,3.7,3.7s-1.66,3.71-3.71,3.71h-1.85v7.41h7.41v-7.41h14.82v7.41h7.41v-7.41h-1.86c-2.04,0-3.7-1.66-3.7-3.71s1.66-3.71,3.7-3.71h1.85v-7.41h-7.41v7.41h-14.82v-7.41h-7.41v7.41h1.86Z"/>
-            <path d="M0.03,16.63c-2.04,0-3.7-1.66-3.7-3.7s1.66-3.71,3.71-3.71h1.85v-7.41h-7.41v7.41h-7.41v7.41h7.41v7.41h7.41v-7.41h-1.86Z"/>
-            <path d="M9.28,51.85c0-2.04,1.66-3.7,3.71-3.7s3.71,1.66,3.71,3.71v1.85h7.41v-7.41h-7.41v-7.41h-7.41v7.41h-7.41v7.41h7.41v-1.86Z"/>
-            <path d="M9.28,31.45v14.82h-7.41v7.41h7.41v-1.86c0-2.04,1.66-3.7,3.71-3.7s3.71,1.66,3.71,3.71v1.85h7.41v-7.41h-7.41v-14.82h7.41v-7.41h-7.41v1.86c0,2.04-1.66,3.7-3.71,3.7s-3.71-1.66-3.71-3.71v-1.85h-7.41v7.41h7.41Z"/>
-            <path d="M31.54,16.61h14.82v7.41h7.41v-7.41h-1.86c-2.04,0-3.7-1.66-3.7-3.7s1.66-3.71,3.71-3.71h1.85v-7.41h-7.41v7.41h-14.82v-7.41h-7.41v7.41h1.86c2.04,0,3.69,1.66,3.69,3.71s-1.66,3.71-3.7,3.71h-1.85v7.41h7.41v-7.41Z"/>
-            <path d="M16.65,31.45h7.41v-7.41h-7.41v1.86c0,2.04-1.66,3.7-3.71,3.7s-3.71-1.66-3.71-3.71v-1.85h-7.41v7.41h7.41v14.82h-7.41v7.41h7.41v-1.86c0-2.04,1.66-3.7,3.71-3.7s3.71,1.66,3.71,3.71v1.85h7.41v-7.41h-7.41v-14.82Z"/>
-            <path d="M16.67,25.88c0,2.04-1.66,3.7-3.71,3.7s-3.71-1.66-3.71-3.71v-1.85h-7.41v7.41h7.41v14.82h-7.41v7.41h7.41v-1.86c0-2.04,1.66-3.7,3.71-3.7s3.71,1.66,3.71,3.71v1.85h7.41v-7.41h-7.41v-14.82h7.41v-7.41h-7.41v1.86Z"/>
-            <path d="M46.31,9.2h-14.82v-7.41h-7.41v7.41h1.86c2.04,0,3.7,1.66,3.7,3.7s-1.66,3.71-3.71,3.71h-1.85v7.41h7.41v-7.41h14.82v7.41h7.41v-7.41h-1.86c-2.04,0-3.69-1.66-3.69-3.71s1.66-3.71,3.7-3.71h1.85v-7.41h-7.41v7.41Z"/>
-            <path d="M16.69,46.23v-14.82h7.41v-7.41h-7.41v1.86c0,2.04-1.66,3.7-3.71,3.7s-3.7-1.66-3.7-3.71v-1.85h-7.41v7.41h7.41v14.82h-7.41v7.41h7.41v-1.86c0-2.04,1.66-3.7,3.71-3.7s3.71,1.66,3.71,3.71v1.85h7.41v-7.41h-7.41Z"/>
-            <path d="M51.89,16.58c-2.04,0-3.7-1.66-3.7-3.71s1.66-3.71,3.71-3.71h1.85v-7.41h-7.41v7.41h-14.82v-7.41h-7.41v7.41h1.86c2.04,0,3.7,1.66,3.7,3.71s-1.66,3.71-3.7,3.71h-1.85v7.41h7.41v-7.41h14.82v7.41h7.41v-7.41h-1.86Z"/>
-            </g>
+        <pattern id="{{ $pid }}" width="66" height="66" patternUnits="userSpaceOnUse">
+            <rect width="33" height="66" fill="{{ $color }}" opacity="{{ $opacity }}"/>
         </pattern>
     </defs>
     <rect width="100%" height="100%" fill="url(#{{ $pid }})"/>
