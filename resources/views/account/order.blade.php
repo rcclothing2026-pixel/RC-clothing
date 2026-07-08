@@ -1,27 +1,27 @@
 @extends('layouts.app')
 
-@section('title', 'Order Details | Racket Club')
+@section('title', __('Order Details') . ' | Racket Club')
 
 @php
 $allStatuses = ['paid', 'processing', 'shipped', 'delivered'];
 $currentIndex = array_search($order->status, $allStatuses);
 $timelineLabels = [
-    'paid' => 'Paid',
-    'processing' => 'Preparing',
-    'shipped' => 'Shipped',
-    'delivered' => 'Delivered',
+    'paid' => __('Paid'),
+    'processing' => __('Preparing'),
+    'shipped' => __('Shipped'),
+    'delivered' => __('Delivered'),
 ];
 @endphp
 
 @section('content')
     <div class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
         <div class="flex items-center justify-between">
-            <a href="{{ route('account.orders') }}" class="text-sm text-accent-600 hover:underline">&larr; Back to orders</a>
+            <a href="{{ route('account.orders') }}" class="text-sm text-accent-600 hover:underline">&larr; {{ __('Back to orders') }}</a>
             <div class="flex gap-2">
                 @if ($order->isPaid())
-                    <a href="{{ route('account.orders.return', $order) }}" class="rounded-lg border border-brand-200 px-3 py-1.5 text-sm text-brand-700 transition hover:bg-brand-50">Request a Return</a>
+                    <a href="{{ route('account.orders.return', $order) }}" class="rounded-lg border border-brand-200 px-3 py-1.5 text-sm text-brand-700 transition hover:bg-brand-50">{{ __('Request a Return') }}</a>
                 @endif
-                <a href="{{ route('account.orders.invoice', $order) }}" target="_blank" class="rounded-lg bg-brand-100 px-3 py-1.5 text-sm font-medium text-brand-700 transition hover:bg-brand-200">Invoice</a>
+                <a href="{{ route('account.orders.invoice', $order) }}" target="_blank" class="rounded-lg bg-brand-100 px-3 py-1.5 text-sm font-medium text-brand-700 transition hover:bg-brand-200">{{ __('Invoice') }}</a>
             </div>
         </div>
 
@@ -91,7 +91,7 @@ $timelineLabels = [
                             <p class="mt-0.5 text-xs text-brand-400">
                                 @if ($item->color) {{ $item->color }} @endif
                                 @if ($item->size) — {{ $item->size }} @endif
-                                — Qty: <span class="fa-num">{{ $item->quantity }}</span>
+                                — {{ __('Qty:') }} <span class="fa-num">{{ $item->quantity }}</span>
                             </p>
                         </div>
                         <span class="font-semibold text-brand-900">{{ $item->formattedLineTotal() }}</span>
@@ -100,31 +100,31 @@ $timelineLabels = [
             </div>
 
             <div class="space-y-2 border-t border-brand-100 pt-4 text-sm">
-                <div class="flex justify-between"><span class="text-brand-500">Subtotal</span><span>{{ \App\Support\Money::toman($order->subtotal) }}</span></div>
-                <div class="flex justify-between"><span class="text-brand-500">Shipping ({{ $order->shipping_method_name }})</span><span>{{ $order->shipping_cost_on_delivery ? 'Cash on delivery' : ($order->shipping_cost > 0 ? \App\Support\Money::toman($order->shipping_cost) : 'Free') }}</span></div>
+                <div class="flex justify-between"><span class="text-brand-500">{{ __('Subtotal') }}</span><span>{{ \App\Support\Money::toman($order->subtotal) }}</span></div>
+                <div class="flex justify-between"><span class="text-brand-500">{{ __('Shipping') }} ({{ $order->shipping_method_name }})</span><span>{{ $order->shipping_cost_on_delivery ? __('Cash on delivery') : ($order->shipping_cost > 0 ? \App\Support\Money::toman($order->shipping_cost) : __('Free')) }}</span></div>
                 @if ($order->gift_wrap)
-                    <div class="flex justify-between"><span class="text-brand-500">Gift wrapping</span><span>{{ $order->gift_wrap_price > 0 ? \App\Support\Money::toman($order->gift_wrap_price) : 'Free' }}</span></div>
+                    <div class="flex justify-between"><span class="text-brand-500">{{ __('Gift wrapping') }}</span><span>{{ $order->gift_wrap_price > 0 ? \App\Support\Money::toman($order->gift_wrap_price) : __('Free') }}</span></div>
                 @endif
-                <div class="flex justify-between border-t border-brand-100 pt-2 text-base font-bold"><span>Total</span><span class="text-brand-900">{{ $order->formattedTotal() }}</span></div>
+                <div class="flex justify-between border-t border-brand-100 pt-2 text-base font-bold"><span>{{ __('Total') }}</span><span class="text-brand-900">{{ $order->formattedTotal() }}</span></div>
             </div>
 
             @if ($order->gift_wrap && filled($order->gift_message))
                 <div class="mt-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200">
-                    <p class="mb-1 text-xs font-semibold text-amber-700">Gift message</p>
+                    <p class="mb-1 text-xs font-semibold text-amber-700">{{ __('Gift message') }}</p>
                     <p class="whitespace-pre-line leading-7">{{ $order->gift_message }}</p>
                 </div>
             @endif
 
             @if ($order->fulfillmentLocationLabel())
                 <div class="mt-4 flex justify-between text-sm">
-                    <span class="text-brand-500">Fulfilled from</span>
+                    <span class="text-brand-500">{{ __('Fulfilled from') }}</span>
                     <span class="text-brand-800">{{ $order->fulfillmentLocationLabel() }}</span>
                 </div>
             @endif
 
             @if ($order->shipping_address)
                 <div class="mt-5 rounded-lg bg-brand-50 p-4 text-xs text-brand-600">
-                    <p class="mb-1 font-semibold text-brand-800">Delivery address</p>
+                    <p class="mb-1 font-semibold text-brand-800">{{ __('Delivery address') }}</p>
                     {{ $order->shipping_address['province'] ?? '' }}، {{ $order->shipping_address['city'] ?? '' }} — {{ $order->shipping_address['line'] ?? '' }}
                 </div>
             @endif
@@ -136,7 +136,7 @@ $timelineLabels = [
                 <a href="https://t.me/{{ $bot }}?start=order_{{ $order->number }}" target="_blank" rel="noopener"
                    class="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-[#229ED9] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1f8fc4]">
                     <svg aria-hidden="true" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                    Get help with this order on Telegram
+                    {{ __('Get help with this order on Telegram') }}
                 </a>
             @endif
         </div>

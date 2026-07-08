@@ -55,7 +55,7 @@
                 </div>
 
                 <div class="flex items-center gap-2 fa-num" dir="ltr">
-                    @foreach (['d' => 'Days', 'h' => 'Hours', 'm' => 'Mins', 's' => 'Secs'] as $key => $label)
+                    @foreach (['d' => __('Days'), 'h' => __('Hours'), 'm' => __('Mins'), 's' => __('Secs')] as $key => $label)
                         <div class="flex min-w-[3.25rem] flex-col items-center rounded-xl {{ $chipBg }} px-3 py-2">
                             <span class="text-2xl font-bold leading-none" x-text="fa({{ $key }})">00</span>
                             <span class="mt-1 text-[10px] {{ $subText }}">{{ $label }}</span>

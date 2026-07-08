@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Verify Code | Racket Club')
+@section('title', __('Verify Code') . ' | Racket Club')
 
 @section('content')
     <div class="mx-auto max-w-md px-4 py-16 sm:px-6">
         <div class="rounded-card bg-white p-8 ring-1 ring-brand-100">
-            <h1 class="text-xl font-bold uppercase tracking-wide text-brand-900">VERIFICATION CODE</h1>
+            <h1 class="text-xl font-bold uppercase tracking-wide text-brand-900">{{ __('VERIFICATION CODE') }}</h1>
             <p class="mt-2 text-sm text-brand-500">
-                Enter the code we sent to <span class="font-semibold text-brand-800 fa-num" dir="ltr">{{ $phone }}</span>.
+                {{ __('Enter the code we sent to') }} <span class="font-semibold text-brand-800 fa-num" dir="ltr">{{ $phone }}</span>.
             </p>
 
             @if (session('dev_code'))
                 <div class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                    Dev code (log mode): <span class="font-bold fa-num">{{ session('dev_code') }}</span>
+                    {{ __('Dev code (log mode):') }} <span class="font-bold fa-num">{{ session('dev_code') }}</span>
                 </div>
             @endif
 
@@ -88,23 +88,23 @@
                     <button type="submit"
                             class="w-full rounded-full bg-brand-900 py-3 text-sm font-semibold text-white transition hover:bg-brand-800 disabled:opacity-50"
                             :disabled="!code.every(d => d)">
-                        Verify
+                        {{ __('Verify') }}
                     </button>
 
                     <p class="text-center text-xs text-brand-500" aria-live="polite">
                         <template x-if="cooldown > 0">
-                            <span>Resend code in <span class="font-bold fa-num" x-text="cooldown"></span> seconds</span>
+                            <span>{{ __('Resend code in') }} <span class="font-bold fa-num" x-text="cooldown"></span> {{ __('seconds') }}</span>
                         </template>
                         <template x-if="cooldown <= 0">
                             <button type="button" @click="resend()" :disabled="resending"
                                     class="text-accent-600 hover:underline disabled:opacity-50"
-                                    x-text="resending ? 'Sending...' : 'Resend code'"></button>
+                                    x-text="resending ? '{{ __('Sending...') }}' : '{{ __('Resend code') }}'"></button>
                         </template>
                     </p>
                 </div>
             </form>
 
-            <a href="{{ route('login') }}" class="mt-5 block text-center text-xs text-accent-600 hover:underline">Edit mobile number</a>
+            <a href="{{ route('login') }}" class="mt-5 block text-center text-xs text-accent-600 hover:underline">{{ __('Edit mobile number') }}</a>
         </div>
     </div>
 @endsection

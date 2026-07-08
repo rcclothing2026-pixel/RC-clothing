@@ -12,7 +12,7 @@
          Explicit `lg:order-*` fixes the visual order regardless of DOM order. --}}
     <div class="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2.5 sm:px-6 lg:gap-6 lg:py-2.5">
         {{-- Mobile menu toggle (mobile only; sits before logo in flex order) --}}
-        <button type="button" @click="navOpen = true" :aria-expanded="navOpen" aria-label="Menu" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-brand-700 ring-1 ring-brand-200 lg:hidden">
+        <button type="button" @click="navOpen = true" :aria-expanded="navOpen" aria-label="{{ __('Menu') }}" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-brand-700 ring-1 ring-brand-200 lg:hidden">
             <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
 
@@ -101,7 +101,7 @@
                     @endif
                 @endforeach
             @else
-                <a href="{{ route('shop.index') }}" class="rounded-lg px-3 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-100">Shop</a>
+                <a href="{{ route('shop.index') }}" class="rounded-lg px-3 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-100">{{ __('Shop') }}</a>
                 @foreach ($navCategories->take(5) as $category)
                     <a href="{{ route('shop.index', ['category' => $category->slug]) }}"
                        class="rounded-lg px-3 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-100">{{ $category->name }}</a>
@@ -128,7 +128,7 @@
             <div class="relative w-full">
                 <input type="search" name="q" x-model="q" autocomplete="off"
                        @input.debounce.250ms="fetchResults()" @focus="results.length && (open = true)"
-                       placeholder="Search"
+                       placeholder="{{ __('Search') }}"
                        class="w-full rounded-full border border-brand-200 bg-brand-50/60 py-2 ps-9 pe-3 text-sm outline-none transition placeholder:text-brand-300 focus:border-brand-400 focus:bg-white focus:shadow-sm focus:ring-2 focus:ring-brand-100 md:ps-10 md:pe-4">
                 <svg aria-hidden="true" class="pointer-events-none absolute top-2.5 start-3 h-4 w-4 text-brand-300 md:start-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
             </div>
@@ -148,7 +148,7 @@
                 </template>
                 <button type="submit"
                         class="block w-full border-t border-brand-100 px-3 py-2.5 text-center text-xs font-medium text-brand-600 transition hover:bg-brand-50">
-                    View all results
+                    {{ __('View all results') }}
                 </button>
             </div>
         </form>
@@ -157,7 +157,7 @@
         <div class="flex items-center gap-0.5 ms-auto md:ms-0 lg:ms-0">
             {{-- Language toggle (EN / FA) --}}
             @php($__loc = app()->getLocale())
-            <div class="me-1 flex items-center gap-1 text-xs font-semibold tracking-wide" aria-label="Language">
+            <div class="me-1 flex items-center gap-1 text-xs font-semibold tracking-wide" aria-label="{{ __('Language') }}">
                 <a href="{{ route('locale.switch', 'en') }}" hreflang="en"
                    class="{{ $__loc === 'en' ? 'text-accent-600' : 'text-brand-400 hover:text-brand-900' }}">EN</a>
                 <span class="text-brand-300" aria-hidden="true">/</span>
@@ -165,16 +165,16 @@
                    class="{{ $__loc === 'fa' ? 'text-accent-600' : 'text-brand-400 hover:text-brand-900' }}">فا</a>
             </div>
             <a href="{{ auth()->check() ? route('account.index') : route('login') }}"
-               class="rounded-lg p-2 text-brand-600 hover:bg-brand-100 hover:text-brand-900" aria-label="Account">
+               class="rounded-lg p-2 text-brand-600 hover:bg-brand-100 hover:text-brand-900" aria-label="{{ __('Account') }}">
                 <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
             </a>
             @auth
             <a href="{{ route('wishlist.index') }}"
-               class="rounded-lg p-2 text-brand-600 hover:bg-brand-100 hover:text-brand-900" aria-label="Wishlist">
+               class="rounded-lg p-2 text-brand-600 hover:bg-brand-100 hover:text-brand-900" aria-label="{{ __('Wishlist') }}">
                 <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-8.5C.5 9 2 5.5 5.5 5.5 7.5 5.5 9 7 12 9c3-2 4.5-3.5 6.5-3.5 3.5 0 5 3.5 3 7C19 16.5 12 21 12 21z"/></svg>
             </a>
             @endauth
-            <a href="{{ route('cart.index') }}" class="relative rounded-lg p-2 text-brand-600 hover:bg-brand-100 hover:text-brand-900" aria-label="Cart">
+            <a href="{{ route('cart.index') }}" class="relative rounded-lg p-2 text-brand-600 hover:bg-brand-100 hover:text-brand-900" aria-label="{{ __('Cart') }}">
                 <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M6 6 5 3H3"/></svg>
                 <span data-cart-count
                       class="absolute -top-0.5 -end-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent-600 text-[10px] font-bold text-white fa-num {{ ($cartCount ?? 0) > 0 ? '' : 'hidden' }}">{{ (string) ($cartCount ?? 0) }}</span>
@@ -200,11 +200,11 @@
              x-transition:leave-start="translate-x-0"
              x-transition:leave-end="translate-x-full rtl:-translate-x-full"
              class="fixed inset-y-0 start-0 z-[56] flex w-[86%] max-w-sm flex-col bg-paper shadow-2xl"
-             role="dialog" aria-modal="true" aria-label="Mobile menu">
+             role="dialog" aria-modal="true" aria-label="{{ __('Mobile menu') }}">
 
             <div class="flex items-center justify-between border-b border-brand-100 px-4 py-3">
                 <a href="{{ route('home') }}" @click="navOpen = false"><x-brand-logo class="text-brand-900" /></a>
-                <button type="button" @click="navOpen = false" aria-label="Close"
+                <button type="button" @click="navOpen = false" aria-label="{{ __('Close') }}"
                         class="grid h-9 w-9 place-items-center rounded-full text-brand-500 ring-1 ring-brand-200 transition hover:bg-brand-50">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
                 </button>
@@ -218,7 +218,7 @@
                                 <div class="flex items-center">
                                     <a href="{{ $item->url }}" @click="navOpen = false"
                                        class="flex-1 rounded-lg px-3 py-3 text-sm font-semibold text-brand-800 transition hover:bg-brand-50">{{ $item->label }}</a>
-                                    <button type="button" @click="open = !open" :aria-expanded="open" aria-label="Submenu"
+                                    <button type="button" @click="open = !open" :aria-expanded="open" aria-label="{{ __('Submenu') }}"
                                             class="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-brand-400 transition hover:bg-brand-50">
                                         <svg class="h-4 w-4 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
                                     </button>
@@ -238,7 +238,7 @@
                         @endif
                     @endforeach
                 @else
-                    <a href="{{ route('shop.index') }}" @click="navOpen = false" class="block rounded-lg px-3 py-3 text-sm font-semibold text-brand-800 transition hover:bg-brand-50">Shop</a>
+                    <a href="{{ route('shop.index') }}" @click="navOpen = false" class="block rounded-lg px-3 py-3 text-sm font-semibold text-brand-800 transition hover:bg-brand-50">{{ __('Shop') }}</a>
                     @foreach ($navCategories->take(8) as $category)
                         <a href="{{ route('shop.index', ['category' => $category->slug]) }}" @click="navOpen = false"
                            class="block rounded-lg px-3 py-2.5 text-sm text-brand-600 transition hover:bg-brand-50">{{ $category->name }}</a>
@@ -250,17 +250,17 @@
             <div class="flex items-center justify-around border-t border-brand-100 px-3 py-3 text-xs text-brand-600">
                 <a href="{{ auth()->check() ? route('account.index') : route('login') }}" @click="navOpen = false" class="flex flex-col items-center gap-1 rounded-lg px-4 py-2 transition hover:bg-brand-50">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-                    Account
+                    {{ __('Account') }}
                 </a>
                 @auth
                 <a href="{{ route('wishlist.index') }}" @click="navOpen = false" class="flex flex-col items-center gap-1 rounded-lg px-4 py-2 transition hover:bg-brand-50">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-8.5C.5 9 2 5.5 5.5 5.5 7.5 5.5 9 7 12 9c3-2 4.5-3.5 6.5-3.5 3.5 0 5 3.5 3 7C19 16.5 12 21 12 21z"/></svg>
-                    Wishlist
+                    {{ __('Wishlist') }}
                 </a>
                 @endauth
                 <a href="{{ route('cart.index') }}" @click="navOpen = false" class="flex flex-col items-center gap-1 rounded-lg px-4 py-2 transition hover:bg-brand-50">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M6 6 5 3H3"/></svg>
-                    Cart
+                    {{ __('Cart') }}
                 </a>
             </div>
         </div>

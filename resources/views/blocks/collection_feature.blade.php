@@ -17,7 +17,7 @@
     @php($tone = ($data['tone'] ?? 'red') === 'dark' ? 'dark' : 'red')
     @php($corner = ($data['corner'] ?? 'bottom') === 'top' ? 'top' : 'bottom')
     @php($eyebrow = trim((string) ($data['eyebrow'] ?? '')) ?: 'RACKET CLUB COLLECTION')
-    @php($ctaText = trim((string) ($data['cta_text'] ?? '')) ?: 'View All')
+    @php($ctaText = trim((string) ($data['cta_text'] ?? '')) ?: __('View All'))
     @php($showSummary = ($data['show_summary'] ?? 'no') === 'yes')
     @php($ratioMap = ['sm' => 'aspect-[4/5]', 'md' => 'aspect-[3/4]', 'lg' => 'aspect-[2/3]', 'square' => 'aspect-square', 'wide' => 'aspect-[4/3]'])
     @php($desktopRatio = $ratioMap[$data['image_size']        ?? 'md'] ?? 'aspect-[3/4]')

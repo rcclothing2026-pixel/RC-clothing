@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Order Invoice {{ $order->number }}</title>
+    <title>{{ __('Order Invoice') }} {{ $order->number }}</title>
     @php($s = \App\Models\Setting::map())
     <style>
         @font-face { font-family: Vazirmatn; src: local('Vazirmatn'); }
@@ -30,38 +30,38 @@
     </style>
 </head>
 <body>
-    <div class="actions"><button class="btn" onclick="window.print()">Print Invoice</button></div>
+    <div class="actions"><button class="btn" onclick="window.print()">{{ __('Print Invoice') }}</button></div>
     <div class="sheet">
         <div class="head">
             <div>
                 <h1>{{ ($s['site.store_name'] ?? null) ?: 'Racket Club' }}</h1>
-                <div class="muted">Sales Invoice</div>
+                <div class="muted">{{ __('Sales Invoice') }}</div>
             </div>
             <div style="text-align:right">
-                <div>Number: <b class="fa-num" dir="ltr">{{ $order->number }}</b></div>
-                <div class="muted">Date: {{ \App\Support\Jalali::format($order->placed_at ?? $order->created_at, true) }}</div>
-                <div class="muted">Status: {{ $order->statusLabel() }}</div>
+                <div>{{ __('Number:') }} <b class="fa-num" dir="ltr">{{ $order->number }}</b></div>
+                <div class="muted">{{ __('Date:') }} {{ \App\Support\Jalali::format($order->placed_at ?? $order->created_at, true) }}</div>
+                <div class="muted">{{ __('Status:') }} {{ $order->statusLabel() }}</div>
             </div>
         </div>
 
         <div class="meta">
             <div class="box">
-                <b>Customer</b>
+                <b>{{ __('Customer') }}</b>
                 {{ $order->customer_name }} — <span class="fa-num" dir="ltr">{{ $order->customer_phone }}</span>
             </div>
             @if ($order->shipping_address)
                 @php($a = (array) $order->shipping_address)
                 <div class="box">
-                    <b>Shipping Address</b>
+                    <b>{{ __('Shipping Address') }}</b>
                     {{ $a['province'] ?? '' }}, {{ $a['city'] ?? '' }} — {{ $a['line'] ?? '' }}
-                    @if (!empty($a['postal_code']))<div class="muted fa-num">Postal code: {{ $a['postal_code'] }}</div>@endif
+                    @if (!empty($a['postal_code']))<div class="muted fa-num">{{ __('Postal code:') }} {{ $a['postal_code'] }}</div>@endif
                 </div>
             @endif
         </div>
 
         <table>
             <thead>
-                <tr><th>#</th><th>Item</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr>
+                <tr><th>#</th><th>{{ __('Item') }}</th><th>{{ __('Qty') }}</th><th>{{ __('Unit Price') }}</th><th>{{ __('Total') }}</th></tr>
             </thead>
             <tbody>
                 @foreach ($order->items as $i => $item)
@@ -77,19 +77,19 @@
         </table>
 
         <div class="totals">
-            <div class="row"><span>Subtotal</span><span>{{ \App\Support\Money::toman($order->subtotal) }}</span></div>
+            <div class="row"><span>{{ __('Subtotal') }}</span><span>{{ \App\Support\Money::toman($order->subtotal) }}</span></div>
             @if ($order->discount > 0)
-                <div class="row"><span>Discount{{ $order->coupon_code ? ' ('.$order->coupon_code.')' : '' }}</span><span>−{{ \App\Support\Money::toman($order->discount) }}</span></div>
+                <div class="row"><span>{{ __('Discount') }}{{ $order->coupon_code ? ' ('.$order->coupon_code.')' : '' }}</span><span>−{{ \App\Support\Money::toman($order->discount) }}</span></div>
             @endif
-            <div class="row"><span>Shipping{{ $order->shipping_method_name ? ' ('.$order->shipping_method_name.')' : '' }}</span><span>{{ $order->shipping_cost > 0 ? \App\Support\Money::toman($order->shipping_cost) : 'Free' }}</span></div>
-            <div class="row grand"><span>Total</span><span>{{ \App\Support\Money::toman($order->total) }}</span></div>
+            <div class="row"><span>{{ __('Shipping') }}{{ $order->shipping_method_name ? ' ('.$order->shipping_method_name.')' : '' }}</span><span>{{ $order->shipping_cost > 0 ? \App\Support\Money::toman($order->shipping_cost) : __('Free') }}</span></div>
+            <div class="row grand"><span>{{ __('Total') }}</span><span>{{ \App\Support\Money::toman($order->total) }}</span></div>
         </div>
 
         @if ($order->payment && $order->payment->ref_id)
-            <p class="muted" style="margin-top:18px">Payment reference: <span class="fa-num" dir="ltr">{{ $order->payment->ref_id }}</span></p>
+            <p class="muted" style="margin-top:18px">{{ __('Payment reference:') }} <span class="fa-num" dir="ltr">{{ $order->payment->ref_id }}</span></p>
         @endif
         @if ($phone = ($s['site.contact_phone'] ?? null))
-            <p class="muted">Support: <span dir="ltr">{{ $phone }}</span></p>
+            <p class="muted">{{ __('Support:') }} <span dir="ltr">{{ $phone }}</span></p>
         @endif
     </div>
 </body>

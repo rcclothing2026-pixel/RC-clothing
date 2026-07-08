@@ -59,7 +59,7 @@
         {{-- Google Tag Manager (noscript fallback). Must sit immediately after <body>. --}}
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtm }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     @endif
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:inset-x-4 focus:top-3 focus:z-50 focus:block focus:rounded-xl focus:bg-brand-900 focus:p-4 focus:text-center focus:text-sm focus:font-bold focus:text-white">Skip to main content</a>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:inset-x-4 focus:top-3 focus:z-50 focus:block focus:rounded-xl focus:bg-brand-900 focus:p-4 focus:text-center focus:text-sm focus:font-bold focus:text-white">{{ __('Skip to main content') }}</a>
 
     @include('partials.promo-bar')
     @include('partials.header')
@@ -70,13 +70,13 @@
         @if (session('success'))
             <div class="flex items-center justify-between rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700 ring-1 ring-green-200" role="alert">
                 <span>{{ session('success') }}</span>
-                <button @click="show = false" class="text-green-500 hover:text-green-700" aria-label="Close">&times;</button>
+                <button @click="show = false" class="text-green-500 hover:text-green-700" aria-label="{{ __('Close') }}">&times;</button>
             </div>
         @endif
         @if (session('error'))
             <div class="flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200" role="alert">
                 <span>{{ session('error') }}</span>
-                <button @click="show = false" class="text-red-400 hover:text-red-600" aria-label="Close">&times;</button>
+                <button @click="show = false" class="text-red-400 hover:text-red-600" aria-label="{{ __('Close') }}">&times;</button>
             </div>
         @endif
     </div>
@@ -98,9 +98,9 @@
     <div x-data="{ show: !localStorage.getItem('cookie_consent') }" x-show="show" x-cloak
          class="fixed inset-x-0 bottom-0 z-50 border-t border-brand-200 bg-white p-4 text-sm shadow-lg">
         <div class="mx-auto flex max-w-5xl items-center justify-between gap-4">
-            <p class="text-brand-600">We use cookies to improve your experience. <a href="{{ route('page', 'privacy') }}" class="text-accent-600 hover:underline">Learn more</a></p>
+            <p class="text-brand-600">{{ __('We use cookies to improve your experience.') }} <a href="{{ route('page', 'privacy') }}" class="text-accent-600 hover:underline">{{ __('Learn more') }}</a></p>
             <button @click="localStorage.setItem('cookie_consent', '1'); show = false"
-                    class="shrink-0 rounded-full bg-brand-900 px-5 py-2 text-xs font-bold text-white transition hover:bg-brand-800">Accept</button>
+                    class="shrink-0 rounded-full bg-brand-900 px-5 py-2 text-xs font-bold text-white transition hover:bg-brand-800">{{ __('Accept') }}</button>
         </div>
     </div>
 </body>

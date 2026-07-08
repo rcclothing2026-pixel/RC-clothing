@@ -61,15 +61,15 @@
             {{-- Quick links column (admin-editable via MenuItem footer_1) --}}
             @php($footer1 = \App\Models\MenuItem::for('footer_1'))
             <div>
-                <h4 class="mb-5 font-display text-xs font-semibold uppercase tracking-[0.22em] text-white/60">Explore</h4>
+                <h4 class="mb-5 font-display text-xs font-semibold uppercase tracking-[0.22em] text-white/60">{{ __('Explore') }}</h4>
                 <ul class="space-y-3 text-sm text-brand-200">
                     @forelse ($footer1 as $item)
                         <li><a href="{{ $item->url }}" class="transition hover:text-white">{{ $item->label }}</a></li>
                     @empty
-                        <li><a href="{{ route('shop.index') }}" class="transition hover:text-white">Shop</a></li>
-                        <li><a href="{{ route('page', 'about') }}" class="transition hover:text-white">About</a></li>
-                        <li><a href="{{ route('contact') }}" class="transition hover:text-white">Contact</a></li>
-                        <li><a href="{{ route('page', 'faq') }}" class="transition hover:text-white">FAQ</a></li>
+                        <li><a href="{{ route('shop.index') }}" class="transition hover:text-white">{{ __('Shop') }}</a></li>
+                        <li><a href="{{ route('page', 'about') }}" class="transition hover:text-white">{{ __('About') }}</a></li>
+                        <li><a href="{{ route('contact') }}" class="transition hover:text-white">{{ __('Contact') }}</a></li>
+                        <li><a href="{{ route('page', 'faq') }}" class="transition hover:text-white">{{ __('FAQ') }}</a></li>
                     @endforelse
                 </ul>
             </div>
@@ -77,20 +77,20 @@
             {{-- Customer service column (admin-editable via MenuItem footer_2) --}}
             @php($footer2 = \App\Models\MenuItem::for('footer_2'))
             <div>
-                <h4 class="mb-5 font-display text-xs font-semibold uppercase tracking-[0.22em] text-white/60">Customer Care</h4>
+                <h4 class="mb-5 font-display text-xs font-semibold uppercase tracking-[0.22em] text-white/60">{{ __('Customer Care') }}</h4>
                 <ul class="space-y-3 text-sm text-brand-200">
                     @forelse ($footer2 as $item)
                         <li><a href="{{ $item->url }}" class="transition hover:text-white">{{ $item->label }}</a></li>
                     @empty
-                        <li><a href="{{ route('page', 'size-guide') }}" class="transition hover:text-white">Size Guide</a></li>
-                        <li><a href="{{ route('page', 'shipping-returns') }}" class="transition hover:text-white">Shipping &amp; Returns</a></li>
-                        <li><a href="{{ route('page', 'terms') }}" class="transition hover:text-white">Terms</a></li>
-                        <li><a href="{{ route('page', 'privacy') }}" class="transition hover:text-white">Privacy</a></li>
+                        <li><a href="{{ route('page', 'size-guide') }}" class="transition hover:text-white">{{ __('Size Guide') }}</a></li>
+                        <li><a href="{{ route('page', 'shipping-returns') }}" class="transition hover:text-white">{{ __('Shipping & Returns') }}</a></li>
+                        <li><a href="{{ route('page', 'terms') }}" class="transition hover:text-white">{{ __('Terms') }}</a></li>
+                        <li><a href="{{ route('page', 'privacy') }}" class="transition hover:text-white">{{ __('Privacy') }}</a></li>
                     @endforelse
                 </ul>
                 @if ($phone = ($site['site.contact_phone'] ?? null))
                     <p class="mt-6 text-sm text-brand-200">
-                        <span class="block font-display text-xs font-semibold uppercase tracking-[0.22em] text-white/60">Support</span>
+                        <span class="block font-display text-xs font-semibold uppercase tracking-[0.22em] text-white/60">{{ __('Support') }}</span>
                         <a href="tel:{{ $phone }}" class="mt-1 inline-block text-white hover:underline" dir="ltr">{{ $phone }}</a>
                     </p>
                 @endif
@@ -110,6 +110,6 @@
 
     {{-- Copyright --}}
     <div class="border-t border-white/10 py-6">
-        <p class="text-center text-xs text-white/45">© {{ now()->year }} {{ ($site['site.store_name'] ?? null) ?: 'Racket Club' }} — All rights reserved.</p>
+        <p class="text-center text-xs text-white/45">© {{ now()->year }} {{ ($site['site.store_name'] ?? null) ?: 'Racket Club' }} — {{ __('All rights reserved.') }}</p>
     </div>
 </footer>

@@ -277,7 +277,7 @@
                      fall through to this anchor; the CTA re-enables pointer events
                      so it still works. --}}
                 @if ($slideLink !== '')
-                    <a href="{{ $slideLink }}" class="absolute inset-0 z-[5]" aria-label="{{ $title !== '' ? $title : ($kicker !== '' ? $kicker : 'View') }}"></a>
+                    <a href="{{ $slideLink }}" class="absolute inset-0 z-[5]" aria-label="{{ $title !== '' ? $title : ($kicker !== '' ? $kicker : __('View')) }}"></a>
                 @endif
 
                 {{-- Overlay copy — positioned by per-breakpoint flex alignment --}}
@@ -308,7 +308,7 @@
                                  }"
                                  x-init="tick(); setInterval(() => tick(), 1000)"
                                  x-show="visible">
-                                @foreach (['d' => 'D', 'h' => 'H', 'm' => 'M', 's' => 'S'] as $key => $unit)
+                                @foreach (['d' => __('D'), 'h' => __('H'), 'm' => __('M'), 's' => __('S')] as $key => $unit)
                                     <div class="flex items-end gap-1">
                                         <span class="text-3xl font-bold leading-none sm:text-5xl md:text-6xl" x-text="fa({{ $key }})">00</span>
                                         <span class="font-display text-sm italic {{ $subtleClass }} sm:text-base">{{ $unit }}</span>
@@ -333,11 +333,11 @@
 
         {{-- Slider chrome: arrows + dots, only when there's more than one slide --}}
         @if (count($slides) > 1)
-            <button type="button" @click.stop="prev(); stop()" aria-label="Previous"
+            <button type="button" @click.stop="prev(); stop()" aria-label="{{ __('Previous') }}"
                     class="absolute end-4 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 sm:end-8">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
             </button>
-            <button type="button" @click.stop="next(); stop()" aria-label="Next"
+            <button type="button" @click.stop="next(); stop()" aria-label="{{ __('Next') }}"
                     class="absolute start-4 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 sm:start-8">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
             </button>
@@ -346,7 +346,7 @@
                     <button type="button" @click="i = {{ $idx }}; stop()"
                             :class="i === {{ $idx }} ? 'bg-white w-6' : 'bg-white/40 w-2'"
                             class="h-2 rounded-full transition-all"
-                            aria-label="Go to slide {{ $idx + 1 }}"></button>
+                            aria-label="{{ __('Go to slide') }} {{ $idx + 1 }}"></button>
                 @endforeach
             </div>
         @endif
@@ -358,12 +358,12 @@
             @php $overlayLink = trim((string) ($data['overlay_png_link'] ?? '')); @endphp
             @if ($overlayLink !== '')
                 {{-- Linked: the PNG itself is the click target (pointer-events-auto). --}}
-                <a href="{{ $overlayLink }}" aria-label="Banner" data-eh-overlay data-eh-bp="mobile"
+                <a href="{{ $overlayLink }}" aria-label="{{ __('Banner') }}" data-eh-overlay data-eh-bp="mobile"
                    class="absolute z-20 -translate-x-1/2 -translate-y-1/2 md:hidden"
                    style="left: {{ $ovxM }}{{ $ovu }}; top: {{ $ovyM }}{{ $ovu }}; width: {{ $overlayW }}%;">
                     <img src="{{ $overlayPng }}" alt="" loading="lazy" class="block w-full">
                 </a>
-                <a href="{{ $overlayLink }}" aria-label="Banner" data-eh-overlay data-eh-bp="desktop"
+                <a href="{{ $overlayLink }}" aria-label="{{ __('Banner') }}" data-eh-overlay data-eh-bp="desktop"
                    class="absolute z-20 hidden -translate-x-1/2 -translate-y-1/2 md:block"
                    style="left: {{ $ovxD }}{{ $ovu }}; top: {{ $ovyD }}{{ $ovu }}; width: {{ $overlayW }}%;">
                     <img src="{{ $overlayPng }}" alt="" loading="lazy" class="block w-full">

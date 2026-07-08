@@ -45,7 +45,7 @@
             @if (count($slides) > 1)
                 <div class="absolute inset-x-0 bottom-5 z-20 flex justify-center gap-2">
                     @foreach ($slides as $k => $slide)
-                        <button type="button" data-dot="{{ $k }}" aria-label="Slide {{ $k + 1 }}"
+                        <button type="button" data-dot="{{ $k }}" aria-label="{{ __('Slide') }} {{ $k + 1 }}"
                                 class="h-2.5 w-2.5 rounded-full transition {{ $k === 0 ? 'bg-brand-900' : 'bg-brand-300' }}"></button>
                     @endforeach
                 </div>

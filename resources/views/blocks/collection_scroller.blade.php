@@ -23,7 +23,7 @@
         @if (! empty($data['heading']))
             <div class="mx-auto mb-6 flex {{ $containerClass }} items-end justify-between px-4 sm:px-6">
                 <h2 class="text-2xl font-bold text-brand-900 sm:text-3xl">{{ $data['heading'] }}</h2>
-                <a href="{{ route('shop.index') }}" class="text-sm font-medium text-accent-600 hover:underline">View All</a>
+                <a href="{{ route('shop.index') }}" class="text-sm font-medium text-accent-600 hover:underline">{{ __('View All') }}</a>
             </div>
         @endif
 
@@ -63,12 +63,12 @@
 
                 {{-- Prev / Next arrows (RTL-aware via app.js direction flag). --}}
                 <button type="button" data-marquee-prev="{{ $marqueeId }}"
-                        aria-label="Previous"
+                        aria-label="{{ __('Previous') }}"
                         class="absolute end-4 top-1/2 z-10 hidden -translate-y-1/2 place-items-center rounded-full bg-white/95 text-brand-900 shadow-lg ring-1 ring-brand-100 transition hover:bg-white sm:grid sm:h-11 sm:w-11">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
                 <button type="button" data-marquee-next="{{ $marqueeId }}"
-                        aria-label="Next"
+                        aria-label="{{ __('Next') }}"
                         class="absolute start-4 top-1/2 z-10 hidden -translate-y-1/2 place-items-center rounded-full bg-white/95 text-brand-900 shadow-lg ring-1 ring-brand-100 transition hover:bg-white sm:grid sm:h-11 sm:w-11">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
                 </button>

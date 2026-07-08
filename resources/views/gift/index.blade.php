@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Gifts | Racket Club')
-@section('meta_description', 'Find the perfect gift for any occasion — filter, sort, or let Surprise Me choose for you.')
+@section('title', __('Gifts').' | Racket Club')
+@section('meta_description', __('Find the perfect gift for any occasion — filter, sort, or let Surprise Me choose for you.'))
 
 @section('content')
     {{-- TOP: editable page-builder hero (slug=`gift`). Admin can change the
@@ -20,12 +20,12 @@
         {{-- Header: count + «Surprise me» CTA --}}
         <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
-                <h2 class="text-2xl font-bold text-brand-900">Find the Perfect Gift</h2>
-                <p class="mt-1 text-sm text-brand-500 fa-num">{{ $products->total() }} options</p>
+                <h2 class="text-2xl font-bold text-brand-900">{{ __('Find the Perfect Gift') }}</h2>
+                <p class="mt-1 text-sm text-brand-500 fa-num">{{ $products->total() }} {{ __('options') }}</p>
             </div>
             <a href="{{ route('gift.surprise') }}"
                class="inline-flex items-center gap-2 rounded-full bg-accent-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-700">
-                Surprise Me (under 500,000 Toman)
+                {{ __('Surprise Me (under 500,000 Toman)') }}
             </a>
         </div>
 
@@ -34,7 +34,7 @@
             <div class="mb-5 flex flex-wrap gap-2">
                 <a href="{{ route('gift.index') }}"
                    class="rounded-full px-4 py-1.5 text-xs font-medium transition {{ ! $activeFacet ? 'bg-brand-900 text-white' : 'bg-brand-100 text-brand-700 hover:bg-brand-200' }}">
-                    All
+                    {{ __('All') }}
                 </a>
                 @foreach ($facets as $facet)
                     <a href="{{ request()->fullUrlWithQuery(['collection' => $facet->slug, 'page' => null]) }}"
@@ -59,12 +59,12 @@
                 @if (request('min') || request('max'))
                     <a href="{{ request()->fullUrlWithQuery(['min' => null, 'max' => null, 'page' => null]) }}"
                        class="flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 ring-1 ring-brand-200 transition hover:bg-brand-100">
-                        Price: {{ request('min') ? \App\Support\Money::toman((int)request('min')) : '' }}{{ request('min') && request('max') ? ' — ' : '' }}{{ request('max') ? \App\Support\Money::toman((int)request('max')) : '' }}
+                        {{ __('Price:') }} {{ request('min') ? \App\Support\Money::toman((int)request('min')) : '' }}{{ request('min') && request('max') ? ' — ' : '' }}{{ request('max') ? \App\Support\Money::toman((int)request('max')) : '' }}
                         <svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                 @endif
                 <a href="{{ route('gift.index') }}"
-                   class="rounded-full px-3 py-1.5 text-xs text-brand-400 transition hover:text-brand-700">Clear filters</a>
+                   class="rounded-full px-3 py-1.5 text-xs text-brand-400 transition hover:text-brand-700">{{ __('Clear filters') }}</a>
             </div>
         @endif
 
@@ -74,21 +74,21 @@
                 <input type="hidden" name="collection" value="{{ $activeFacet->slug }}">
             @endif
             <label class="flex items-center gap-2 text-xs text-brand-500">
-                Max price:
+                {{ __('Max price:') }}
                 <select name="max" onchange="this.form.requestSubmit()" class="rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-xs">
-                    <option value="">Any price</option>
+                    <option value="">{{ __('Any price') }}</option>
                     @foreach ([200_000, 500_000, 1_000_000, 2_000_000, 5_000_000] as $bp)
-                        <option value="{{ $bp }}" @selected((int) request('max') === $bp)>Up to {{ \App\Support\Money::toman($bp) }}</option>
+                        <option value="{{ $bp }}" @selected((int) request('max') === $bp)>{{ __('Up to') }} {{ \App\Support\Money::toman($bp) }}</option>
                     @endforeach
                 </select>
             </label>
             <span class="hidden h-5 w-px bg-brand-100 sm:block"></span>
             <label class="flex items-center gap-2 text-xs text-brand-500">
-                Sort:
+                {{ __('Sort:') }}
                 <select name="sort" onchange="this.form.requestSubmit()" class="rounded-lg border border-brand-200 bg-white px-3 py-1.5 text-xs">
-                    <option value="newest"     @selected(request('sort') === 'newest' || ! request('sort'))>Newest</option>
-                    <option value="price_asc"  @selected(request('sort') === 'price_asc')>Price: Low to High</option>
-                    <option value="price_desc" @selected(request('sort') === 'price_desc')>Price: High to Low</option>
+                    <option value="newest"     @selected(request('sort') === 'newest' || ! request('sort'))>{{ __('Newest') }}</option>
+                    <option value="price_asc"  @selected(request('sort') === 'price_asc')>{{ __('Price: Low to High') }}</option>
+                    <option value="price_desc" @selected(request('sort') === 'price_desc')>{{ __('Price: High to Low') }}</option>
                 </select>
             </label>
         </form>
@@ -97,9 +97,9 @@
         @if ($products->isEmpty())
             <x-empty-state
                 icon="search"
-                title="Nothing found"
-                caption="Try loosening your filters, or let Surprise Me pick something for you."
-                :cta="['label' => 'Clear filters', 'href' => route('gift.index')]" />
+                title="{{ __('Nothing found') }}"
+                caption="{{ __('Try loosening your filters, or let Surprise Me pick something for you.') }}"
+                :cta="['label' => __('Clear filters'), 'href' => route('gift.index')]" />
         @else
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 @foreach ($products as $product)

@@ -34,7 +34,7 @@
          x-show="visible" x-cloak x-transition
          class="fixed bottom-20 end-3 z-40 w-[min(19rem,calc(100vw-1.5rem))] sm:bottom-4 sm:end-4">
         <div class="relative rounded-2xl bg-white p-3.5 shadow-xl ring-1 ring-brand-100">
-            <button @click="dismiss()" aria-label="Close"
+            <button @click="dismiss()" aria-label="{{ __('Close') }}"
                     class="absolute top-2 start-2 grid h-6 w-6 place-items-center rounded-full text-brand-300 transition hover:bg-brand-50 hover:text-brand-600">
                 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
             </button>
@@ -46,9 +46,9 @@
                 <div class="min-w-0 flex-1">
                     <p class="text-xs leading-5 text-brand-700" x-show="!reached">
                         <span class="fa-num font-bold text-brand-900" x-text="remainingLabel"></span>
-                        away from <span class="font-semibold">free shipping</span>
+                        {{ __('away from') }} <span class="font-semibold">{{ __('free shipping') }}</span>
                     </p>
-                    <p class="text-xs font-bold text-green-600" x-show="reached" x-cloak>Free shipping unlocked</p>
+                    <p class="text-xs font-bold text-green-600" x-show="reached" x-cloak>{{ __('Free shipping unlocked') }}</p>
                     <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-brand-100">
                         <div class="h-full rounded-full transition-all duration-500"
                              :class="reached ? 'bg-green-500' : 'bg-accent-500'" :style="`width:${pct}%`"></div>
