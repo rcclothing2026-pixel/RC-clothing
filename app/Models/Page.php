@@ -151,17 +151,23 @@ class Page extends Model
     {
         return [
             // Hero — the trio on navy (rc-solo-terracotta is actually the navy
-            // group shot; filenames are scrambled by design). Image is an
-            // admin-editable field, so it can be swapped in the page builder.
+            // group shot; filenames are scrambled by design). Uses the block's
+            // canonical `slides` shape so it's fully editable in the page builder
+            // (image, title, CTA all live under the Slides repeater).
             ['type' => 'editorial_hero', 'data' => [
-                'image' => '/img/photography/rc-solo-terracotta.jpg',
-                'kicker' => 'Racket Club · Est. 2025',
-                'title' => 'THE ART OF LEISURE',
-                'cta_text' => 'Explore the Collection',
-                'cta_link' => '/shop',
                 'height' => 'tall',
-                'text_color' => 'white',
                 'overlay' => 'soft',
+                'slides' => [[
+                    'image' => '/img/photography/rc-solo-terracotta.jpg',
+                    'kicker' => 'Racket Club · Est. 2025',
+                    'title' => 'THE ART OF LEISURE',
+                    'cta_text' => 'Explore the Collection',
+                    'cta_link' => '/shop',
+                    'text_color' => 'white',
+                    'title_size' => 'xl',
+                    'position_desktop' => 'mc',
+                    'position_mobile' => 'mc',
+                ]],
             ]],
             ['type' => 'product_grid', 'data' => [
                 'heading' => 'The Essentials',
@@ -193,14 +199,19 @@ class Page extends Model
             ]],
             // Brand band — the towel shot carries the "Legends & Legacy" mark.
             ['type' => 'editorial_hero', 'data' => [
-                'image' => '/img/photography/rc-laughing-terracotta.jpg',
-                'kicker' => 'Off the Court',
-                'title' => 'MADE FOR THE MOMENT',
-                'cta_text' => 'Shop New Arrivals',
-                'cta_link' => '/shop?sort=new',
                 'height' => 'med',
-                'text_color' => 'white',
                 'overlay' => 'soft',
+                'slides' => [[
+                    'image' => '/img/photography/rc-laughing-terracotta.jpg',
+                    'kicker' => 'Off the Court',
+                    'title' => 'MADE FOR THE MOMENT',
+                    'cta_text' => 'Shop New Arrivals',
+                    'cta_link' => '/shop?sort=new',
+                    'text_color' => 'white',
+                    'title_size' => 'xl',
+                    'position_desktop' => 'mc',
+                    'position_mobile' => 'mc',
+                ]],
             ]],
             ['type' => 'product_grid', 'data' => [
                 'heading' => 'New Arrivals',
