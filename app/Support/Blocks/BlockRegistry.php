@@ -425,12 +425,10 @@ class BlockRegistry
                     ['key' => 'slides', 'label' => 'Slides (each slide has its own image, text and position)', 'type' => 'repeater', 'sub' => [
                         ['key' => 'image', 'label' => 'Desktop Image (landscape)', 'type' => 'image'],
                         ['key' => 'image_mobile', 'label' => 'Mobile Image (portrait — optional; empty = same as desktop image)', 'type' => 'image'],
-                        // 9-key options render as the admin's visual 3×3 position grid
-                        ['key' => 'focal', 'label' => 'Image Focal Point (which part of the photo stays in view when cropped to fill)', 'type' => 'select', 'options' => [
-                            'tl' => 'Top-left', 'tc' => 'Top', 'tr' => 'Top-right',
-                            'ml' => 'Left', 'mc' => 'Center', 'mr' => 'Right',
-                            'bl' => 'Bottom-left', 'bc' => 'Bottom', 'br' => 'Bottom-right',
-                        ]],
+                        // Precise focal point: which part of the photo stays in view
+                        // when it's cropped to fill (object-position X% Y%).
+                        ['key' => 'focal_x', 'label' => 'Image Focal Point — horizontal (0 = left edge, 100 = right edge)', 'type' => 'range', 'min' => 0, 'max' => 100, 'default' => 50, 'unit' => '%'],
+                        ['key' => 'focal_y', 'label' => 'Image Focal Point — vertical (0 = top, 100 = bottom)', 'type' => 'range', 'min' => 0, 'max' => 100, 'default' => 50, 'unit' => '%'],
                         ['key' => 'link', 'label' => 'Link for Entire Image (optional — click anywhere on the slide)', 'type' => 'text'],
                         ['key' => 'kicker', 'label' => 'Kicker (e.g. "Now Live")', 'type' => 'text'],
                         ['key' => 'title', 'label' => 'Large Title', 'type' => 'text'],
