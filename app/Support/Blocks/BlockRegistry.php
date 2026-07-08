@@ -425,6 +425,10 @@ class BlockRegistry
                     ['key' => 'slides', 'label' => 'Slides (each slide has its own image, text and position)', 'type' => 'repeater', 'sub' => [
                         ['key' => 'image', 'label' => 'Desktop Image (landscape)', 'type' => 'image'],
                         ['key' => 'image_mobile', 'label' => 'Mobile Image (portrait — optional; empty = same as desktop image)', 'type' => 'image'],
+                        ['key' => 'focal', 'label' => 'Image Focal Point (which part stays in view when the photo is cropped to fill)', 'type' => 'select', 'options' => [
+                            'center' => 'Center', 'top' => 'Top', 'bottom' => 'Bottom', 'left' => 'Left', 'right' => 'Right',
+                            'top-left' => 'Top-left', 'top-right' => 'Top-right', 'bottom-left' => 'Bottom-left', 'bottom-right' => 'Bottom-right',
+                        ]],
                         ['key' => 'link', 'label' => 'Link for Entire Image (optional — click anywhere on the slide)', 'type' => 'text'],
                         ['key' => 'kicker', 'label' => 'Kicker (e.g. "Now Live")', 'type' => 'text'],
                         ['key' => 'title', 'label' => 'Large Title', 'type' => 'text'],

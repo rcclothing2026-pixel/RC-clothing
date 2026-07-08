@@ -160,6 +160,15 @@
             @php
                 $imgDesktop = trim((string) ($slide['image'] ?? ''));
                 $imgMobile  = trim((string) ($slide['image_mobile'] ?? '')) ?: $imgDesktop;
+                // Focal point — which part of the image stays in view when it is
+                // cropped to fill the banner (object-cover). Keeps faces/subjects
+                // out from under the header on tall heroes.
+                $focal = [
+                    'center' => '50% 50%', 'top' => '50% 0%', 'bottom' => '50% 100%',
+                    'left' => '0% 50%', 'right' => '100% 50%',
+                    'top-left' => '0% 0%', 'top-right' => '100% 0%',
+                    'bottom-left' => '0% 100%', 'bottom-right' => '100% 100%',
+                ][$slide['focal'] ?? 'center'] ?? '50% 50%';
                 $kicker     = trim((string) ($slide['kicker'] ?? ''));
                 $title      = trim((string) ($slide['title'] ?? ''));
                 $subtitle   = trim((string) ($slide['subtitle'] ?? ''));
@@ -262,9 +271,9 @@
                 {{-- Per-breakpoint imagery: hidden swap via responsive utility --}}
                 @if ($imgDesktop !== '')
                     <img src="{{ $imgMobile }}" alt="{{ $title }}"
-                         class="{{ $imgClassMobile }}">
+                         class="{{ $imgClassMobile }}" style="object-position: {{ $focal }};">
                     <img src="{{ $imgDesktop }}" alt="{{ $title }}"
-                         class="{{ $imgClassDesktop }}">
+                         class="{{ $imgClassDesktop }}" style="object-position: {{ $focal }};">
                 @endif
                 @if ($slideOverlayClass)
                     <div class="absolute inset-0 {{ $slideOverlayClass }}"></div>

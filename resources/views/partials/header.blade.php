@@ -124,7 +124,7 @@
                                 .catch(() => { this.results = []; this.open = false; });
                         } }"
               @click.outside="open = false"
-              class="relative flex flex-1 max-w-xs ms-auto md:ms-0 lg:flex-initial lg:w-56 lg:ms-0">
+              class="relative flex min-w-0 flex-1 max-w-xs ms-auto md:ms-0 lg:flex-initial lg:w-56 lg:ms-0">
             <div class="relative w-full">
                 <input type="search" name="q" x-model="q" autocomplete="off"
                        @input.debounce.250ms="fetchResults()" @focus="results.length && (open = true)"
@@ -157,7 +157,7 @@
         <div class="flex items-center gap-0.5 ms-auto md:ms-0 lg:ms-0">
             {{-- Language toggle (EN / FA) --}}
             @php($__loc = app()->getLocale())
-            <div class="me-1 flex items-center gap-1 text-xs font-semibold tracking-wide" aria-label="{{ __('Language') }}">
+            <div class="me-1 hidden items-center gap-1 text-xs font-semibold tracking-wide sm:flex" aria-label="{{ __('Language') }}">
                 <a href="{{ route('locale.switch', 'en') }}" hreflang="en"
                    class="{{ $__loc === 'en' ? 'text-accent-600' : 'text-brand-400 hover:text-brand-900' }}">EN</a>
                 <span class="text-brand-300" aria-hidden="true">/</span>
@@ -262,6 +262,16 @@
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M6 6 5 3H3"/></svg>
                     {{ __('Cart') }}
                 </a>
+            </div>
+
+            {{-- Language toggle (mobile — the header one is hidden on small screens) --}}
+            @php($__locM = app()->getLocale())
+            <div class="flex items-center justify-center gap-2 border-t border-brand-100 px-3 py-3 text-sm font-semibold" aria-label="{{ __('Language') }}">
+                <a href="{{ route('locale.switch', 'en') }}" hreflang="en"
+                   class="{{ $__locM === 'en' ? 'text-accent-600' : 'text-brand-500' }}">EN</a>
+                <span class="text-brand-300" aria-hidden="true">/</span>
+                <a href="{{ route('locale.switch', 'fa') }}" hreflang="fa"
+                   class="{{ $__locM === 'fa' ? 'text-accent-600' : 'text-brand-500' }}">فارسی</a>
             </div>
         </div>
     </div>
