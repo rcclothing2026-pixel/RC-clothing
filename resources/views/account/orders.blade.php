@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'سفارش‌های من | چیاکو')
+@section('title', 'My Orders | Racket Club')
 
 @php
 $badgeColors = [
@@ -16,21 +16,21 @@ $badgeColors = [
 
 @section('content')
     <div class="mx-auto max-w-4xl px-4 py-10 sm:px-6">
-        <h1 class="mb-8 text-2xl font-bold text-brand-900">سفارش‌های من</h1>
+        <h1 class="mb-8 text-2xl font-bold uppercase tracking-wide text-brand-900">MY ORDERS</h1>
 
         @if ($orders->isEmpty())
             <x-empty-state
                 icon="box"
-                title="هنوز سفارشی ثبت نکرده‌اید"
-                caption="پس از اولین خرید، می‌توانید وضعیت سفارش‌هایتان را اینجا دنبال کنید."
-                :cta="['label' => 'شروع خرید', 'href' => route('shop.index')]" />
+                title="No orders yet"
+                caption="Once you place your first order, you can follow its progress right here."
+                :cta="['label' => 'Start Shopping', 'href' => route('shop.index')]" />
         @else
             <div class="space-y-3">
                 @foreach ($orders as $order)
                     <a href="{{ route('account.orders.show', $order) }}" class="flex flex-wrap items-center justify-between gap-3 rounded-card bg-white p-5 ring-1 ring-brand-100 transition hover:ring-brand-300 hover:shadow-sm">
                         <div>
                             <p class="font-semibold text-brand-800 fa-num" dir="ltr">{{ $order->number }}</p>
-                            <p class="mt-1 text-xs text-brand-400 fa-num">{{ \App\Support\Jalali::format($order->created_at) }} — {{ \App\Support\Money::toPersianDigits((string) $order->items->count()) }} کالا</p>
+                            <p class="mt-1 text-xs text-brand-400 fa-num">{{ \App\Support\Jalali::format($order->created_at) }} — {{ $order->items->count() }} items</p>
                         </div>
                         <span class="rounded-full px-3 py-1 text-xs font-medium ring-1 {{ $badgeColors[$order->status] ?? 'bg-brand-50 text-brand-600 ring-brand-200' }}">{{ $order->statusLabel() }}</span>
                         <span class="font-bold text-brand-900">{{ $order->formattedTotal() }}</span>

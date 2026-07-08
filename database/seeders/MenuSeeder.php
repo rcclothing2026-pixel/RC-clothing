@@ -18,27 +18,31 @@ class MenuSeeder extends Seeder
     {
         $this->seedHeader();
         $this->seedFooter('footer_1', [
-            ['فروشگاه', '/shop'],
-            ['درباره ما', '/page/about'],
-            ['تماس با ما', '/contact'],
-            ['سوالات متداول', '/page/faq'],
+            ['Shop', '/shop'],
+            ['About', '/page/about'],
+            ['Contact', '/contact'],
+            ['FAQ', '/page/faq'],
         ]);
         $this->seedFooter('footer_2', [
-            ['راهنمای سایز', '/page/size-guide'],
-            ['شیوه‌های ارسال و بازگشت', '/page/shipping-returns'],
-            ['قوانین و مقررات', '/page/terms'],
-            ['حریم خصوصی', '/page/privacy'],
+            ['Size Guide', '/page/size-guide'],
+            ['Shipping & Returns', '/page/shipping-returns'],
+            ['Terms', '/page/terms'],
+            ['Privacy', '/page/privacy'],
         ]);
     }
 
     private function seedHeader(): void
     {
-        if (MenuItem::where('location', 'header')->exists()) {
+        // Key the guard off the "Shop" link, not "any header row": content
+        // migrations (gift, concept stores) may have inserted their own header
+        // items before this seeder runs, and we still want the core Shop +
+        // category nav seeded alongside them.
+        if (MenuItem::where('location', 'header')->where('url', '/shop')->exists()) {
             return;
         }
 
         $pos = 0;
-        MenuItem::create(['location' => 'header', 'label' => 'فروشگاه', 'url' => '/shop', 'position' => $pos++]);
+        MenuItem::create(['location' => 'header', 'label' => 'Shop', 'url' => '/shop', 'position' => $pos++]);
 
         $topLevel = Category::where('is_active', true)
             ->whereNull('parent_id')

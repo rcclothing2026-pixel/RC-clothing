@@ -83,57 +83,57 @@ class Page extends Model
     {
         return [
             'editorial-home' => [
-                'label' => 'صفحهٔ اصلی ادیتوریال (پیش‌فرض)',
-                'description' => 'هیرو تمام‌صفحه → کاروسل محصول → هیرو → کاروسل → کاشی دسته‌بندی‌ها → تضمین‌ها',
+                'label' => 'Editorial Homepage (default)',
+                'description' => 'Full-screen hero → product carousel → hero → carousel → category tiles → guarantees',
                 'blocks' => self::defaultHomeBlocks(),
             ],
             'collection-drop' => [
-                'label' => 'صفحهٔ معرفی کالکشن جدید',
-                'description' => 'یک هیرو ادیتوریال + معرفی کالکشن + لوک‌بوک + تضمین‌ها',
+                'label' => 'New Collection Launch Page',
+                'description' => 'One editorial hero + collection feature + lookbook + guarantees',
                 'blocks' => [
                     ['type' => 'editorial_hero', 'data' => ['height' => 'tall', 'overlay' => 'soft', 'slides' => [[
-                        'image' => '', 'kicker' => 'حالا فعال', 'title' => 'کالکشن جدید',
-                        'cta_text' => 'خرید', 'cta_link' => '/shop',
+                        'image' => '', 'kicker' => 'Now Live', 'title' => 'The New Collection',
+                        'cta_text' => 'Shop', 'cta_link' => '/shop',
                         'text_color' => 'white', 'title_size' => 'xl',
                         'position_desktop' => 'bc', 'position_mobile' => 'bc',
                     ]]]],
                     ['type' => 'collection_feature', 'data' => ['image_size' => 'lg', 'tone' => 'red', 'corner' => 'bottom', 'limit' => 4]],
-                    ['type' => 'lookbook_grid', 'data' => ['heading' => 'لوک‌بوک', 'columns' => '4', 'mobile_columns' => '2']],
+                    ['type' => 'lookbook_grid', 'data' => ['heading' => 'The Lookbook', 'columns' => '4', 'mobile_columns' => '2']],
                     ['type' => 'features', 'data' => []],
                 ],
             ],
             'sale' => [
-                'label' => 'صفحهٔ تخفیف / حراج',
-                'description' => 'بنر شمارش معکوس + کاروسل محصول + بنر تبلیغاتی + کاشی دسته‌بندی',
+                'label' => 'Sale Page',
+                'description' => 'Countdown banner + product carousel + promo banner + category tiles',
                 'blocks' => [
                     ['type' => 'editorial_hero', 'data' => ['height' => 'banner', 'overlay' => 'medium', 'slides' => [[
-                        'image' => '', 'kicker' => 'برای زمان محدود', 'title' => 'تخفیف ویژه',
-                        'cta_text' => 'مشاهده محصولات', 'cta_link' => '/shop',
+                        'image' => '', 'kicker' => 'For a Limited Time', 'title' => 'Season Sale',
+                        'cta_text' => 'View Products', 'cta_link' => '/shop',
                         'text_color' => 'white', 'title_size' => 'xl', 'cta_style' => 'pill-accent',
                         'position_desktop' => 'mc', 'position_mobile' => 'mc',
                     ]]]],
-                    ['type' => 'product_grid', 'data' => ['heading' => 'فقط ۲۴ ساعت', 'layout' => 'carousel', 'card_size' => 'compact', 'card_style' => 'minimal']],
-                    ['type' => 'promo_banner', 'data' => ['heading' => 'ارسال رایگان', 'text' => 'برای خریدهای بالای ۱ میلیون تومان', 'cta_text' => 'خرید کنید', 'cta_link' => '/shop', 'style' => 'grad-dark-red']],
+                    ['type' => 'product_grid', 'data' => ['heading' => '24 Hours Only', 'layout' => 'carousel', 'card_size' => 'compact', 'card_style' => 'minimal']],
+                    ['type' => 'promo_banner', 'data' => ['heading' => 'Complimentary Shipping', 'text' => 'On orders over 1,000,000 Toman', 'cta_text' => 'Shop Now', 'cta_link' => '/shop', 'style' => 'grad-dark-red']],
                     ['type' => 'category_tiles', 'data' => ['layout' => 'marquee', 'speed' => 'med']],
                 ],
             ],
             'about' => [
-                'label' => 'دربارهٔ ما (ادیتوریال)',
-                'description' => 'هیرو + متن مانیفست + ویژگی‌ها + کاروسل کالکشن',
+                'label' => 'About Us (editorial)',
+                'description' => 'Hero + manifesto text + features + collection carousel',
                 'blocks' => [
                     ['type' => 'editorial_hero', 'data' => ['height' => 'banner', 'overlay' => 'soft', 'slides' => [[
-                        'image' => '', 'kicker' => 'ما کی هستیم', 'title' => 'CHIACO',
+                        'image' => '', 'kicker' => 'Who We Are', 'title' => 'RACKET CLUB',
                         'text_color' => 'white', 'title_size' => 'xl',
                         'position_desktop' => 'mc', 'position_mobile' => 'mc',
                     ]]]],
-                    ['type' => 'rich_text', 'data' => ['heading' => 'برند چیاکو', 'body' => '<p>متن دربارهٔ برند را اینجا بنویسید — مانیفست، الهام و ارزش‌ها.</p>', 'align' => 'right', 'width' => 'narrow', 'padding' => 'lg']],
-                    ['type' => 'features', 'data' => ['items' => ['دوخت ایرانی :: پارچهٔ منتخب با دوختی تمیز', 'طراحی امروزی :: متعادل بین سنت و حال', 'ارسال سریع :: به سراسر کشور']]],
-                    ['type' => 'collection_scroller', 'data' => ['heading' => 'کالکشن‌ها', 'size' => 'lg', 'shape' => 'portrait']],
+                    ['type' => 'rich_text', 'data' => ['heading' => 'The Racket Club', 'body' => '<p>Write the story of the house here — the manifesto, the inspiration and the values behind The Art of Leisure.</p>', 'align' => 'center', 'width' => 'narrow', 'padding' => 'lg']],
+                    ['type' => 'features', 'data' => ['items' => ['Considered Craft :: Selected fabric with a clean, quiet finish', 'Timeless Design :: Balanced between the classic and the contemporary', 'Considered Shipping :: Carefully dispatched, wherever you are']]],
+                    ['type' => 'collection_scroller', 'data' => ['heading' => 'The Collections', 'size' => 'lg', 'shape' => 'portrait']],
                 ],
             ],
             'blank' => [
-                'label' => 'خالی (شروع از صفر)',
-                'description' => 'بدون بلاک — خودتان از تری بلاک‌ها بسازید.',
+                'label' => 'Blank (start from scratch)',
+                'description' => 'No blocks — build it yourself from the block tray.',
                 'blocks' => [],
             ],
         ];
@@ -150,36 +150,60 @@ class Page extends Model
     public static function defaultHomeBlocks(): array
     {
         return [
+            // Hero — the trio on navy (rc-solo-terracotta is actually the navy
+            // group shot; filenames are scrambled by design). Image is an
+            // admin-editable field, so it can be swapped in the page builder.
             ['type' => 'editorial_hero', 'data' => [
-                'image' => '',
-                'kicker' => 'به‌زودی',
-                'title' => 'کالکشن نو',
-                'cta_text' => 'مشاهده',
+                'image' => '/img/photography/rc-solo-terracotta.jpg',
+                'kicker' => 'Racket Club · Est. 2025',
+                'title' => 'THE ART OF LEISURE',
+                'cta_text' => 'Explore the Collection',
                 'cta_link' => '/shop',
                 'height' => 'tall',
                 'text_color' => 'white',
                 'overlay' => 'soft',
             ]],
             ['type' => 'product_grid', 'data' => [
-                'heading' => 'منتخب چیاکو',
+                'heading' => 'The Essentials',
                 'feed' => 'featured',
                 'limit' => 8,
                 'layout' => 'carousel',
                 'card_size' => 'compact',
                 'card_style' => 'minimal',
             ]],
+            // The Art of Leisure — manifesto (sell the moment, not the product).
+            ['type' => 'rich_text', 'data' => [
+                'heading' => 'The Life Off the Court',
+                'body' => '<p>Racket Club is an ode to the moments between the matches — the slow mornings, the long lunches, the easy evenings. Quiet luxury for those who have nothing to prove. Legends are made on the court; a legacy is lived off it.</p>',
+                'align' => 'center',
+                'width' => 'narrow',
+                'padding' => 'lg',
+            ]],
+            // Editorial lookbook duo — both images are admin-editable fields.
+            ['type' => 'image_duo', 'data' => [
+                'image_a' => '/img/photography/rc-couple-terracotta.jpg',
+                'link_a' => '/shop',
+                'image_b' => '/img/photography/rc-padel-back.jpg',
+                'link_b' => '/shop',
+                'aspect' => 'portrait',
+                'stack_mobile' => 'stack',
+                'container' => 'wide',
+                'gap' => 'normal',
+                'padding' => 'md',
+            ]],
+            // Brand band — the towel shot carries the "Legends & Legacy" mark.
             ['type' => 'editorial_hero', 'data' => [
-                'image' => '',
-                'kicker' => 'حالا فعال',
-                'title' => 'جدیدترین‌ها',
-                'cta_text' => 'خرید کنید',
+                'image' => '/img/photography/rc-laughing-terracotta.jpg',
+                'kicker' => 'Off the Court',
+                'title' => 'MADE FOR THE MOMENT',
+                'cta_text' => 'Shop New Arrivals',
                 'cta_link' => '/shop?sort=new',
                 'height' => 'med',
                 'text_color' => 'white',
                 'overlay' => 'soft',
             ]],
             ['type' => 'product_grid', 'data' => [
-                'heading' => 'جدیدترین‌ها',
+                'heading' => 'New Arrivals',
                 'feed' => 'new',
                 'limit' => 8,
                 'layout' => 'carousel',
@@ -187,15 +211,15 @@ class Page extends Model
                 'card_style' => 'minimal',
             ]],
             ['type' => 'category_tiles', 'data' => [
-                'heading' => 'دسته‌بندی‌ها',
+                'heading' => 'Shop by Category',
                 'limit' => 12,
                 'layout' => 'marquee',
                 'speed' => 'med',
             ]],
             ['type' => 'features', 'data' => ['heading' => '', 'items' => [
-                'ارسال سریع :: بسته‌بندی و ارسال در کوتاه‌ترین زمان به سراسر کشور',
-                'پرداخت امن :: پرداخت آنلاین مطمئن از طریق درگاه معتبر',
-                'ضمانت کیفیت :: تضمین کیفیت پارچه و دوخت با امکان بازگشت کالا',
+                'Considered Shipping :: Carefully packed and dispatched, wherever you are',
+                'Secure Payment :: Trusted online checkout through a verified gateway',
+                'Quality, Guaranteed :: Considered fabric and finish, with easy returns',
             ]]],
         ];
     }
@@ -215,100 +239,100 @@ class Page extends Model
         return [
             [
                 'slug' => 'about',
-                'title' => 'درباره چیاکو',
-                'seo_description' => 'درباره برند پوشاک چیاکو',
+                'title' => 'About',
+                'seo_description' => 'About Racket Club — the art of leisure',
                 'html' => <<<'HTML'
-<h1 class="text-2xl font-bold text-brand-900">درباره چیاکو</h1>
+<h1 class="text-2xl font-bold text-brand-900">ABOUT RACKET CLUB</h1>
 <div class="mt-6 space-y-4 text-sm leading-8 text-brand-700">
-    <p>چیاکو یک برند پوشاک ایرانی است که با تمرکز بر طراحی امروزی، پارچه‌ی باکیفیت و دوختِ تمیز، لباس‌هایی برای پوشش روزمره عرضه می‌کند. هدف ما ساده است: لباسی که راحت بپوشی، خوب بمانَد و به‌قیمت منصفانه به دستت برسد.</p>
-    <p>همه‌ی محصولات با دقت انتخاب و کنترل کیفیت می‌شوند و موجودی فروشگاه به‌صورت زنده با انبار ما هماهنگ است؛ یعنی چیزی که می‌بینی واقعاً موجود است.</p>
-    <p>برای هر پرسش یا پیگیری سفارش، از صفحه‌ی <a href="/contact" class="text-accent-600 hover:underline">تماس با ما</a> در کنار شما هستیم.</p>
+    <p>Racket Club is a quiet-luxury leisurewear house built around a single idea: The Art of Leisure. We make considered pieces for the moments between the matches — the slow mornings, the long lunches, the easy evenings. Nothing loud, nothing to prove; just fabric, cut and finish, done well.</p>
+    <p>Legends are made on the court. A legacy is lived off it. Every piece is chosen for how it feels to wear over the years, not just the season — timeless design, balanced between the classic and the contemporary, made to be lived in.</p>
+    <p>For any question, or to follow up on an order, we are here on the <a href="/contact" class="text-accent-600 hover:underline">Contact</a> page.</p>
 </div>
 HTML,
             ],
             [
                 'slug' => 'faq',
-                'title' => 'سوالات متداول',
-                'seo_description' => 'پاسخ پرسش‌های پرتکرار درباره خرید از چیاکو',
+                'title' => 'FAQ',
+                'seo_description' => 'Answers to common questions about shopping with Racket Club',
                 'html' => <<<'HTML'
-<h1 class="text-2xl font-bold text-brand-900">سوالات متداول</h1>
+<h1 class="text-2xl font-bold text-brand-900">FREQUENTLY ASKED QUESTIONS</h1>
 <div class="mt-8 space-y-4">
     <details class="rounded-card bg-white p-5 ring-1 ring-brand-100">
-        <summary class="cursor-pointer text-sm font-semibold text-brand-800">چطور سفارش ثبت کنم؟</summary>
-        <p class="mt-3 text-sm leading-7 text-brand-600">محصول مورد نظر را به سبد خرید اضافه کنید، سایز و رنگ را انتخاب کنید و در مرحله‌ی پرداخت آدرس و روش ارسال را مشخص کنید.</p>
+        <summary class="cursor-pointer text-sm font-semibold text-brand-800">How do I place an order?</summary>
+        <p class="mt-3 text-sm leading-7 text-brand-600">Add the piece you want to your bag, choose your size and colour, then enter your address and shipping method at checkout.</p>
     </details>
     <details class="rounded-card bg-white p-5 ring-1 ring-brand-100">
-        <summary class="cursor-pointer text-sm font-semibold text-brand-800">پرداخت چگونه انجام می‌شود؟</summary>
-        <p class="mt-3 text-sm leading-7 text-brand-600">پرداخت به‌صورت آنلاین و امن از طریق درگاه‌های معتبر بانکی انجام می‌شود.</p>
+        <summary class="cursor-pointer text-sm font-semibold text-brand-800">How is payment handled?</summary>
+        <p class="mt-3 text-sm leading-7 text-brand-600">Payment is made securely online through a trusted, verified gateway.</p>
     </details>
     <details class="rounded-card bg-white p-5 ring-1 ring-brand-100">
-        <summary class="cursor-pointer text-sm font-semibold text-brand-800">سفارش چند روزه به دستم می‌رسد؟</summary>
-        <p class="mt-3 text-sm leading-7 text-brand-600">بسته به روش ارسال انتخابی، معمولاً بین ۱ تا ۴ روز کاری.</p>
+        <summary class="cursor-pointer text-sm font-semibold text-brand-800">How long will my order take to arrive?</summary>
+        <p class="mt-3 text-sm leading-7 text-brand-600">Depending on the shipping method you choose, typically between 1 and 4 business days.</p>
     </details>
     <details class="rounded-card bg-white p-5 ring-1 ring-brand-100">
-        <summary class="cursor-pointer text-sm font-semibold text-brand-800">اگر سایز مناسب نبود چه کنم؟</summary>
-        <p class="mt-3 text-sm leading-7 text-brand-600">تا ۷ روز امکان بازگشت یا تعویض کالای استفاده‌نشده وجود دارد. جزئیات در صفحه‌ی شرایط ارسال و بازگشت.</p>
+        <summary class="cursor-pointer text-sm font-semibold text-brand-800">What if the size isn't right?</summary>
+        <p class="mt-3 text-sm leading-7 text-brand-600">Unworn pieces can be returned or exchanged within 7 days. Full details are on the Shipping &amp; Returns page.</p>
     </details>
     <details class="rounded-card bg-white p-5 ring-1 ring-brand-100">
-        <summary class="cursor-pointer text-sm font-semibold text-brand-800">موجودی سایت دقیق است؟</summary>
-        <p class="mt-3 text-sm leading-7 text-brand-600">بله، موجودی به‌صورت زنده با انبار هماهنگ می‌شود؛ سایزهای ناموجود غیرفعال نمایش داده می‌شوند.</p>
+        <summary class="cursor-pointer text-sm font-semibold text-brand-800">Is the stock shown on the site accurate?</summary>
+        <p class="mt-3 text-sm leading-7 text-brand-600">Yes. Stock is synced live with our inventory; sizes that are out of stock are shown as unavailable.</p>
     </details>
 </div>
 HTML,
             ],
             [
                 'slug' => 'shipping-returns',
-                'title' => 'شرایط ارسال و بازگشت کالا',
-                'seo_description' => 'شرایط ارسال، بازگشت و تعویض کالا در چیاکو',
+                'title' => 'Shipping & Returns',
+                'seo_description' => 'Shipping, returns and exchange terms at Racket Club',
                 'html' => <<<'HTML'
-<h1 class="text-2xl font-bold text-brand-900">شرایط ارسال و بازگشت کالا</h1>
+<h1 class="text-2xl font-bold text-brand-900">SHIPPING &amp; RETURNS</h1>
 <div class="mt-6 space-y-4 text-sm leading-8 text-brand-700">
-    <h2 class="pt-2 font-bold text-brand-900">ارسال</h2>
-    <p>سفارش‌ها پس از تأیید پرداخت آماده و ارسال می‌شوند. روش و هزینه‌ی ارسال در مرحله‌ی پرداخت قابل انتخاب است و برای سفارش‌های بالای سقف مشخص، ارسال رایگان خواهد بود.</p>
-    <h2 class="pt-2 font-bold text-brand-900">بازگشت و تعویض</h2>
-    <p>تا ۷ روز پس از دریافت، در صورت استفاده‌نشدن و سالم بودن کالا و برچسب‌ها، امکان بازگشت یا تعویض وجود دارد. برای شروع فرایند، از صفحه‌ی <a href="/contact" class="text-accent-600 hover:underline">تماس با ما</a> اطلاع دهید.</p>
-    <h2 class="pt-2 font-bold text-brand-900">شرایط بازگشت</h2>
+    <h2 class="pt-2 font-bold text-brand-900">Shipping</h2>
+    <p>Orders are prepared and dispatched once payment is confirmed. The shipping method and cost are chosen at checkout, and orders above a set threshold ship complimentary.</p>
+    <h2 class="pt-2 font-bold text-brand-900">Returns and Exchanges</h2>
+    <p>Within 7 days of delivery, unworn pieces in their original condition with tags intact may be returned or exchanged. To begin, let us know via the <a href="/contact" class="text-accent-600 hover:underline">Contact</a> page.</p>
+    <h2 class="pt-2 font-bold text-brand-900">Return Conditions</h2>
     <ul class="list-inside list-disc space-y-1">
-        <li>کالا باید استفاده‌نشده و با بسته‌بندی و برچسب اصلی باشد.</li>
-        <li>هزینه‌ی بازگشت در صورت ایراد از سمت ما به‌عهده‌ی فروشگاه است.</li>
-        <li>مبلغ پس از بررسی کالا حداکثر ظرف ۷۲ ساعت کاری بازگردانده می‌شود.</li>
+        <li>The piece must be unworn, with its original packaging and tags.</li>
+        <li>Return shipping is covered by us when the fault is ours.</li>
+        <li>Refunds are issued within 72 business hours of the piece being inspected.</li>
     </ul>
 </div>
 HTML,
             ],
             [
                 'slug' => 'terms',
-                'title' => 'قوانین و مقررات',
-                'seo_description' => 'قوانین و مقررات خرید از فروشگاه چیاکو',
+                'title' => 'Terms',
+                'seo_description' => 'Terms and conditions for shopping with Racket Club',
                 'html' => <<<'HTML'
-<h1 class="text-2xl font-bold text-brand-900">قوانین و مقررات</h1>
+<h1 class="text-2xl font-bold text-brand-900">TERMS &amp; CONDITIONS</h1>
 <div class="mt-6 space-y-4 text-sm leading-8 text-brand-700">
-    <p>با ثبت سفارش در چیاکو، شما قوانین زیر را می‌پذیرید. این قوانین برای شفافیت و حفظ حقوق طرفین تنظیم شده است.</p>
-    <h2 class="pt-2 font-bold text-brand-900">۱. ثبت سفارش</h2>
-    <p>قیمت‌ها به تومان و شامل ارزش افزوده هستند. پس از پرداخت موفق، سفارش ثبت و برای پردازش ارسال می‌شود.</p>
-    <h2 class="pt-2 font-bold text-brand-900">۲. قیمت و موجودی</h2>
-    <p>قیمت‌ها و موجودی ممکن است تغییر کنند؛ ملاک، اطلاعات لحظه‌ی ثبت سفارش است. در صورت اتمام موجودی پس از پرداخت، مبلغ بازگردانده می‌شود.</p>
-    <h2 class="pt-2 font-bold text-brand-900">۳. ارسال</h2>
-    <p>زمان و هزینه‌ی ارسال بر اساس روش انتخابی شما محاسبه می‌شود. جزئیات در صفحه‌ی شرایط ارسال و بازگشت آمده است.</p>
-    <h2 class="pt-2 font-bold text-brand-900">۴. حریم خصوصی</h2>
-    <p>اطلاعات شما طبق سیاست <a href="/page/privacy" class="text-accent-600 hover:underline">حریم خصوصی</a> محافظت می‌شود.</p>
+    <p>By placing an order with Racket Club, you accept the terms below. They exist for clarity and to protect the interests of both sides.</p>
+    <h2 class="pt-2 font-bold text-brand-900">1. Placing an Order</h2>
+    <p>Prices are shown in Toman and include applicable tax. Once payment succeeds, your order is confirmed and sent for processing.</p>
+    <h2 class="pt-2 font-bold text-brand-900">2. Price and Availability</h2>
+    <p>Prices and availability may change; what applies is the information shown at the moment your order is placed. If an item sells out after payment, the amount is refunded.</p>
+    <h2 class="pt-2 font-bold text-brand-900">3. Shipping</h2>
+    <p>Shipping time and cost are calculated based on the method you choose. Full details are on the Shipping &amp; Returns page.</p>
+    <h2 class="pt-2 font-bold text-brand-900">4. Privacy</h2>
+    <p>Your information is protected in line with our <a href="/page/privacy" class="text-accent-600 hover:underline">Privacy</a> policy.</p>
 </div>
 HTML,
             ],
             [
                 'slug' => 'privacy',
-                'title' => 'حریم خصوصی',
-                'seo_description' => 'سیاست حریم خصوصی و حفاظت از داده‌های مشتریان چیاکو',
+                'title' => 'Privacy',
+                'seo_description' => 'Privacy policy and how Racket Club protects customer data',
                 'html' => <<<'HTML'
-<h1 class="text-2xl font-bold text-brand-900">حریم خصوصی</h1>
+<h1 class="text-2xl font-bold text-brand-900">PRIVACY</h1>
 <div class="mt-6 space-y-4 text-sm leading-8 text-brand-700">
-    <p>حفظ اطلاعات شما برای ما مهم است. این صفحه توضیح می‌دهد چه داده‌هایی و چرا جمع‌آوری می‌شوند.</p>
-    <h2 class="pt-2 font-bold text-brand-900">داده‌هایی که جمع می‌کنیم</h2>
-    <p>نام، شماره تماس و آدرس برای پردازش و ارسال سفارش؛ و اطلاعات پرداخت که فقط نزد درگاه بانکی پردازش می‌شود و روی سرور ما ذخیره نمی‌شود.</p>
-    <h2 class="pt-2 font-bold text-brand-900">استفاده از داده‌ها</h2>
-    <p>صرفاً برای انجام سفارش، پشتیبانی و در صورت تمایل شما، اطلاع‌رسانی محصولات. اطلاعات شما به اشخاص ثالث فروخته نمی‌شود.</p>
-    <h2 class="pt-2 font-bold text-brand-900">امنیت</h2>
-    <p>ارتباط سایت رمزنگاری‌شده (HTTPS) است و دسترسی به داده‌ها محدود و کنترل‌شده می‌باشد.</p>
+    <p>Protecting your information matters to us. This page explains what data we collect and why.</p>
+    <h2 class="pt-2 font-bold text-brand-900">What We Collect</h2>
+    <p>Your name, phone number and address, to process and ship your order; and payment details, which are handled only by the payment gateway and are never stored on our servers.</p>
+    <h2 class="pt-2 font-bold text-brand-900">How We Use It</h2>
+    <p>Only to fulfil your order, provide support and, if you choose, share news of new pieces. Your information is never sold to third parties.</p>
+    <h2 class="pt-2 font-bold text-brand-900">Security</h2>
+    <p>The site runs over an encrypted connection (HTTPS), and access to data is limited and controlled.</p>
 </div>
 HTML,
             ],

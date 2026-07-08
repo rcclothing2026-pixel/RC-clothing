@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', ($page->seo_title ?: $page->title).' | چیاکو')
+@section('title', ($page->seo_title ?: $page->title).' | Racket Club')
 @section('meta_description', $page->seo_description ?? '')
 
 @section('content')

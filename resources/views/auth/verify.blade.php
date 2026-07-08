@@ -1,18 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'تایید کد | چیاکو')
+@section('title', 'Verify Code | Racket Club')
 
 @section('content')
     <div class="mx-auto max-w-md px-4 py-16 sm:px-6">
         <div class="rounded-card bg-white p-8 ring-1 ring-brand-100">
-            <h1 class="text-xl font-bold text-brand-900">کد تایید</h1>
+            <h1 class="text-xl font-bold uppercase tracking-wide text-brand-900">VERIFICATION CODE</h1>
             <p class="mt-2 text-sm text-brand-500">
-                کد ارسال‌شده به شماره <span class="font-semibold text-brand-800 fa-num" dir="ltr">{{ \App\Support\Money::toPersianDigits($phone) }}</span> را وارد کنید.
+                Enter the code we sent to <span class="font-semibold text-brand-800 fa-num" dir="ltr">{{ $phone }}</span>.
             </p>
 
             @if (session('dev_code'))
                 <div class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                    کد توسعه (حالت log): <span class="font-bold fa-num">{{ \App\Support\Money::toPersianDigits(session('dev_code')) }}</span>
+                    Dev code (log mode): <span class="font-bold fa-num">{{ session('dev_code') }}</span>
                 </div>
             @endif
 
@@ -88,23 +88,23 @@
                     <button type="submit"
                             class="w-full rounded-full bg-brand-900 py-3 text-sm font-semibold text-white transition hover:bg-brand-800 disabled:opacity-50"
                             :disabled="!code.every(d => d)">
-                        ورود
+                        Verify
                     </button>
 
                     <p class="text-center text-xs text-brand-500" aria-live="polite">
                         <template x-if="cooldown > 0">
-                            <span>ارسال مجدد کد تا <span class="font-bold fa-num" x-text="cooldown"></span> ثانیه دیگر</span>
+                            <span>Resend code in <span class="font-bold fa-num" x-text="cooldown"></span> seconds</span>
                         </template>
                         <template x-if="cooldown <= 0">
                             <button type="button" @click="resend()" :disabled="resending"
                                     class="text-accent-600 hover:underline disabled:opacity-50"
-                                    x-text="resending ? 'در حال ارسال...' : 'ارسال مجدد کد'"></button>
+                                    x-text="resending ? 'Sending...' : 'Resend code'"></button>
                         </template>
                     </p>
                 </div>
             </form>
 
-            <a href="{{ route('login') }}" class="mt-5 block text-center text-xs text-accent-600 hover:underline">ویرایش شماره موبایل</a>
+            <a href="{{ route('login') }}" class="mt-5 block text-center text-xs text-accent-600 hover:underline">Edit mobile number</a>
         </div>
     </div>
 @endsection

@@ -1,20 +1,20 @@
 @extends('layouts.app')
 
-@section('title', 'قوانین و مقررات | چیاکو')
+@section('title', 'Terms | Racket Club')
 
 @section('content')
     <div class="mx-auto max-w-3xl px-4 py-14 sm:px-6">
-        <h1 class="text-2xl font-bold text-brand-900">قوانین و مقررات</h1>
+        <h1 class="text-2xl font-bold uppercase tracking-wide text-brand-900">TERMS &amp; CONDITIONS</h1>
         <div class="mt-6 space-y-4 text-sm leading-8 text-brand-700">
-            <p>با ثبت سفارش در چیاکو، شما قوانین زیر را می‌پذیرید. این قوانین برای شفافیت و حفظ حقوق طرفین تنظیم شده است.</p>
-            <h2 class="pt-2 font-bold text-brand-900">۱. ثبت سفارش</h2>
-            <p>قیمت‌ها به تومان و شامل ارزش افزوده هستند. پس از پرداخت موفق، سفارش ثبت و برای پردازش ارسال می‌شود.</p>
-            <h2 class="pt-2 font-bold text-brand-900">۲. قیمت و موجودی</h2>
-            <p>قیمت‌ها و موجودی ممکن است تغییر کنند؛ ملاک، اطلاعات لحظه‌ی ثبت سفارش است. در صورت اتمام موجودی پس از پرداخت، مبلغ بازگردانده می‌شود.</p>
-            <h2 class="pt-2 font-bold text-brand-900">۳. ارسال</h2>
-            <p>زمان و هزینه‌ی ارسال بر اساس روش انتخابی شما محاسبه می‌شود. جزئیات در صفحه‌ی شرایط ارسال و بازگشت آمده است.</p>
-            <h2 class="pt-2 font-bold text-brand-900">۴. حریم خصوصی</h2>
-            <p>اطلاعات شما طبق سیاست <a href="{{ route('page', 'privacy') }}" class="text-accent-600 hover:underline">حریم خصوصی</a> محافظت می‌شود.</p>
+            <p>By placing an order with Racket Club, you agree to the terms below. They exist for clarity and to protect both sides.</p>
+            <h2 class="pt-2 font-bold text-brand-900">1. Placing an Order</h2>
+            <p>Prices are shown in Toman and include applicable tax. Once payment succeeds, your order is confirmed and sent for processing.</p>
+            <h2 class="pt-2 font-bold text-brand-900">2. Pricing &amp; Availability</h2>
+            <p>Prices and stock may change; the details at the moment you order are what apply. If an item sells out after payment, we will refund you in full.</p>
+            <h2 class="pt-2 font-bold text-brand-900">3. Shipping</h2>
+            <p>Delivery time and cost depend on the method you choose. Full details are on our shipping and returns page.</p>
+            <h2 class="pt-2 font-bold text-brand-900">4. Privacy</h2>
+            <p>Your information is protected in line with our <a href="{{ route('page', 'privacy') }}" class="text-accent-600 hover:underline">privacy policy</a>.</p>
         </div>
     </div>
 @endsection

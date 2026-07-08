@@ -11,20 +11,36 @@ class Money
     private const PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
 
     /**
-     * Format a Toman amount for display, e.g. 1250000 => "۱٬۲۵۰٬۰۰۰ تومان".
+     * Format a Toman amount for display. Locale-aware:
+     *   en => "1,250,000 Toman"   (Latin digits, Latin separator)
+     *   fa => "۱٬۲۵۰٬۰۰۰ تومان"    (Persian digits, Persian separator)
      */
     public static function toman(int|float|null $amount, bool $withLabel = true): string
     {
         $amount = (int) round((float) ($amount ?? 0));
-        $grouped = number_format($amount, 0, '.', '٬'); // Persian thousands separator
-        $fa = self::toPersianDigits($grouped);
 
-        return $withLabel ? $fa.' تومان' : $fa;
+        if (app()->getLocale() === 'fa') {
+            $grouped = self::toPersianDigits(number_format($amount, 0, '.', '٬'));
+
+            return $withLabel ? $grouped.' تومان' : $grouped;
+        }
+
+        $grouped = number_format($amount, 0, '.', ',');
+
+        return $withLabel ? $grouped.' Toman' : $grouped;
     }
 
-    /** Convert any Latin digits in a string to Persian digits. */
+    /**
+     * Convert Latin digits to Persian — but ONLY under the Persian locale, so
+     * the English storefront keeps Latin numerals. The name + signature are
+     * unchanged so the existing call sites work under both locales.
+     */
     public static function toPersianDigits(string $value): string
     {
+        if (app()->getLocale() !== 'fa') {
+            return $value;
+        }
+
         return str_replace(range('0', '9'), self::PERSIAN_DIGITS, $value);
     }
 

@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'علاقه‌مندی‌ها | چیاکو')
+@section('title', 'Wishlist | Racket Club')
 
 @section('content')
     <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6">
         <div class="mb-6 flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-brand-900">علاقه‌مندی‌ها</h1>
+            <h1 class="text-2xl font-bold uppercase tracking-wide text-brand-900">WISHLIST</h1>
             @if ($products->isNotEmpty())
-                <form method="POST" action="{{ route('wishlist.clear') }}" onsubmit="return confirm('همه علاقه‌مندی‌ها حذف شود؟')">
+                <form method="POST" action="{{ route('wishlist.clear') }}" onsubmit="return confirm('Remove all items from your wishlist?')">
                     @csrf @method('DELETE')
-                    <button class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-50">حذف همه</button>
+                    <button class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-50">Clear all</button>
                 </form>
             @endif
         </div>
@@ -17,9 +17,9 @@
         @if ($products->isEmpty())
             <x-empty-state
                 icon="heart"
-                title="فهرست علاقه‌مندی‌ها خالی است"
-                caption="محصول‌هایی که می‌پسندید را با ❤ ذخیره کنید تا بعداً به‌راحتی پیداشان کنید."
-                :cta="['label' => 'رفتن به فروشگاه', 'href' => route('shop.index')]" />
+                title="Your wishlist is empty"
+                caption="Save the pieces you love and find them here whenever you're ready."
+                :cta="['label' => 'Browse the Shop', 'href' => route('shop.index')]" />
         @else
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 @foreach ($products as $product)
@@ -31,12 +31,12 @@
                                     @csrf
                                     <input type="hidden" name="variant_id" value="{{ $product->variants->first()->id }}">
                                     <input type="hidden" name="quantity" value="1">
-                                    <button class="rounded-full bg-white px-2.5 py-1.5 text-xs font-medium text-brand-700 shadow ring-1 ring-brand-100 transition hover:bg-brand-50" title="افزودن به سبد">+ سبد خرید</button>
+                                    <button class="rounded-full bg-white px-2.5 py-1.5 text-xs font-medium text-brand-700 shadow ring-1 ring-brand-100 transition hover:bg-brand-50" title="Add to cart">+ Add to cart</button>
                                 </form>
                             @endif
                             <form method="POST" action="{{ route('wishlist.toggle', $product) }}">
                                 @csrf
-                                <button class="rounded-full bg-white px-2.5 py-1.5 text-xs font-medium text-red-500 shadow ring-1 ring-brand-100 transition hover:bg-red-50 active:scale-95" title="حذف از علاقه‌مندی‌ها">✕ حذف</button>
+                                <button class="rounded-full bg-white px-2.5 py-1.5 text-xs font-medium text-red-500 shadow ring-1 ring-brand-100 transition hover:bg-red-50 active:scale-95" title="Remove from wishlist">Remove</button>
                             </form>
                         </div>
                     </div>

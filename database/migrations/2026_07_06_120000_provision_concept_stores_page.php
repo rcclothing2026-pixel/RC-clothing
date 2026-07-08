@@ -22,31 +22,31 @@ return new class extends Migration
         Page::firstOrCreate(
             ['slug' => 'concept-stores'],
             [
-                'title' => 'کانسپت‌استورها',
+                'title' => 'The Club',
                 'is_published' => true,
                 'is_home' => false,
                 'blocks' => [
                     ['type' => 'concept_stores', 'data' => [
-                        'heading' => 'کانسپت‌استورهای همکار چیاکو',
-                        'subtitle' => 'فروشگاه‌های منتخبی که می‌توانید محصولات چیاکو را از نزدیک ببینید و تجربه کنید.',
+                        'heading' => 'The Club',
+                        'subtitle' => 'Selected spaces where you can see and feel Racket Club in person.',
                         'container' => 'default',
                         'padding' => 'md',
                         'stores' => [
                             [
-                                'name' => 'نام کانسپت‌استور اول',
-                                'tagline' => 'یک جملهٔ کوتاه دربارهٔ فروشگاه',
-                                'city' => 'تهران',
-                                'description' => '<p>اینجا معرفی کامل فروشگاه را بنویسید — داستان برند، فضای فروشگاه و آنچه آن را خاص می‌کند. این متن را از بخش «معرفی کامل» ویرایش کنید.</p>',
+                                'name' => 'The Flagship',
+                                'tagline' => 'A short line about the space',
+                                'city' => 'London',
+                                'description' => '<p>Introduce the space here — the story, the atmosphere, and what makes it worth the visit. Edit this from the "Full description" field.</p>',
                                 'image' => '',
                                 'image2' => '',
                                 'instagram' => '',
                                 'website' => '',
                             ],
                             [
-                                'name' => 'نام کانسپت‌استور دوم',
-                                'tagline' => 'یک جملهٔ کوتاه دربارهٔ فروشگاه',
+                                'name' => 'The Pavilion',
+                                'tagline' => 'A short line about the space',
                                 'city' => '',
-                                'description' => '<p>معرفی کامل فروشگاه دوم را اینجا وارد کنید.</p>',
+                                'description' => '<p>Introduce the second space here.</p>',
                                 'image' => '',
                                 'image2' => '',
                                 'instagram' => '',

@@ -1,7 +1,7 @@
 @php
     $items = $data['items'] ?? [];
     if (! is_array($items) || ! $items) {
-        $items = ['ارسال سریع :: بسته‌بندی و ارسال در کوتاه‌ترین زمان به سراسر کشور', 'پرداخت امن :: پرداخت آنلاین مطمئن از طریق درگاه معتبر', 'ضمانت کیفیت :: تضمین کیفیت پارچه و دوخت با امکان بازگشت کالا'];
+        $items = ['Considered Delivery :: Every order packed with care and dispatched swiftly, wherever you play.', 'Secure Checkout :: Confident, protected payment through a trusted gateway.', 'Made to Last :: Fabric and finish held to a standard, with easy returns if it is not right.'];
     }
     $containerClass = match ($data['container'] ?? 'default') { 'wide' => 'max-w-screen-2xl', 'full' => 'max-w-none', default => 'max-w-7xl' };
     $padClass = match ($data['padding'] ?? 'md') { 'none' => 'py-0', 'sm' => 'py-8', 'lg' => 'py-24 sm:py-32', default => 'py-20 sm:py-24' };

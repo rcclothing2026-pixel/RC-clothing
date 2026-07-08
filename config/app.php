@@ -78,7 +78,13 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    // Persian is the default storefront language (Iran-market: Toman, RTL);
+    // English is available via the header toggle.
+    'locale' => env('APP_LOCALE', 'fa'),
+
+    // Storefront locales the language toggle offers. 'fa' = Persian (default, RTL);
+    // 'en' = Racket Club English (LTR). See App\Http\Middleware\SetLocale.
+    'available_locales' => ['fa', 'en'],
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 

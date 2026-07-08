@@ -16,8 +16,8 @@
     @php($imageSide = ($data['image_side'] ?? 'start') === 'end' ? 'end' : 'start')
     @php($tone = ($data['tone'] ?? 'red') === 'dark' ? 'dark' : 'red')
     @php($corner = ($data['corner'] ?? 'bottom') === 'top' ? 'top' : 'bottom')
-    @php($eyebrow = trim((string) ($data['eyebrow'] ?? '')) ?: 'CHIACO COLLECTION')
-    @php($ctaText = trim((string) ($data['cta_text'] ?? '')) ?: 'مشاهده همه')
+    @php($eyebrow = trim((string) ($data['eyebrow'] ?? '')) ?: 'RACKET CLUB COLLECTION')
+    @php($ctaText = trim((string) ($data['cta_text'] ?? '')) ?: 'View All')
     @php($showSummary = ($data['show_summary'] ?? 'no') === 'yes')
     @php($ratioMap = ['sm' => 'aspect-[4/5]', 'md' => 'aspect-[3/4]', 'lg' => 'aspect-[2/3]', 'square' => 'aspect-square', 'wide' => 'aspect-[4/3]'])
     @php($desktopRatio = $ratioMap[$data['image_size']        ?? 'md'] ?? 'aspect-[3/4]')
@@ -37,7 +37,7 @@
             <div class="reveal {{ $imageSide === 'end' ? 'lg:order-2' : '' }}">
                 <x-diagonal-cut :src="$imageSrc" :alt="$collection->name"
                                 :ratio="$imageRatio"
-                                :tone="$tone" :corner="$corner" label="CHIACO" />
+                                :tone="$tone" :corner="$corner" label="RACKET CLUB" />
             </div>
 
             {{-- Editorial copy + product strip --}}
@@ -84,7 +84,7 @@
                 <a href="{{ $collectionUrl }}"
                    class="mt-8 inline-flex items-center gap-1.5 rounded-full bg-brand-900 px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-800 active:scale-[0.98]">
                     {{ $ctaText }}
-                    <svg aria-hidden="true" class="h-4 w-4 -scale-x-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                    <svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
                 </a>
             </div>
         </div>

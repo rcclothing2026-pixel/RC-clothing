@@ -1,18 +1,19 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+@php($__locale = app()->getLocale())
+<html lang="{{ $__locale }}" dir="{{ $__locale === 'fa' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', ($site['site.seo_title'] ?? null) ?: 'چیاکو | پوشاک ایرانی')</title>
-    <meta name="description" content="@yield('meta_description', ($site['site.seo_description'] ?? null) ?: 'فروشگاه اینترنتی پوشاک چیاکو؛ مانتو، پیراهن، شلوار و انواع لباس با کیفیت.')">
+    <title>@yield('title', ($site['site.seo_title'] ?? null) ?: 'Racket Club | The Art of Leisure')</title>
+    <meta name="description" content="@yield('meta_description', ($site['site.seo_description'] ?? null) ?: 'Racket Club — quiet-luxury leisurewear for the life off the court. Legends & Legacy.')">
     @if ($kw = ($site['site.seo_keywords'] ?? null))<meta name="keywords" content="{{ $kw }}">@endif
     <link rel="canonical" href="{{ url()->current() }}">
     {{-- Open Graph / social --}}
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="{{ ($site['site.store_name'] ?? null) ?: 'چیاکو' }}">
-    <meta property="og:title" content="@yield('title', 'چیاکو | پوشاک ایرانی')">
-    <meta property="og:description" content="@yield('meta_description', 'فروشگاه اینترنتی پوشاک چیاکو')">
+    <meta property="og:site_name" content="{{ ($site['site.store_name'] ?? null) ?: 'Racket Club' }}">
+    <meta property="og:title" content="@yield('title', 'Racket Club | The Art of Leisure')">
+    <meta property="og:description" content="@yield('meta_description', 'Racket Club — quiet-luxury leisurewear. Legends & Legacy.')">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta name="twitter:card" content="summary_large_image">
     @stack('head')
@@ -46,11 +47,11 @@
     <link rel="alternate icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#282828">
+    <meta name="theme-color" content="#18234f">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="چیاکو">
+    <meta name="apple-mobile-web-app-title" content="Racket Club">
     <link rel="apple-touch-icon" href="/favicon.svg">
 </head>
 <body class="min-h-dvh flex flex-col bg-paper text-ink">
@@ -58,7 +59,7 @@
         {{-- Google Tag Manager (noscript fallback). Must sit immediately after <body>. --}}
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtm }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     @endif
-    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:inset-x-4 focus:top-3 focus:z-50 focus:block focus:rounded-xl focus:bg-brand-900 focus:p-4 focus:text-center focus:text-sm focus:font-bold focus:text-white">پرش به محتوای اصلی</a>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:inset-x-4 focus:top-3 focus:z-50 focus:block focus:rounded-xl focus:bg-brand-900 focus:p-4 focus:text-center focus:text-sm focus:font-bold focus:text-white">Skip to main content</a>
 
     @include('partials.promo-bar')
     @include('partials.header')
@@ -69,13 +70,13 @@
         @if (session('success'))
             <div class="flex items-center justify-between rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700 ring-1 ring-green-200" role="alert">
                 <span>{{ session('success') }}</span>
-                <button @click="show = false" class="text-green-500 hover:text-green-700" aria-label="بستن">&times;</button>
+                <button @click="show = false" class="text-green-500 hover:text-green-700" aria-label="Close">&times;</button>
             </div>
         @endif
         @if (session('error'))
             <div class="flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200" role="alert">
                 <span>{{ session('error') }}</span>
-                <button @click="show = false" class="text-red-400 hover:text-red-600" aria-label="بستن">&times;</button>
+                <button @click="show = false" class="text-red-400 hover:text-red-600" aria-label="Close">&times;</button>
             </div>
         @endif
     </div>
@@ -97,9 +98,9 @@
     <div x-data="{ show: !localStorage.getItem('cookie_consent') }" x-show="show" x-cloak
          class="fixed inset-x-0 bottom-0 z-50 border-t border-brand-200 bg-white p-4 text-sm shadow-lg">
         <div class="mx-auto flex max-w-5xl items-center justify-between gap-4">
-            <p class="text-brand-600">برای بهبود تجربه شما از <span class="font-semibold text-brand-800">کلوچه</span> (cookie) استفاده می‌کنیم. <a href="{{ route('page', 'privacy') }}" class="text-accent-600 hover:underline">بیشتر بدانید</a></p>
+            <p class="text-brand-600">We use cookies to improve your experience. <a href="{{ route('page', 'privacy') }}" class="text-accent-600 hover:underline">Learn more</a></p>
             <button @click="localStorage.setItem('cookie_consent', '1'); show = false"
-                    class="shrink-0 rounded-full bg-brand-900 px-5 py-2 text-xs font-bold text-white transition hover:bg-brand-800">قبول</button>
+                    class="shrink-0 rounded-full bg-brand-900 px-5 py-2 text-xs font-bold text-white transition hover:bg-brand-800">Accept</button>
         </div>
     </div>
 </body>

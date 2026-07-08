@@ -19,10 +19,10 @@
     @php
         $style = $data['style'] ?? 'grad-dark-red';
         $bg = match ($style) {
-            'grad-red-light' => 'bg-gradient-to-l from-accent-500 to-accent-300 text-white',
+            'grad-red-light' => 'bg-accent-600 text-white',
             'dark' => 'bg-brand-900 text-white',
             'amber' => 'bg-amber-100 text-amber-900',
-            default => 'bg-gradient-to-l from-brand-900 to-accent-700 text-white',
+            default => 'bg-brand-900 text-white',
         };
         $chipBg = $style === 'amber' ? 'bg-white/80 text-amber-900' : 'bg-white/15 text-white';
         $subText = $style === 'amber' ? 'text-amber-800/80' : 'text-white/80';
@@ -40,7 +40,7 @@
                     this.m = Math.floor(diff % 3600000 / 60000);
                     this.s = Math.floor(diff % 60000 / 1000);
                 },
-                fa(n) { return String(n).padStart(2,'0').replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]) },
+                fa(n) { return String(n).padStart(2,'0') },
              }"
              x-init="tick(); setInterval(() => tick(), 1000)"
              x-show="visible">
@@ -55,9 +55,9 @@
                 </div>
 
                 <div class="flex items-center gap-2 fa-num" dir="ltr">
-                    @foreach (['d' => 'روز', 'h' => 'ساعت', 'm' => 'دقیقه', 's' => 'ثانیه'] as $key => $label)
+                    @foreach (['d' => 'Days', 'h' => 'Hours', 'm' => 'Mins', 's' => 'Secs'] as $key => $label)
                         <div class="flex min-w-[3.25rem] flex-col items-center rounded-xl {{ $chipBg }} px-3 py-2">
-                            <span class="text-2xl font-bold leading-none" x-text="fa({{ $key }})">۰۰</span>
+                            <span class="text-2xl font-bold leading-none" x-text="fa({{ $key }})">00</span>
                             <span class="mt-1 text-[10px] {{ $subText }}">{{ $label }}</span>
                         </div>
                     @endforeach

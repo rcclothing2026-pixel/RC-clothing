@@ -42,8 +42,11 @@ window.productLightbox = function (images) {
 // a partial @include'd in the layout body pushes to 'head' AFTER the head
 // @stack has already rendered, so window.miniCart came out undefined and every
 // `state.*` binding in the drawer threw "state is not defined".
+// Numeral passthrough — Racket Club is an English (LTR) storefront, so digits
+// stay Latin. Kept as a named helper so the mini-cart x-text bindings work
+// unchanged.
 window.__chiiacoFa = function (s) {
-    return String(s ?? '').replace(/[0-9]/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+    return String(s ?? '');
 };
 window.miniCart = function () {
     return {
@@ -87,7 +90,7 @@ document.addEventListener('submit', function (e) {
     .then(({ ok, body }) => {
         if (!ok || !body.ok) {
             if (btn) btn.disabled = prevDisabled;
-            alert(body && body.message ? body.message : 'افزودن به سبد ناموفق بود.');
+            alert(body && body.message ? body.message : 'Could not add to bag.');
             return;
         }
         document.querySelectorAll('[data-cart-count]').forEach(el => {
@@ -410,7 +413,7 @@ function initProduct() {
             if (variantInput) variantInput.value = '';
             if (addBtn) addBtn.disabled = true;
             if (note) {
-                note.textContent = 'این ترکیب رنگ و سایز موجود نیست.';
+                note.textContent = 'This colour and size combination is unavailable.';
                 note.classList.remove('hidden');
             }
             // Show back-in-stock form for the specific out-of-stock variant
@@ -430,7 +433,7 @@ function initProduct() {
         const msg = root.querySelector('#stock-msg span');
         if (ind && msg) {
             if (variant.stock > 0 && variant.stock <= 5) {
-                msg.textContent = 'فقط ' + variant.stock + ' عدد در انبار باقی مانده';
+                msg.textContent = 'Only ' + variant.stock + ' left in stock';
                 ind.classList.remove('hidden');
             } else {
                 ind.classList.add('hidden');
@@ -461,7 +464,7 @@ function initProduct() {
         if (!variantInput || !variantInput.value) {
             e.preventDefault();
             if (note) {
-                note.textContent = 'لطفاً رنگ و سایز را انتخاب کنید.';
+                note.textContent = 'Please select a colour and size.';
                 note.classList.remove('hidden');
             }
         }
@@ -491,11 +494,11 @@ function initProduct() {
                         [selection.color, selection.size].filter(Boolean).join(' — ');
                 } else {
                     stickyBtn.disabled = true;
-                    if (stickyLabel) stickyLabel.textContent = 'ناموجود';
+                    if (stickyLabel) stickyLabel.textContent = 'Sold Out';
                 }
             } else {
                 stickyBtn.disabled = true;
-                if (stickyLabel) stickyLabel.textContent = 'لطفاً رنگ و سایز را انتخاب کنید';
+                if (stickyLabel) stickyLabel.textContent = 'Please select a colour and size';
             }
         };
         // Sticky ATC triggers the real cart form
@@ -503,7 +506,7 @@ function initProduct() {
         stickyBtn.addEventListener('click', () => {
             if (!variantInput || !variantInput.value) {
                 if (note) {
-                    note.textContent = 'لطفاً رنگ و سایز را انتخاب کنید.';
+                    note.textContent = 'Please select a colour and size.';
                     note.classList.remove('hidden');
                 }
                 return;
@@ -623,7 +626,7 @@ function initPopups() {
         const card = document.createElement('div');
         card.style.cssText = 'position:relative;max-width:480px;width:100%;background:#fff;border-radius:1rem;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;';
 
-        const closeBtn = '<button data-popup-close aria-label="بستن" style="position:absolute;top:8px;left:8px;z-index:2;border:0;background:#f1ecee;width:32px;height:32px;border-radius:9999px;cursor:pointer;font-size:18px;line-height:1;">×</button>';
+        const closeBtn = '<button data-popup-close aria-label="Close" style="position:absolute;top:8px;left:8px;z-index:2;border:0;background:#f1ecee;width:32px;height:32px;border-radius:9999px;cursor:pointer;font-size:18px;line-height:1;">×</button>';
 
         // A full HTML document (with its own <style>/<head>) can't render via
         // innerHTML — the parser drops <head> + the styles. Render it in an
@@ -700,12 +703,11 @@ function initQuantityStepper() {
     const stickyPlus = document.getElementById('sticky-qty-plus');
     const stickyDisplay = document.getElementById('sticky-qty-display');
 
-    const persianDigits = (n) =>
-        String(n).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+    const fmtQty = (n) => String(n);
 
     let qty = 1;
     const update = () => {
-        const txt = persianDigits(qty);
+        const txt = fmtQty(qty);
         display.textContent = txt;
         input.value = qty;
         minus.disabled = qty <= 1;
@@ -729,11 +731,8 @@ function initQuantityStepper() {
    Cart page: +/- stepper buttons submit the quantity update form.
    Optimistically updates the line total display before the page reloads.
 --------------------------------------------------------------------------- */
-const PERSIAN_DIGITS = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
-
 function formatToman(toman) {
-    const s = Math.round(toman).toLocaleString('en-US').replace(/,/g, '٬');
-    return s.replace(/\d/g, d => PERSIAN_DIGITS[+d]) + ' تومان';
+    return Math.round(toman).toLocaleString('en-US') + ' Toman';
 }
 
 function initCartSteppers() {
@@ -835,7 +834,7 @@ function initRecentlyViewed() {
 
     const persianPrice = (n) => {
         if (!n || isNaN(n)) return '';
-        return Number(n).toLocaleString('fa-IR') + ' تومان';
+        return Number(n).toLocaleString('en-US') + ' Toman';
     };
 
     grid.innerHTML = items.slice(0, 4).map((item) => `

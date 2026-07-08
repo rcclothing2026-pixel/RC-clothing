@@ -14,12 +14,12 @@ class CatalogSeeder extends Seeder
     public function run(): void
     {
         $categories = [
-            ['name' => 'مانتو', 'slug' => 'manto'],
-            ['name' => 'پیراهن', 'slug' => 'pirahan'],
-            ['name' => 'شلوار', 'slug' => 'shalvar'],
-            ['name' => 'تیشرت و تاپ', 'slug' => 'tshirt'],
-            ['name' => 'کت و پالتو', 'slug' => 'coat'],
-            ['name' => 'شال و روسری', 'slug' => 'scarf'],
+            ['name' => 'Polos', 'slug' => 'polos'],
+            ['name' => 'Tees', 'slug' => 'tees'],
+            ['name' => 'Shorts', 'slug' => 'shorts'],
+            ['name' => 'Knitwear', 'slug' => 'knitwear'],
+            ['name' => 'Outerwear', 'slug' => 'outerwear'],
+            ['name' => 'Accessories', 'slug' => 'accessories'],
         ];
 
         $catModels = [];
@@ -33,33 +33,36 @@ class CatalogSeeder extends Seeder
             ]);
         }
 
-        // [name, category slug, price(Toman), compareAt|null, featured, colors]
+        // Racket Club — quiet-luxury leisurewear demo catalogue. English names,
+        // brand-palette colours, prices in Toman. Where a verified campaign photo
+        // matches the piece it's used as the primary image (admin-swappable).
+        // [name, category slug, price(Toman), compareAt|null, featured, colors, heroPhoto|null]
         $products = [
-            ['مانتو کتان جلو باز مدل آرامش', 'manto', 1_280_000, 1_650_000, true, ['مشکی' => '#1c1c1c', 'کرم' => '#e7ddca', 'زیتونی' => '#6b6f4b']],
-            ['مانتو اداری مدل پاییز', 'manto', 1_540_000, null, true, ['طوسی' => '#8a8a8a', 'سرمه‌ای' => '#26324a']],
-            ['پیراهن ویسکوز مدل نسیم', 'pirahan', 890_000, 1_120_000, true, ['آبی' => '#5b7aa6', 'صورتی' => '#d8a7b4']],
-            ['پیراهن مجلسی مدل ماه', 'pirahan', 1_950_000, null, false, ['مشکی' => '#141414', 'شرابی' => '#5e1f2c']],
-            ['شلوار پارچه‌ای دمپا', 'shalvar', 760_000, 920_000, false, ['مشکی' => '#161616', 'کرم' => '#e7ddca']],
-            ['شلوار جین مام‌فیت', 'shalvar', 980_000, null, true, ['آبی روشن' => '#8fb0d6', 'آبی تیره' => '#33425c']],
-            ['تیشرت نخی یقه گرد', 'tshirt', 320_000, 420_000, false, ['سفید' => '#f4f4f0', 'مشکی' => '#161616', 'سبز' => '#3f6b4f']],
-            ['تاپ کبریتی بندی', 'tshirt', 280_000, null, false, ['کرم' => '#e7ddca', 'قهوه‌ای' => '#6b4f3a']],
-            ['پالتو بلند مدل زمستان', 'coat', 2_780_000, 3_200_000, true, ['شتری' => '#c2a079', 'طوسی' => '#7f7f7f']],
-            ['کت تک دکمه کلاسیک', 'coat', 2_240_000, null, false, ['سرمه‌ای' => '#26324a', 'مشکی' => '#141414']],
-            ['شال نخی طرح‌دار', 'scarf', 240_000, 320_000, false, ['کرم' => '#e7ddca', 'آبی' => '#5b7aa6']],
-            ['روسری ابریشمی مدل گل‌نقش', 'scarf', 360_000, null, true, ['صورتی' => '#d8a7b4', 'زرد' => '#d9c27a']],
+            ['Heritage Piqué Polo', 'polos', 1_280_000, 1_650_000, true, ['Cream' => '#ece7d0', 'Navy' => '#18234f', 'Clay' => '#a72f23'], null],
+            ['Club Long-Sleeve Polo', 'polos', 1_460_000, null, false, ['Forest' => '#034326', 'Sand' => '#c6af92'], null],
+            ['Essential Boxy Tee', 'tees', 640_000, 820_000, true, ['Cream' => '#ece7d0', 'Navy' => '#18234f', 'Forest' => '#034326'], '/img/photography/rc-trio-navy.jpg'],
+            ['Legends Graphic Tee', 'tees', 720_000, null, true, ['Forest' => '#034326', 'Black' => '#141414'], '/img/photography/rc-padel-back.jpg'],
+            ['Off-Court Pleated Short', 'shorts', 980_000, null, true, ['Cream' => '#ece7d0', 'Navy' => '#18234f'], null],
+            ['Terry Sweat Short', 'shorts', 860_000, 1_040_000, false, ['Sand' => '#c6af92', 'Navy' => '#18234f'], null],
+            ['Cotton Cable Knit', 'knitwear', 1_980_000, null, false, ['Cream' => '#ece7d0', 'Forest' => '#034326'], null],
+            ['Merino Half-Zip', 'knitwear', 2_240_000, 2_600_000, true, ['Navy' => '#18234f', 'Sand' => '#c6af92'], null],
+            ['The Clubhouse Overshirt', 'outerwear', 2_480_000, null, false, ['Forest' => '#034326', 'Navy' => '#18234f'], null],
+            ['Warm-Up Track Jacket', 'outerwear', 2_780_000, 3_200_000, true, ['Navy' => '#18234f', 'Clay' => '#a72f23'], null],
+            ['Ribbed Crew Socks', 'accessories', 240_000, 320_000, false, ['Navy' => '#18234f', 'Cream' => '#ece7d0'], '/img/photography/rc-socks-stack.jpg'],
+            ['Legacy Canvas Tote', 'accessories', 460_000, null, true, ['Sand' => '#c6af92', 'Navy' => '#18234f'], '/img/photography/rc-kneel-tote.jpg'],
         ];
 
         $sizes = ['S', 'M', 'L', 'XL'];
 
-        foreach ($products as $idx => [$name, $catSlug, $price, $compare, $featured, $colors]) {
+        foreach ($products as $idx => [$name, $catSlug, $price, $compare, $featured, $colors, $heroPhoto]) {
             $slug = Str::slug(Str::ascii($catSlug).'-'.($idx + 1)).'-'.Str::random(4);
 
             $product = Product::create([
                 'category_id' => $catModels[$catSlug]->id,
                 'name' => $name,
                 'slug' => $slug,
-                'summary' => 'کیفیت پارچه درجه یک، دوخت تمیز و فیت استاندارد.',
-                'description' => "<p>{$name} با پارچه‌ای باکیفیت و دوخت اصولی، انتخابی مناسب برای استفاده روزمره و مجالس. شست‌وشوی آسان و ماندگاری رنگ بالا.</p><ul><li>جنس: پارچه باکیفیت ایرانی</li><li>دوخت: استاندارد</li><li>قابل شست‌وشو در ماشین لباسشویی با دمای پایین</li></ul>",
+                'summary' => 'Considered fabric, a clean finish, and an easy modern fit.',
+                'description' => "<p>{$name} — cut from considered fabric with a clean, durable finish. Made for the life off the court: the slow mornings, the long lunches, the easy evenings.</p><ul><li>Premium, breathable cloth</li><li>Relaxed, modern fit</li><li>Machine washable, cold</li></ul>",
                 'price' => $price,
                 'compare_at_price' => $compare,
                 'is_active' => true,
@@ -67,12 +70,16 @@ class CatalogSeeder extends Seeder
                 'stockkeeping_id' => null, // mapped on first sync with stock-keeping
             ]);
 
-            // Images (placeholders, one per color tint)
+            // Images: a verified campaign photo as the primary where one matches,
+            // then a colour-tinted placeholder per remaining colour. All rows are
+            // editable in admin (Media library / product images), so they swap.
             $pos = 0;
             foreach ($colors as $colorName => $hex) {
                 ProductImage::create([
                     'product_id' => $product->id,
-                    'path' => '/placeholder?w=800&h=1000&seed='.$slug.$colorName.'&label='.urlencode($name),
+                    'path' => ($pos === 0 && $heroPhoto)
+                        ? $heroPhoto
+                        : '/placeholder?w=800&h=1000&seed='.$slug.$colorName.'&label='.urlencode($name),
                     'alt' => $name.' - '.$colorName,
                     'position' => $pos,
                     'is_primary' => $pos === 0,

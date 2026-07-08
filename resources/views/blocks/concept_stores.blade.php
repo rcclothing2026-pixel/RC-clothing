@@ -86,8 +86,8 @@
                                 @if ($site !== '')
                                     <a href="{{ str_starts_with($site, 'http') ? $site : 'https://'.$site }}" target="_blank" rel="noopener"
                                        class="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium text-brand-700 ring-1 ring-brand-200 transition hover:bg-brand-50">
-                                        وب‌سایت
-                                        <svg class="h-3.5 w-3.5 -scale-x-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                                        Website
+                                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
                                     </a>
                                 @endif
                             </div>

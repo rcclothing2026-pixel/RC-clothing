@@ -65,9 +65,9 @@
             })
             <section class="bg-white {{ $padClass }}">
                 <div class="mx-auto flex {{ $containerClass }} items-end justify-between gap-4 border-t border-brand-100 px-4 py-6 sm:px-6 sm:py-8">
-                    <h2 class="text-lg font-bold uppercase tracking-wide text-brand-900 sm:text-xl">{{ $heading ?: 'محصولات' }}</h2>
+                    <h2 class="font-display text-lg font-bold uppercase tracking-wide text-brand-900 sm:text-xl">{{ $heading ?: 'Products' }}</h2>
                     <a href="{{ $shopAllLink }}"
-                       class="shrink-0 border-b border-brand-900 pb-0.5 text-sm font-medium text-brand-900 underline-offset-4 transition hover:opacity-70">مشاهده همه</a>
+                       class="shrink-0 border-b border-brand-900 pb-0.5 text-sm font-medium text-brand-900 underline-offset-4 transition hover:opacity-70">View All</a>
                 </div>
                 <div class="relative">
                     <div id="{{ $carouselId }}"
@@ -81,11 +81,11 @@
                             @endforeach
                         </div>
                     </div>
-                    <button type="button" data-marquee-prev="{{ $carouselId }}" aria-label="قبلی"
+                    <button type="button" data-marquee-prev="{{ $carouselId }}" aria-label="Previous"
                             class="absolute end-3 top-[45%] z-10 hidden -translate-y-1/2 place-items-center rounded-full bg-white/95 text-brand-900 shadow-md ring-1 ring-brand-100 transition hover:bg-white sm:grid sm:h-11 sm:w-11">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
                     </button>
-                    <button type="button" data-marquee-next="{{ $carouselId }}" aria-label="بعدی"
+                    <button type="button" data-marquee-next="{{ $carouselId }}" aria-label="Next"
                             class="absolute start-3 top-[45%] z-10 hidden -translate-y-1/2 place-items-center rounded-full bg-white/95 text-brand-900 shadow-md ring-1 ring-brand-100 transition hover:bg-white sm:grid sm:h-11 sm:w-11">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
                     </button>
@@ -98,7 +98,7 @@
             @if ($heading !== '')
                 <div class="reveal mb-8 flex items-end justify-between">
                     <h2 class="text-2xl font-bold text-brand-900">{{ $heading }}</h2>
-                    <a href="{{ $shopAllLink }}" class="text-sm font-medium text-accent-600 hover:underline">مشاهده همه</a>
+                    <a href="{{ $shopAllLink }}" class="text-sm font-medium text-accent-600 hover:underline">View All</a>
                 </div>
             @endif
             <div class="grid {{ $colsMobileClass }} {{ $colsDesktopClass }} {{ $gapClass }}">

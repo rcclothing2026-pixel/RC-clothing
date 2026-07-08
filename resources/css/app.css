@@ -1,11 +1,8 @@
 @import 'tailwindcss';
 
-/* Display face (Latin: Jost) + code face (JetBrains Mono) are loaded from
-   Google Fonts — proven reachable from the Iran host. Vazirmatn stays
-   self-hosted because it's heavier and used on every page. These two are
-   light and only render inside display lockups / code chips, so the CDN
-   cost is negligible. */
-@import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Pinyon Script — the Racket Club slogan face ("Legends & Legacy"). Used at
+   most once per view; loaded from Google Fonts. */
+@import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap');
 
 /* Alpine x-cloak — REQUIRED, or every x-cloak element (mini-cart drawer,
    cookie bar, alerts) renders visible on load until Alpine hydrates and then
@@ -50,54 +47,109 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Mansory — the Racket Club brand typeface (headings, logo, display lockups).
+   Client-supplied, self-hosted from public/fonts/mansory.
+--------------------------------------------------------------------------- */
+@font-face {
+    font-family: 'Mansory';
+    font-style: normal;
+    font-weight: 400 500;
+    font-display: swap;
+    src: url('/fonts/mansory/Mansory-Medium.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Mansory';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/mansory/Mansory-SemiBold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Mansory';
+    font-style: normal;
+    font-weight: 700 900;
+    font-display: swap;
+    src: url('/fonts/mansory/Mansory-Bold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Mansory';
+    font-style: italic;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('/fonts/mansory/Mansory-Oblique.ttf') format('truetype');
+}
+
+/* ---------------------------------------------------------------------------
    DESIGN TOKENS — the theming layer.
    When the new CI (visual identity) arrives, the design drops in by editing
    ONLY the values below. Nothing else in the app references raw colors.
 --------------------------------------------------------------------------- */
 @theme {
-    --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif;
-    /* Latin display lockups (Brand kit): eyebrows, CHIACO wordmarks, kicker
-       labels. Use the `font-display` utility. */
-    --font-display: 'Jost', ui-sans-serif, system-ui, sans-serif;
-    /* Code chips / token labels in the brand kit. Use the `font-mono` utility. */
+    /* Body copy — Helvetica Neue (system) with graceful fallbacks; Vazirmatn
+       kept at the tail so Persian glyphs (admin panel) still shape correctly. */
+    --font-sans: 'Helvetica Neue', Helvetica, Arial, 'Vazirmatn', system-ui, sans-serif;
+    /* Display — Mansory, the brand typeface (headings, logo, eyebrows).
+       Use the `font-display` utility. Vazirmatn tails the stack so Persian
+       glyphs (fa locale) fall back cleanly while Latin stays Mansory. */
+    --font-display: 'Mansory', 'Archivo', 'Vazirmatn', Georgia, serif;
+    /* Slogan face — Pinyon Script. Use the `font-script` utility, ≤ once/view. */
+    --font-script: 'Pinyon Script', 'Snell Roundhand', cursive;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
     /* -----------------------------------------------------------------------
-       CHIACO visual identity (BrandBook v01).
-       Official palette: Persian Red #CC3333, Chiaco Dark #282828,
-       Chiaco Light #E0D5D9, White, Black. No off-palette colours.
-       The neutral "brand" scale is a charcoal anchored on Chiaco Dark and
-       tinted toward Chiaco Light at the soft end; "accent" is Persian Red.
+       RACKET CLUB visual identity — "The Art of Leisure".
+       CI palette: Navy #18234F, Forest #034326, Clay #A72F23,
+       Brick Brown #672C24, Warm Beige/Sand #C6AF92, Cream #ECE7D0.
+       Balance 60 cream / 30 navy / 10 accents. Solid colours, no gradients.
+       The neutral "brand" scale IS the navy ramp; "accent" is clay.
+       Values mirror design-system/racket-club/tokens/colors.css verbatim.
     ----------------------------------------------------------------------- */
 
-    /* Official brand colours (raw) */
-    --color-persian-red: #cc3333;
-    --color-chiaco-dark: #282828;
-    --color-chiaco-light: #e0d5d9;
+    /* CI bases (raw) — referenced by legacy focus ring / utilities below */
+    --color-persian-red: #a72f23; /* -> clay (accent base) */
+    --color-chiaco-dark: #18234f; /* -> navy */
+    --color-chiaco-light: #c6af92; /* -> warm beige/sand */
 
-    /* Neutral scale — Chiaco Dark → Chiaco Light, for text/surfaces/borders */
-    --color-brand-50: #faf8f9;
-    --color-brand-100: #f1ecee;
-    --color-brand-200: #e0d5d9; /* Chiaco Light (secondary colour) */
-    --color-brand-300: #c5b9bd;
-    --color-brand-400: #9c9296;
-    --color-brand-500: #726b6e;
-    --color-brand-600: #524d4f;
-    --color-brand-700: #3c393a;
-    --color-brand-800: #2f2c2d;
-    --color-brand-900: #282828; /* Chiaco Dark (primary colour) */
-    --color-brand-950: #161616;
+    /* Forest green (secondary) + warm neutrals used by the studio grounds */
+    --color-forest: #034326;
+    --color-sand: #c6af92;
+    --color-cream: #ece7d0;
+    --color-terracotta: #a8492c;
+    --color-petrol: #1e3d46;
 
-    /* Accent — Persian Red (call-to-action, links, sale) */
-    --color-accent-400: #e36a6a;
-    --color-accent-500: #d94f4f;
-    --color-accent-600: #cc3333; /* Persian Red (primary accent) */
-    --color-accent-700: #a82a2a; /* darker, for hover/pressed */
+    /* Neutral scale — the NAVY ramp, for text/surfaces/borders */
+    --color-brand-50: #edeef3;
+    --color-brand-100: #d5d8e4;
+    --color-brand-200: #a6abc4;
+    --color-brand-300: #6e77a0;
+    --color-brand-400: #3a4680;
+    --color-brand-500: #232f63;
+    --color-brand-600: #18234f; /* Navy — CI base (primary) */
+    --color-brand-700: #141e45;
+    --color-brand-800: #10173a;
+    --color-brand-900: #0b1024; /* deep navy — dark surfaces */
+    --color-brand-950: #070a18;
 
-    --color-ink: #282828; /* Chiaco Dark */
-    --color-paper: #faf8f9;
+    /* Accent — Clay (call-to-action, links, sale) */
+    --color-accent-400: #d46456;
+    --color-accent-500: #c13e30;
+    --color-accent-600: #a72f23; /* Clay — CI base (primary accent) */
+    --color-accent-700: #8a251a; /* darker, for hover/pressed */
 
-    --radius-card: 1rem;
+    --color-ink: #18234f;   /* Navy — primary text/headings */
+    --color-paper: #ece7d0; /* Cream — page surface (the 60%) */
+
+    /* Corners — keep it crisp (RC effects.css: 4px default) */
+    --radius-card: 4px;
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --radius-lg: 4px;
+    --radius-xl: 4px;
+    --radius-2xl: 6px;
+    --radius-3xl: 10px;
+
+    /* Motion — quiet, confident; ease-out, no bounce */
+    --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 /* ---------------------------------------------------------------------------
@@ -221,22 +273,28 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Brand gradients — the ONLY sanctioned gradients (BrandBook: Color Palette).
-   Red→Light, Dark→Light, Dark→Red, and Black&White.
+   Legacy "gradient" utilities — neutralised to SOLID fills. The Racket Club
+   client chose solid colours over gradients; these classes stay defined so any
+   existing markup keeps a valid, on-brand background instead of a gradient.
 --------------------------------------------------------------------------- */
 @layer utilities {
     .bg-grad-red-light {
-        background-image: linear-gradient(120deg, var(--color-persian-red), var(--color-chiaco-light));
+        background-color: var(--color-accent-600); /* clay */
     }
     .bg-grad-dark-light {
-        background-image: linear-gradient(120deg, var(--color-chiaco-dark), var(--color-chiaco-light));
+        background-color: var(--color-brand-600); /* navy */
     }
     .bg-grad-dark-red {
-        background-image: linear-gradient(120deg, var(--color-chiaco-dark), var(--color-persian-red));
+        background-color: var(--color-brand-600); /* navy */
     }
     .bg-grad-bw {
-        background-image: linear-gradient(120deg, #000, #fff);
+        background-color: var(--color-brand-900); /* deep navy */
     }
+}
+
+/* Slogan face utility — Pinyon Script, for "Legends & Legacy" (≤ once/view). */
+@layer utilities {
+    .font-script { font-family: var(--font-script); letter-spacing: 0; }
 }
 
 /* ---------------------------------------------------------------------------

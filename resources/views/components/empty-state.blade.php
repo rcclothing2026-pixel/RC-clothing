@@ -50,7 +50,7 @@
         @endif
         @if ($cta && is_array($cta) && ! empty($cta['href']))
             <a href="{{ $cta['href'] }}" class="mt-6 inline-block rounded-full bg-brand-900 px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-800 active:scale-[0.98]">
-                {{ $cta['label'] ?? 'ادامه' }}
+                {{ $cta['label'] ?? 'Continue' }}
             </a>
         @endif
 

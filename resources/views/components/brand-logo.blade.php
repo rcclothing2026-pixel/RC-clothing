@@ -1,27 +1,24 @@
 {{--
-    Chiaco logo lockup: optional Gate sign + the REAL logotype extracted from the
-    brand book (Asset 2). Defaults to the Persian چیاکو wordmark; pass :latin=true
-    for the CHIACO wordmark. The wordmark is rendered via CSS mask so it inherits
-    colour from `currentColor` (works on light and dark surfaces).
+    Racket Club logo lockup: the square brand mark + the "RACKET CLUB" wordmark
+    set in Mansory (the brand display face). The wordmark inherits colour from
+    `currentColor` (set via the `class` prop) so it works on light and dark
+    surfaces; the mark is a fixed two-tone SVG badge whose variant is chosen to
+    contrast with the surface.
 
-    Props:
-      sign  : show the Gate sign before the wordmark
-      latin : use the CHIACO wordmark instead of Persian چیاکو
-      class : colour utility (sets currentColor for both sign and wordmark)
-      h     : wordmark/sign height (Tailwind height class, default h-6)
+    Props (kept compatible with previous callers):
+      sign  : show the square brand mark before the wordmark
+      mark  : mark variant — 'navy' (default, for light surfaces) | 'cream' | 'green'
+      latin : (legacy, ignored — the wordmark is always the Latin RACKET CLUB)
+      class : colour utility (sets currentColor for the wordmark)
+      h     : lockup / mark height (Tailwind height class, default h-6)
 --}}
-@props(['sign' => true, 'latin' => false, 'class' => 'text-brand-900', 'h' => 'h-6'])
+@props(['sign' => true, 'mark' => 'navy', 'latin' => false, 'class' => 'text-brand-900', 'h' => 'h-6'])
 @php
-    $src   = $latin ? '/img/brand/chiaco-logo-en.svg' : '/img/brand/chiaco-logo-fa.svg';
-    $ratio = $latin ? 4.91 : 2.97;
-    $label = $latin ? 'CHIACO' : 'چیاکو';
+    $markSrc = in_array($mark, ['navy', 'cream', 'green'], true) ? "/brand/mark-{$mark}.svg" : '/brand/mark-navy.svg';
 @endphp
-<span {{ $attributes->merge(['class' => 'inline-flex items-center gap-2 '.$class]) }}>
+<span {{ $attributes->merge(['class' => 'inline-flex items-center gap-2.5 '.$class]) }}>
     @if ($sign)
-        <x-brand-sign class="{{ $h }} w-auto" />
+        <img src="{{ $markSrc }}" alt="" aria-hidden="true" class="{{ $h }} w-auto shrink-0 rounded-[3px]">
     @endif
-    <span class="{{ $h }} block" role="img" aria-label="{{ $label }}"
-          style="aspect-ratio: {{ $ratio }}; background: currentColor;
-                 -webkit-mask: url('{{ $src }}') no-repeat center / contain;
-                 mask: url('{{ $src }}') no-repeat center / contain;"></span>
+    <span class="font-display text-[1.05em] font-bold uppercase leading-none tracking-[0.12em]" role="img" aria-label="Racket Club">Racket&nbsp;Club</span>
 </span>

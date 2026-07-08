@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
         ]);
+        // Storefront locale (en/fa) from the visitor's saved choice — drives
+        // <html lang/dir>, currency formatting, and translated chrome copy.
+        $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
         // Inbound webhooks authenticate via signature / path secret, not CSRF.
         $middleware->validateCsrfTokens(except: [
             'webhooks/stoqs',

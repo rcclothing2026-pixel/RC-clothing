@@ -5,7 +5,7 @@
 
 @once
 <style>
-  .chiaco-hero{width:100%;display:flex;align-items:center;justify-content:center;padding:48px 32px;background:radial-gradient(120% 120% at 50% 0%, #f4eff1 0%, #E0D5D9 100%);font-family:'Vazirmatn','Jost',system-ui,sans-serif;}
+  .chiaco-hero{width:100%;display:flex;align-items:center;justify-content:center;padding:48px 32px;background:radial-gradient(120% 120% at 50% 0%, #f4eff1 0%, #E0D5D9 100%);font-family:'Helvetica Neue',Helvetica,Arial,system-ui,sans-serif;}
   .chiaco-hero *{box-sizing:border-box;}
   .ch-card{position:relative;width:100%;max-width:1180px;aspect-ratio:1180/640;background:#fff;border-radius:34px;box-shadow:0 40px 90px -30px rgba(40,30,40,.28),0 12px 30px -12px rgba(0,0,0,.12);overflow:hidden;}
   .ch-card{--ch-anim:800ms;}
@@ -289,7 +289,7 @@
 
         <div class="ch-panel">
           <h2 class="ch-title">{{ $cfg['brandLine'] ?? '' }}<br><b>{{ $cfg['storeTitle'] ?? '' }}</b></h2>
-          <div class="ch-thead"><span>محصول</span><span>کد</span></div>
+          <div class="ch-thead"><span>Product</span><span>Code</span></div>
           @foreach (($s['products'] ?? []) as $p)
             @php
                 // Priority: an explicit/uploaded image wins (override); else the
@@ -319,9 +319,9 @@
 
     @php($tb = $cfg['toolbar'] ?? [])
     <div class="ch-toolbar">
-      <a href="{{ $tb['sizes'] ?? '#' }}" aria-label="اندازه‌ها"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 8h18v8H3zM7 8v3M11 8v4M15 8v3M19 8v4"></path></svg></a>
-      <a href="{{ $tb['edit'] ?? '#' }}" aria-label="ویرایش" class="accent"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M16 3 21 8 8 21H3v-5L16 3Z"></path></svg></a>
-      <a href="{{ $tb['account'] ?? '/account' }}" aria-label="حساب"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"></circle><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6"></path></svg></a>
+      <a href="{{ $tb['sizes'] ?? '#' }}" aria-label="Sizes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 8h18v8H3zM7 8v3M11 8v4M15 8v3M19 8v4"></path></svg></a>
+      <a href="{{ $tb['edit'] ?? '#' }}" aria-label="Edit" class="accent"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M16 3 21 8 8 21H3v-5L16 3Z"></path></svg></a>
+      <a href="{{ $tb['account'] ?? '/account' }}" aria-label="Account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"></circle><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6"></path></svg></a>
       <a class="ch-go" href="{{ ($tb['cta'] ?? '') ?: $firstCta }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></a>
     </div>
 

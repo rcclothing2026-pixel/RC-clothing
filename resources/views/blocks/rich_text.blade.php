@@ -1,5 +1,5 @@
 @php
-    $align = ($data['align'] ?? 'right') === 'center' ? 'text-center mx-auto' : 'text-right';
+    $align = ($data['align'] ?? 'left') === 'center' ? 'text-center mx-auto' : 'text-left';
     $widthClass = match ($data['width'] ?? 'narrow') {
         'default' => 'max-w-7xl',
         'wide'    => 'max-w-screen-2xl',

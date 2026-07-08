@@ -33,10 +33,10 @@
         <div class="flex items-center justify-between border-b border-brand-100 px-5 py-4">
             <h2 id="mini-cart-title" class="flex items-center gap-2 text-base font-bold text-brand-900">
                 <svg class="h-5 w-5 text-accent-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M6 6 5 3H3"/></svg>
-                به سبد اضافه شد
+                Added to Bag
                 <span class="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-bold text-brand-700 fa-num" x-text="toPersianDigits(state.count)"></span>
             </h2>
-            <button type="button" @click="close()" aria-label="بستن"
+            <button type="button" @click="close()" aria-label="Close"
                     class="grid h-9 w-9 place-items-center rounded-full text-brand-400 transition hover:bg-brand-50 hover:text-brand-900">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -72,7 +72,7 @@
                             </div>
                             <div class="min-w-0 flex-1">
                                 <p class="line-clamp-1 text-sm font-medium text-brand-800" x-text="item.name"></p>
-                                <p class="mt-0.5 text-xs text-brand-400" x-text="(item.variant_label ? item.variant_label + ' · ' : '') + 'تعداد: ' + toPersianDigits(item.quantity)"></p>
+                                <p class="mt-0.5 text-xs text-brand-400" x-text="(item.variant_label ? item.variant_label + ' · ' : '') + 'Qty: ' + toPersianDigits(item.quantity)"></p>
                             </div>
                             <span class="shrink-0 text-sm font-bold text-brand-900 fa-num" x-text="item.line_total"></span>
                         </a>
@@ -84,17 +84,17 @@
         {{-- Footer: subtotal + CTAs --}}
         <div class="border-t border-brand-100 bg-brand-50/60 px-5 py-4">
             <div class="mb-3 flex items-center justify-between text-sm">
-                <span class="text-brand-500">جمع کل</span>
+                <span class="text-brand-500">Total</span>
                 <span class="text-lg font-bold text-brand-900 fa-num" x-text="state.subtotal"></span>
             </div>
             <div class="flex gap-2">
                 <a :href="state.checkout_url"
-                   class="flex-1 rounded-full bg-brand-900 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-800">تسویه‌حساب</a>
+                   class="flex-1 rounded-full bg-brand-900 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-800">Checkout</a>
                 <a :href="state.cart_url"
-                   class="rounded-full px-5 py-3 text-center text-sm font-semibold text-brand-700 ring-1 ring-brand-200 transition hover:bg-white">سبد خرید</a>
+                   class="rounded-full px-5 py-3 text-center text-sm font-semibold text-brand-700 ring-1 ring-brand-200 transition hover:bg-white">View Bag</a>
             </div>
             <button type="button" @click="close()"
-                    class="mt-2 w-full py-2 text-xs text-brand-400 hover:text-brand-600">ادامه خرید</button>
+                    class="mt-2 w-full py-2 text-xs text-brand-400 hover:text-brand-600">Continue Shopping</button>
         </div>
     </aside>
 </div>

@@ -32,11 +32,11 @@
                 @endif
                 @if ($product->hasDiscount())
                     <span class="absolute start-2 top-2 rounded-sm bg-white px-1.5 py-0.5 text-[10px] font-medium text-brand-900 ring-1 ring-brand-100 fa-num">
-                        ٪{{ \App\Support\Money::toPersianDigits((string) $product->discountPercent()) }}
+                        {{ $product->discountPercent() }}%
                     </span>
                 @endif
                 @unless ($product->inStock())
-                    <span class="absolute start-2 top-2 rounded-sm bg-white px-1.5 py-0.5 text-[10px] font-medium text-brand-900 ring-1 ring-brand-100">ناموجود</span>
+                    <span class="absolute start-2 top-2 rounded-sm bg-white px-1.5 py-0.5 text-[10px] font-medium text-brand-900 ring-1 ring-brand-100">Sold Out</span>
                 @endunless
             </div>
             <div class="mt-3 px-1">
@@ -58,7 +58,7 @@
                     @csrf
                     <input type="hidden" name="variant_id" value="{{ $inStockVariants->first()->id }}">
                     <input type="hidden" name="quantity" value="1">
-                    <button type="submit" aria-label="افزودن به سبد"
+                    <button type="submit" aria-label="Add to bag"
                             class="grid h-8 w-8 place-items-center rounded-full bg-white text-brand-900 ring-1 ring-brand-200 transition hover:bg-brand-900 hover:text-white">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                     </button>
@@ -67,7 +67,7 @@
                 <div x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false"
                      class="absolute end-2 top-[calc(75%-2.25rem)] sm:top-auto sm:bottom-[3.25rem]"
                      onclick="event.stopPropagation()">
-                    <button type="button" @click="open = !open" :aria-expanded="open" aria-label="انتخاب سایز و افزودن به سبد"
+                    <button type="button" @click="open = !open" :aria-expanded="open" aria-label="Select size and add to bag"
                             class="grid h-8 w-8 place-items-center rounded-full bg-white text-brand-900 ring-1 ring-brand-200 transition hover:bg-brand-900 hover:text-white">
                         <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                     </button>
@@ -79,7 +79,7 @@
                                 <input type="hidden" name="variant_id" value="{{ $v->id }}">
                                 <input type="hidden" name="quantity" value="1">
                                 <button type="submit"
-                                        class="min-w-[2rem] rounded-md border border-brand-200 px-2 py-1 text-xs font-medium text-brand-800 transition hover:border-accent-400 hover:bg-brand-50 hover:text-accent-600">{{ $v->size ?: 'افزودن' }}</button>
+                                        class="min-w-[2rem] rounded-md border border-brand-200 px-2 py-1 text-xs font-medium text-brand-800 transition hover:border-accent-400 hover:bg-brand-50 hover:text-accent-600">{{ $v->size ?: 'Add' }}</button>
                             </form>
                         @endforeach
                     </div>
@@ -120,7 +120,7 @@
             <div class="flex flex-col gap-1.5">
                 <div class="flex items-center justify-center gap-1.5 rounded-full bg-white/95 py-2.5 text-xs font-bold text-brand-900 shadow-lg backdrop-blur-sm">
                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><circle cx="12" cy="12" r="3"/></svg>
-                    مشاهده محصول
+                    View Product
                 </div>
                 @if ($firstVariant)
                     <form action="{{ route('cart.add') }}" method="POST" class="pointer-events-auto" onclick="event.stopPropagation()">
@@ -130,7 +130,7 @@
                         <button type="submit"
                                 class="flex w-full items-center justify-center gap-1.5 rounded-full bg-brand-900 py-2.5 text-xs font-bold text-white shadow-lg transition hover:bg-brand-800 active:scale-[0.97]">
                             <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                            افزودن به سبد خرید
+                            Add to Bag
                         </button>
                     </form>
                 @endif
@@ -142,7 +142,7 @@
         <div class="pointer-events-none absolute start-3 top-3 flex flex-col gap-1.5 z-[2]">
             @if ($product->hasDiscount())
                 <span class="rounded-full bg-accent-600 px-2.5 py-1 text-[11px] font-bold text-white fa-num shadow-sm">
-                    ٪{{ \App\Support\Money::toPersianDigits((string) $product->discountPercent()) }}
+                    {{ $product->discountPercent() }}%
                 </span>
             @endif
         </div>
@@ -150,13 +150,13 @@
         {{-- Low-stock urgency badge --}}
         @if ($totalStock > 0 && $totalStock <= 5)
             <span class="absolute top-2 end-2 z-[3] rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
-                فقط {{ \App\Support\Money::toPersianDigits((string) $totalStock) }} عدد
+                Only {{ $totalStock }} left
             </span>
         @endif
 
         {{-- Out of stock overlay --}}
         @unless ($product->inStock())
-            <div class="pointer-events-none absolute inset-x-0 bottom-0 z-[2] bg-brand-900/75 py-2 text-center text-xs font-medium text-white backdrop-blur-sm">ناموجود</div>
+            <div class="pointer-events-none absolute inset-x-0 bottom-0 z-[2] bg-brand-900/75 py-2 text-center text-xs font-medium text-white backdrop-blur-sm">Sold Out</div>
         @endunless
 
         {{-- Wishlist button (z-2, above full-cover link) --}}
@@ -165,7 +165,7 @@
               class="absolute end-3 top-3 z-[2]">
             @csrf
             <button type="submit"
-                    aria-label="افزودن به علاقه‌مندی"
+                    aria-label="Add to wishlist"
                     class="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-brand-400 shadow-sm backdrop-blur-sm ring-1 ring-brand-100 transition-all duration-200 hover:bg-white hover:text-red-500 hover:ring-red-200 sm:translate-x-2 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-8.5C.5 9 2 5.5 5.5 5.5 7.5 5.5 9 7 12 9c3-2 4.5-3.5 6.5-3.5 3.5 0 5 3.5 3 7C19 16.5 12 21 12 21z"/></svg>
             </button>

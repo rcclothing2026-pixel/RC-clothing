@@ -26,562 +26,562 @@ class BlockRegistry
     {
         return [
             'hero_banner' => [
-                'label' => 'بنر هیرو فروشگاه',
+                'label' => 'Store Hero Banner',
                 'icon' => '🛒',
                 'fields' => [], // edited in the dedicated Hero admin (admin → بنر هیرو)
             ],
             'motion_banner' => [
-                'label' => 'بنر متحرک (اسلایدشو)',
+                'label' => 'Motion Banner (Slideshow)',
                 'icon' => '🎞',
                 'fields' => [
-                    ['key' => 'interval', 'label' => 'فاصله تعویض (ثانیه)', 'type' => 'number'],
-                    ['key' => 'slides', 'label' => 'اسلایدها', 'type' => 'repeater', 'sub' => [
-                        ['key' => 'title', 'label' => 'عنوان', 'type' => 'text'],
-                        ['key' => 'subtitle', 'label' => 'زیرعنوان', 'type' => 'text'],
-                        ['key' => 'image', 'label' => 'تصویر محصول', 'type' => 'image'],
-                        ['key' => 'color', 'label' => 'رنگ بلاب', 'type' => 'select', 'options' => [
-                            'purple' => 'بنفش', 'amber' => 'کهربایی', 'teal' => 'فیروزه‌ای', 'red' => 'قرمز چیاکو', 'dark' => 'تیره',
+                    ['key' => 'interval', 'label' => 'Change Interval (seconds)', 'type' => 'number'],
+                    ['key' => 'slides', 'label' => 'Slides', 'type' => 'repeater', 'sub' => [
+                        ['key' => 'title', 'label' => 'Title', 'type' => 'text'],
+                        ['key' => 'subtitle', 'label' => 'Subtitle', 'type' => 'text'],
+                        ['key' => 'image', 'label' => 'Product Image', 'type' => 'image'],
+                        ['key' => 'color', 'label' => 'Blob Color', 'type' => 'select', 'options' => [
+                            'purple' => 'Purple', 'amber' => 'Amber', 'teal' => 'Teal', 'red' => 'Club Clay', 'dark' => 'Dark',
                         ]],
-                        ['key' => 'cta_text', 'label' => 'متن دکمه', 'type' => 'text'],
-                        ['key' => 'cta_link', 'label' => 'لینک دکمه', 'type' => 'text'],
+                        ['key' => 'cta_text', 'label' => 'Button Text', 'type' => 'text'],
+                        ['key' => 'cta_link', 'label' => 'Button Link', 'type' => 'text'],
                     ]],
                 ],
             ],
             'hero' => [
-                'label' => 'هیرو (سربرگ بزرگ)',
+                'label' => 'Hero (Large Header)',
                 'icon' => '🖼',
                 'fields' => [
-                    ['key' => 'badge', 'label' => 'برچسب کوچک', 'type' => 'text'],
-                    ['key' => 'title', 'label' => 'عنوان', 'type' => 'text'],
-                    ['key' => 'accent', 'label' => 'بخش رنگی عنوان', 'type' => 'text'],
-                    ['key' => 'subtitle', 'label' => 'زیرعنوان', 'type' => 'textarea'],
-                    ['key' => 'cta_text', 'label' => 'متن دکمه', 'type' => 'text'],
-                    ['key' => 'cta_link', 'label' => 'لینک دکمه', 'type' => 'text'],
-                    ['key' => 'image', 'label' => 'تصویر', 'type' => 'image'],
-                    ['key' => 'style', 'label' => 'پس‌زمینه', 'type' => 'select', 'options' => [
-                        'light' => 'روشن', 'grad-red-light' => 'گرادیان قرمز', 'grad-dark-red' => 'گرادیان تیره‑قرمز', 'dark' => 'تیره',
+                    ['key' => 'badge', 'label' => 'Small Label', 'type' => 'text'],
+                    ['key' => 'title', 'label' => 'Title', 'type' => 'text'],
+                    ['key' => 'accent', 'label' => 'Accent Part of Title', 'type' => 'text'],
+                    ['key' => 'subtitle', 'label' => 'Subtitle', 'type' => 'textarea'],
+                    ['key' => 'cta_text', 'label' => 'Button Text', 'type' => 'text'],
+                    ['key' => 'cta_link', 'label' => 'Button Link', 'type' => 'text'],
+                    ['key' => 'image', 'label' => 'Image', 'type' => 'image'],
+                    ['key' => 'style', 'label' => 'Background', 'type' => 'select', 'options' => [
+                        'light' => 'Light', 'grad-red-light' => 'Clay Gradient', 'grad-dark-red' => 'Dark Clay Gradient', 'dark' => 'Dark',
                     ]],
                 ],
             ],
             'product_grid' => [
-                'label' => 'شبکه محصولات',
+                'label' => 'Product Grid',
                 'icon' => '🛍',
                 'fields' => [
                     // Content
-                    ['key' => 'heading', 'label' => 'عنوان بخش', 'type' => 'text'],
-                    ['key' => 'products', 'label' => 'محصولات انتخابی (جستجو و انتخاب؛ خالی = از منبع زیر استفاده می‌شود)', 'type' => 'multipicker', 'source' => 'products'],
-                    ['key' => 'feed', 'label' => 'منبع محصولات (وقتی محصول انتخابی ندارید)', 'type' => 'picker', 'source' => 'product_feed'],
-                    ['key' => 'limit', 'label' => 'تعداد', 'type' => 'number'],
-                    ['key' => 'shop_all_link', 'label' => 'لینک «مشاهده همه» (خالی = فروشگاه)', 'type' => 'text'],
+                    ['key' => 'heading', 'label' => 'Section Title', 'type' => 'text'],
+                    ['key' => 'products', 'label' => 'Selected Products (search and choose; empty = use the source below)', 'type' => 'multipicker', 'source' => 'products'],
+                    ['key' => 'feed', 'label' => 'Product Source (when no products are selected)', 'type' => 'picker', 'source' => 'product_feed'],
+                    ['key' => 'limit', 'label' => 'Count', 'type' => 'number'],
+                    ['key' => 'shop_all_link', 'label' => '"View All" Link (empty = shop)', 'type' => 'text'],
 
                     // Layout mode
-                    ['key' => 'layout', 'label' => 'چیدمان', 'type' => 'select', 'options' => [
-                        'grid'     => 'شبکه (ستون‌بندی ثابت)',
-                        'carousel' => 'اسلایدر افقی (سبک ادیتوریال)',
+                    ['key' => 'layout', 'label' => 'Layout', 'type' => 'select', 'options' => [
+                        'grid'     => 'Grid (fixed columns)',
+                        'carousel' => 'Horizontal Slider (editorial style)',
                     ]],
 
                     // Grid-mode column counts (per breakpoint)
-                    ['key' => 'columns_mobile', 'label' => 'تعداد ستون — موبایل (شبکه)', 'type' => 'select', 'options' => [
-                        '1' => '۱ ستون', '2' => '۲ ستون', '3' => '۳ ستون',
+                    ['key' => 'columns_mobile', 'label' => 'Columns — Mobile (grid)', 'type' => 'select', 'options' => [
+                        '1' => '1 Column', '2' => '2 Columns', '3' => '3 Columns',
                     ]],
-                    ['key' => 'columns_desktop', 'label' => 'تعداد ستون — دسکتاپ (شبکه)', 'type' => 'select', 'options' => [
-                        '2' => '۲ ستون', '3' => '۳ ستون', '4' => '۴ ستون', '5' => '۵ ستون', '6' => '۶ ستون',
+                    ['key' => 'columns_desktop', 'label' => 'Columns — Desktop (grid)', 'type' => 'select', 'options' => [
+                        '2' => '2 Columns', '3' => '3 Columns', '4' => '4 Columns', '5' => '5 Columns', '6' => '6 Columns',
                     ]],
 
                     // Carousel-mode card size. Fullscreen was removed —
                     // it took over the entire viewport and broke editorial flow.
-                    ['key' => 'card_size', 'label' => 'اندازه کارت (اسلایدر)', 'type' => 'select', 'options' => [
-                        'compact' => 'فشرده — ۴–۵ کارت قابل دیدن',
-                        'med'     => 'متوسط — ۳ کارت دسکتاپ، ۲ موبایل',
-                        'large'   => 'بزرگ — ۲ کارت دسکتاپ، ۱.۲ موبایل',
+                    ['key' => 'card_size', 'label' => 'Card Size (slider)', 'type' => 'select', 'options' => [
+                        'compact' => 'Compact — 4–5 cards visible',
+                        'med'     => 'Medium — 3 cards desktop, 2 mobile',
+                        'large'   => 'Large — 2 cards desktop, 1.2 mobile',
                     ]],
 
                     // Card appearance
-                    ['key' => 'card_style', 'label' => 'سبک کارت محصول', 'type' => 'select', 'options' => [
-                        'minimal'  => 'مینیمال (عکس + نام + قیمت + دکمهٔ +)',
-                        'detailed' => 'کامل (همراه با هاور، نشان، دکمه‌ها)',
+                    ['key' => 'card_style', 'label' => 'Product Card Style', 'type' => 'select', 'options' => [
+                        'minimal'  => 'Minimal (photo + name + price + add button)',
+                        'detailed' => 'Detailed (with hover, badge, buttons)',
                     ]],
-                    ['key' => 'card_aspect', 'label' => 'نسبت تصویر کارت', 'type' => 'select', 'options' => [
-                        'portrait' => 'پرتره ۳:۴ (پیش‌فرض)',
-                        'tall'     => 'بلند ۲:۳',
-                        'square'   => 'مربع ۱:۱',
-                        'wide'     => 'افقی ۴:۳',
+                    ['key' => 'card_aspect', 'label' => 'Card Image Ratio', 'type' => 'select', 'options' => [
+                        'portrait' => 'Portrait 3:4 (default)',
+                        'tall'     => 'Tall 2:3',
+                        'square'   => 'Square 1:1',
+                        'wide'     => 'Landscape 4:3',
                     ]],
 
                     // Section spacing
-                    ['key' => 'container', 'label' => 'پهنای ناحیه', 'type' => 'select', 'options' => [
-                        'default' => 'پیش‌فرض (max-w-7xl)',
-                        'wide'    => 'عریض (max-w-screen-2xl)',
-                        'full'    => 'تمام‌عرض (لبه به لبه)',
+                    ['key' => 'container', 'label' => 'Section Width', 'type' => 'select', 'options' => [
+                        'default' => 'Default (max-w-7xl)',
+                        'wide'    => 'Wide (max-w-screen-2xl)',
+                        'full'    => 'Full Width (edge to edge)',
                     ]],
-                    ['key' => 'gap', 'label' => 'فاصلهٔ بین کارت‌ها', 'type' => 'select', 'options' => [
-                        'tight'  => 'فشرده',
-                        'normal' => 'معمولی (پیش‌فرض)',
-                        'wide'   => 'بازتر',
+                    ['key' => 'gap', 'label' => 'Gap Between Cards', 'type' => 'select', 'options' => [
+                        'tight'  => 'Tight',
+                        'normal' => 'Normal (default)',
+                        'wide'   => 'Wider',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'sm' => 'کم',
-                        'md' => 'متوسط (پیش‌فرض)',
-                        'lg' => 'زیاد',
-                        'none' => 'بدون',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'sm' => 'Small',
+                        'md' => 'Medium (default)',
+                        'lg' => 'Large',
+                        'none' => 'None',
                     ]],
                 ],
             ],
             'category_tiles' => [
-                'label' => 'کاشی دسته‌بندی‌ها',
+                'label' => 'Category Tiles',
                 'icon' => '🗂',
                 'fields' => [
-                    ['key' => 'heading', 'label' => 'عنوان بخش', 'type' => 'text'],
-                    ['key' => 'ref', 'label' => 'دسته‌بندی‌ها (جستجو و انتخاب؛ خالی = همه)', 'type' => 'multipicker', 'source' => 'categories'],
-                    ['key' => 'limit', 'label' => 'تعداد نمایش (خالی = همه)', 'type' => 'number'],
-                    ['key' => 'fit', 'label' => 'نوع نمایش تصویر', 'type' => 'select', 'options' => [
-                        'cover' => 'دایره با پس‌زمینه (عکس)',
-                        'contain' => 'نمایش کامل بدون برش (PNG بدون پس‌زمینه و قاب)',
+                    ['key' => 'heading', 'label' => 'Section Title', 'type' => 'text'],
+                    ['key' => 'ref', 'label' => 'Categories (search and choose; empty = all)', 'type' => 'multipicker', 'source' => 'categories'],
+                    ['key' => 'limit', 'label' => 'Number to Show (empty = all)', 'type' => 'number'],
+                    ['key' => 'fit', 'label' => 'Image Display Mode', 'type' => 'select', 'options' => [
+                        'cover' => 'Circle with background (photo)',
+                        'contain' => 'Full display, no crop (transparent PNG, no frame)',
                     ]],
-                    ['key' => 'layout', 'label' => 'چیدمان', 'type' => 'select', 'options' => [
-                        'wrap' => 'شبکهٔ ثابت (پیش‌فرض)',
-                        'marquee' => 'اسلایدر بی‌نهایت (Marquee)',
+                    ['key' => 'layout', 'label' => 'Layout', 'type' => 'select', 'options' => [
+                        'wrap' => 'Fixed Grid (default)',
+                        'marquee' => 'Infinite Slider (Marquee)',
                     ]],
-                    ['key' => 'speed', 'label' => 'سرعت اسلایدر (فقط در حالت Marquee)', 'type' => 'select', 'options' => [
-                        'slow' => 'آرام',
-                        'med' => 'متوسط',
-                        'fast' => 'سریع',
+                    ['key' => 'speed', 'label' => 'Slider Speed (Marquee mode only)', 'type' => 'select', 'options' => [
+                        'slow' => 'Slow',
+                        'med' => 'Medium',
+                        'fast' => 'Fast',
                     ]],
-                    ['key' => 'columns_mobile', 'label' => 'تعداد ستون — موبایل (شبکهٔ ثابت)', 'type' => 'select', 'options' => [
-                        '2' => '۲', '3' => '۳', '4' => '۴',
+                    ['key' => 'columns_mobile', 'label' => 'Columns — Mobile (fixed grid)', 'type' => 'select', 'options' => [
+                        '2' => '2', '3' => '3', '4' => '4',
                     ]],
-                    ['key' => 'columns_desktop', 'label' => 'تعداد ستون — دسکتاپ (شبکهٔ ثابت)', 'type' => 'select', 'options' => [
-                        '4' => '۴', '5' => '۵', '6' => '۶', '7' => '۷', '8' => '۸',
+                    ['key' => 'columns_desktop', 'label' => 'Columns — Desktop (fixed grid)', 'type' => 'select', 'options' => [
+                        '4' => '4', '5' => '5', '6' => '6', '7' => '7', '8' => '8',
                     ]],
-                    ['key' => 'container', 'label' => 'پهنای ناحیه', 'type' => 'select', 'options' => [
-                        'default' => 'پیش‌فرض', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'container', 'label' => 'Section Width', 'type' => 'select', 'options' => [
+                        'default' => 'Default', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'none' => 'بدون', 'sm' => 'کم', 'md' => 'متوسط', 'lg' => 'زیاد',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large',
                     ]],
                 ],
             ],
             'collection_scroller' => [
-                'label' => 'اسلایدر کالکشن‌ها (تصویر بزرگ)',
+                'label' => 'Collection Slider (Large Image)',
                 'icon' => '🖼',
                 'fields' => [
-                    ['key' => 'heading', 'label' => 'عنوان بخش (اختیاری)', 'type' => 'text'],
-                    ['key' => 'ref', 'label' => 'کالکشن‌ها (جستجو و انتخاب؛ خالی = همه)', 'type' => 'multipicker', 'source' => 'collections'],
-                    ['key' => 'limit', 'label' => 'تعداد (خالی = همه)', 'type' => 'number'],
-                    ['key' => 'size', 'label' => 'اندازهٔ تصویر', 'type' => 'select', 'options' => [
-                        'md' => 'متوسط', 'lg' => 'بزرگ', 'xl' => 'خیلی بزرگ',
+                    ['key' => 'heading', 'label' => 'Section Title (optional)', 'type' => 'text'],
+                    ['key' => 'ref', 'label' => 'Collections (search and choose; empty = all)', 'type' => 'multipicker', 'source' => 'collections'],
+                    ['key' => 'limit', 'label' => 'Count (empty = all)', 'type' => 'number'],
+                    ['key' => 'size', 'label' => 'Image Size', 'type' => 'select', 'options' => [
+                        'md' => 'Medium', 'lg' => 'Large', 'xl' => 'Extra Large',
                     ]],
-                    ['key' => 'shape', 'label' => 'نسبت تصویر', 'type' => 'select', 'options' => [
-                        'portrait' => 'عمودی (۳:۴)', 'square' => 'مربع', 'landscape' => 'افقی (۴:۳)',
+                    ['key' => 'shape', 'label' => 'Image Ratio', 'type' => 'select', 'options' => [
+                        'portrait' => 'Portrait (3:4)', 'square' => 'Square', 'landscape' => 'Landscape (4:3)',
                     ]],
-                    ['key' => 'fit', 'label' => 'نوع نمایش تصویر', 'type' => 'select', 'options' => [
-                        'cover' => 'پر کردن کادر (عکس)',
-                        'contain' => 'نمایش کامل بدون برش (PNG بدون پس‌زمینه)',
+                    ['key' => 'fit', 'label' => 'Image Display Mode', 'type' => 'select', 'options' => [
+                        'cover' => 'Fill the frame (photo)',
+                        'contain' => 'Full display, no crop (transparent PNG)',
                     ]],
-                    ['key' => 'show_name', 'label' => 'نمایش نام روی تصویر', 'type' => 'select', 'options' => [
-                        'no' => 'فقط تصویر', 'yes' => 'با نام کالکشن',
+                    ['key' => 'show_name', 'label' => 'Show Name over Image', 'type' => 'select', 'options' => [
+                        'no' => 'Image only', 'yes' => 'With collection name',
                     ]],
-                    ['key' => 'layout', 'label' => 'چیدمان', 'type' => 'select', 'options' => [
-                        'scroll' => 'اسکرول دستی (پیش‌فرض)',
-                        'marquee' => 'اسلایدر بی‌نهایت (Marquee)',
+                    ['key' => 'layout', 'label' => 'Layout', 'type' => 'select', 'options' => [
+                        'scroll' => 'Manual Scroll (default)',
+                        'marquee' => 'Infinite Slider (Marquee)',
                     ]],
-                    ['key' => 'speed', 'label' => 'سرعت اسلایدر (فقط در حالت Marquee)', 'type' => 'select', 'options' => [
-                        'slow' => 'آرام',
-                        'med' => 'متوسط',
-                        'fast' => 'سریع',
+                    ['key' => 'speed', 'label' => 'Slider Speed (Marquee mode only)', 'type' => 'select', 'options' => [
+                        'slow' => 'Slow',
+                        'med' => 'Medium',
+                        'fast' => 'Fast',
                     ]],
-                    ['key' => 'container', 'label' => 'پهنای ناحیه', 'type' => 'select', 'options' => [
-                        'default' => 'پیش‌فرض', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'container', 'label' => 'Section Width', 'type' => 'select', 'options' => [
+                        'default' => 'Default', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
-                    ['key' => 'gap', 'label' => 'فاصلهٔ بین کارت‌ها', 'type' => 'select', 'options' => [
-                        'tight' => 'فشرده', 'normal' => 'معمولی', 'wide' => 'بازتر',
+                    ['key' => 'gap', 'label' => 'Gap Between Cards', 'type' => 'select', 'options' => [
+                        'tight' => 'Tight', 'normal' => 'Normal', 'wide' => 'Wider',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'none' => 'بدون', 'sm' => 'کم', 'md' => 'متوسط', 'lg' => 'زیاد',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large',
                     ]],
                 ],
             ],
             'promo_banner' => [
-                'label' => 'بنر تبلیغاتی',
+                'label' => 'Promo Banner',
                 'icon' => '📣',
                 'fields' => [
-                    ['key' => 'heading', 'label' => 'عنوان', 'type' => 'text'],
-                    ['key' => 'text', 'label' => 'متن', 'type' => 'textarea'],
-                    ['key' => 'cta_text', 'label' => 'متن دکمه', 'type' => 'text'],
-                    ['key' => 'cta_link', 'label' => 'لینک دکمه', 'type' => 'text'],
-                    ['key' => 'container', 'label' => 'پهنای ناحیه', 'type' => 'select', 'options' => [
-                        'default' => 'پیش‌فرض', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'heading', 'label' => 'Title', 'type' => 'text'],
+                    ['key' => 'text', 'label' => 'Text', 'type' => 'textarea'],
+                    ['key' => 'cta_text', 'label' => 'Button Text', 'type' => 'text'],
+                    ['key' => 'cta_link', 'label' => 'Button Link', 'type' => 'text'],
+                    ['key' => 'container', 'label' => 'Section Width', 'type' => 'select', 'options' => [
+                        'default' => 'Default', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'none' => 'بدون', 'sm' => 'کم', 'md' => 'متوسط', 'lg' => 'زیاد',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large',
                     ]],
-                    ['key' => 'style', 'label' => 'پس‌زمینه', 'type' => 'select', 'options' => [
-                        'grad-red-light' => 'گرادیان قرمز', 'grad-dark-red' => 'گرادیان تیره‑قرمز', 'grad-dark-light' => 'گرادیان تیره', 'dark' => 'تیره', 'light' => 'روشن',
+                    ['key' => 'style', 'label' => 'Background', 'type' => 'select', 'options' => [
+                        'grad-red-light' => 'Clay Gradient', 'grad-dark-red' => 'Dark Clay Gradient', 'grad-dark-light' => 'Dark Gradient', 'dark' => 'Dark', 'light' => 'Light',
                     ]],
                 ],
             ],
             'rich_text' => [
-                'label' => 'متن و عنوان',
+                'label' => 'Text and Heading',
                 'icon' => '📝',
                 'fields' => [
-                    ['key' => 'heading', 'label' => 'عنوان', 'type' => 'text'],
-                    ['key' => 'body', 'label' => 'متن (HTML مجاز)', 'type' => 'richtext'],
-                    ['key' => 'align', 'label' => 'چینش', 'type' => 'select', 'options' => ['right' => 'راست', 'center' => 'وسط']],
-                    ['key' => 'width', 'label' => 'پهنای متن', 'type' => 'select', 'options' => [
-                        'narrow' => 'باریک (مناسب خواندن)', 'default' => 'پیش‌فرض', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'heading', 'label' => 'Heading', 'type' => 'text'],
+                    ['key' => 'body', 'label' => 'Body (HTML allowed)', 'type' => 'richtext'],
+                    ['key' => 'align', 'label' => 'Alignment', 'type' => 'select', 'options' => ['right' => 'Right', 'center' => 'Center']],
+                    ['key' => 'width', 'label' => 'Text Width', 'type' => 'select', 'options' => [
+                        'narrow' => 'Narrow (comfortable reading)', 'default' => 'Default', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'none' => 'بدون', 'sm' => 'کم', 'md' => 'متوسط', 'lg' => 'زیاد',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large',
                     ]],
                 ],
             ],
             'html' => [
-                'label' => 'کد HTML (نمای کامل)',
+                'label' => 'HTML Code (Full Render)',
                 'icon' => '⟨⟩',
                 'fields' => [
-                    ['key' => 'html', 'label' => 'کد HTML — دقیقاً همان چیزی که می‌نویسید نمایش داده می‌شود', 'type' => 'code'],
-                    ['key' => 'width', 'label' => 'پهنای محتوا', 'type' => 'select', 'options' => [
-                        'narrow' => 'باریک (مناسب متن)', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'html', 'label' => 'HTML code — rendered exactly as you write it', 'type' => 'code'],
+                    ['key' => 'width', 'label' => 'Content Width', 'type' => 'select', 'options' => [
+                        'narrow' => 'Narrow (good for text)', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
                 ],
             ],
             'image' => [
-                'label' => 'تصویر',
+                'label' => 'Image',
                 'icon' => '🏞',
                 'fields' => [
-                    ['key' => 'image', 'label' => 'تصویر', 'type' => 'image'],
-                    ['key' => 'link', 'label' => 'لینک', 'type' => 'text'],
-                    ['key' => 'caption', 'label' => 'زیرنویس', 'type' => 'text'],
-                    ['key' => 'height', 'label' => 'ارتفاع', 'type' => 'select', 'options' => ['sm' => 'کوتاه', 'md' => 'متوسط', 'lg' => 'بلند']],
+                    ['key' => 'image', 'label' => 'Image', 'type' => 'image'],
+                    ['key' => 'link', 'label' => 'Link', 'type' => 'text'],
+                    ['key' => 'caption', 'label' => 'Caption', 'type' => 'text'],
+                    ['key' => 'height', 'label' => 'Height', 'type' => 'select', 'options' => ['sm' => 'Short', 'md' => 'Medium', 'lg' => 'Tall']],
                 ],
             ],
             'image_duo' => [
-                'label' => 'دو تصویر کنار هم',
+                'label' => 'Two Images Side by Side',
                 'icon' => '🖼🖼',
                 'fields' => [
-                    ['key' => 'image_a', 'label' => 'تصویر ۱', 'type' => 'image'],
-                    ['key' => 'link_a', 'label' => 'لینک ۱', 'type' => 'text'],
-                    ['key' => 'image_b', 'label' => 'تصویر ۲', 'type' => 'image'],
-                    ['key' => 'link_b', 'label' => 'لینک ۲', 'type' => 'text'],
-                    ['key' => 'stack_mobile', 'label' => 'چیدمان موبایل', 'type' => 'select', 'options' => [
-                        'stack' => 'عمودی (یکی بالای دیگری)', 'side' => 'افقی (کنار هم — کوچک‌تر)',
+                    ['key' => 'image_a', 'label' => 'Image 1', 'type' => 'image'],
+                    ['key' => 'link_a', 'label' => 'Link 1', 'type' => 'text'],
+                    ['key' => 'image_b', 'label' => 'Image 2', 'type' => 'image'],
+                    ['key' => 'link_b', 'label' => 'Link 2', 'type' => 'text'],
+                    ['key' => 'stack_mobile', 'label' => 'Mobile Layout', 'type' => 'select', 'options' => [
+                        'stack' => 'Stacked (one above the other)', 'side' => 'Side by side (smaller)',
                     ]],
-                    ['key' => 'aspect', 'label' => 'نسبت تصویر', 'type' => 'select', 'options' => [
-                        'portrait' => 'پرتره ۴:۵', 'tall' => 'بلند ۲:۳', 'square' => 'مربع', 'wide' => 'افقی ۴:۳',
+                    ['key' => 'aspect', 'label' => 'Image Ratio', 'type' => 'select', 'options' => [
+                        'portrait' => 'Portrait 4:5', 'tall' => 'Tall 2:3', 'square' => 'Square', 'wide' => 'Landscape 4:3',
                     ]],
-                    ['key' => 'container', 'label' => 'پهنای ناحیه', 'type' => 'select', 'options' => [
-                        'default' => 'پیش‌فرض', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'container', 'label' => 'Section Width', 'type' => 'select', 'options' => [
+                        'default' => 'Default', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
-                    ['key' => 'gap', 'label' => 'فاصلهٔ بین', 'type' => 'select', 'options' => [
-                        'tight' => 'فشرده', 'normal' => 'معمولی', 'wide' => 'بازتر',
+                    ['key' => 'gap', 'label' => 'Gap Between', 'type' => 'select', 'options' => [
+                        'tight' => 'Tight', 'normal' => 'Normal', 'wide' => 'Wider',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'none' => 'بدون', 'sm' => 'کم', 'md' => 'متوسط', 'lg' => 'زیاد',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large',
                     ]],
                 ],
             ],
             'marquee' => [
-                'label' => 'نوار متحرک',
+                'label' => 'Scrolling Marquee',
                 'icon' => '🔁',
                 'fields' => [
-                    ['key' => 'items', 'label' => 'عبارت‌ها (هر خط یک مورد)', 'type' => 'lines'],
-                    ['key' => 'style', 'label' => 'رنگ', 'type' => 'select', 'options' => ['dark' => 'تیره', 'red' => 'قرمز']],
+                    ['key' => 'items', 'label' => 'Phrases (one per line)', 'type' => 'lines'],
+                    ['key' => 'style', 'label' => 'Color', 'type' => 'select', 'options' => ['dark' => 'Dark', 'red' => 'Clay']],
                 ],
             ],
             'features' => [
-                'label' => 'ویژگی‌ها / تضمین‌ها',
+                'label' => 'Features / Guarantees',
                 'icon' => '✅',
                 'fields' => [
-                    ['key' => 'heading', 'label' => 'عنوان بخش', 'type' => 'text'],
-                    ['key' => 'items', 'label' => 'موارد (هر خط: عنوان :: توضیح)', 'type' => 'lines'],
-                    ['key' => 'container', 'label' => 'پهنای ناحیه', 'type' => 'select', 'options' => [
-                        'default' => 'پیش‌فرض', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'heading', 'label' => 'Section Title', 'type' => 'text'],
+                    ['key' => 'items', 'label' => 'Items (each line: title :: description)', 'type' => 'lines'],
+                    ['key' => 'container', 'label' => 'Section Width', 'type' => 'select', 'options' => [
+                        'default' => 'Default', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'none' => 'بدون', 'sm' => 'کم', 'md' => 'متوسط', 'lg' => 'زیاد',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large',
                     ]],
                 ],
             ],
             'concept_stores' => [
-                'label' => 'کانسپت‌استورها',
+                'label' => 'Concept Stores',
                 'icon' => '🏬',
                 'fields' => [
-                    ['key' => 'heading', 'label' => 'عنوان بخش', 'type' => 'text'],
-                    ['key' => 'subtitle', 'label' => 'زیرعنوان بخش', 'type' => 'textarea'],
-                    ['key' => 'stores', 'label' => 'کانسپت‌استورها', 'type' => 'repeater', 'sub' => [
-                        ['key' => 'name', 'label' => 'نام فروشگاه', 'type' => 'text'],
-                        ['key' => 'tagline', 'label' => 'شعار / عنوان کوتاه', 'type' => 'text'],
-                        ['key' => 'city', 'label' => 'شهر / موقعیت', 'type' => 'text'],
-                        ['key' => 'description', 'label' => 'معرفی کامل', 'type' => 'richtext'],
-                        ['key' => 'image', 'label' => 'تصویر اصلی', 'type' => 'image'],
-                        ['key' => 'image2', 'label' => 'تصویر دوم (اختیاری)', 'type' => 'image'],
-                        ['key' => 'instagram', 'label' => 'اینستاگرام (آیدی یا لینک)', 'type' => 'text'],
-                        ['key' => 'website', 'label' => 'وب‌سایت (اختیاری)', 'type' => 'text'],
+                    ['key' => 'heading', 'label' => 'Section Title', 'type' => 'text'],
+                    ['key' => 'subtitle', 'label' => 'Section Subtitle', 'type' => 'textarea'],
+                    ['key' => 'stores', 'label' => 'Concept Stores', 'type' => 'repeater', 'sub' => [
+                        ['key' => 'name', 'label' => 'Store Name', 'type' => 'text'],
+                        ['key' => 'tagline', 'label' => 'Tagline / Short Title', 'type' => 'text'],
+                        ['key' => 'city', 'label' => 'City / Location', 'type' => 'text'],
+                        ['key' => 'description', 'label' => 'Full Description', 'type' => 'richtext'],
+                        ['key' => 'image', 'label' => 'Main Image', 'type' => 'image'],
+                        ['key' => 'image2', 'label' => 'Second Image (optional)', 'type' => 'image'],
+                        ['key' => 'instagram', 'label' => 'Instagram (handle or link)', 'type' => 'text'],
+                        ['key' => 'website', 'label' => 'Website (optional)', 'type' => 'text'],
                     ]],
-                    ['key' => 'container', 'label' => 'پهنای ناحیه', 'type' => 'select', 'options' => [
-                        'default' => 'پیش‌فرض', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'container', 'label' => 'Section Width', 'type' => 'select', 'options' => [
+                        'default' => 'Default', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'none' => 'بدون', 'sm' => 'کم', 'md' => 'متوسط', 'lg' => 'زیاد',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large',
                     ]],
                 ],
             ],
             'newsletter' => [
-                'label' => 'عضویت خبرنامه',
+                'label' => 'Newsletter Signup',
                 'icon' => '✉️',
                 'fields' => [
-                    ['key' => 'container', 'label' => 'پهنای ناحیه', 'type' => 'select', 'options' => [
-                        'default' => 'پیش‌فرض', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'container', 'label' => 'Section Width', 'type' => 'select', 'options' => [
+                        'default' => 'Default', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'none' => 'بدون', 'sm' => 'کم', 'md' => 'متوسط', 'lg' => 'زیاد',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large',
                     ]],
-                    ['key' => 'heading', 'label' => 'عنوان', 'type' => 'text'],
-                    ['key' => 'text', 'label' => 'متن', 'type' => 'textarea'],
-                    ['key' => 'channel', 'label' => 'کانال', 'type' => 'select', 'options' => ['telegram' => 'تلگرام', 'sms' => 'پیامک', 'email' => 'ایمیل']],
+                    ['key' => 'heading', 'label' => 'Heading', 'type' => 'text'],
+                    ['key' => 'text', 'label' => 'Text', 'type' => 'textarea'],
+                    ['key' => 'channel', 'label' => 'Channel', 'type' => 'select', 'options' => ['telegram' => 'Telegram', 'sms' => 'SMS', 'email' => 'Email']],
                 ],
             ],
             'pattern_divider' => [
-                'label' => 'جداکننده نقش‌مایه',
+                'label' => 'Motif Divider',
                 'icon' => '➗',
                 'fields' => [
-                    ['key' => 'style', 'label' => 'رنگ', 'type' => 'select', 'options' => ['light' => 'روشن', 'red' => 'قرمز', 'dark' => 'تیره']],
-                    ['key' => 'height', 'label' => 'ارتفاع', 'type' => 'select', 'options' => ['sm' => 'کوتاه', 'md' => 'متوسط']],
+                    ['key' => 'style', 'label' => 'Color', 'type' => 'select', 'options' => ['light' => 'Light', 'red' => 'Clay', 'dark' => 'Dark']],
+                    ['key' => 'height', 'label' => 'Height', 'type' => 'select', 'options' => ['sm' => 'Short', 'md' => 'Medium']],
                 ],
             ],
             'lookbook_grid' => [
-                'label' => 'لوک‌بوک (شبکهٔ موزائیکی)',
+                'label' => 'Lookbook (Mosaic Grid)',
                 'icon' => '🧱',
                 'fields' => [
-                    ['key' => 'heading', 'label' => 'عنوان بخش', 'type' => 'text'],
-                    ['key' => 'subtitle', 'label' => 'زیرعنوان (اختیاری)', 'type' => 'text'],
-                    ['key' => 'products', 'label' => 'محصولات انتخابی (جستجو و انتخاب؛ خالی = از منبع زیر استفاده می‌شود)', 'type' => 'multipicker', 'source' => 'products'],
-                    ['key' => 'feed', 'label' => 'منبع محصولات (وقتی محصول انتخابی ندارید — دسته یا کالکشن)', 'type' => 'picker', 'source' => 'product_feed'],
-                    ['key' => 'limit', 'label' => 'تعداد نمایش (خالی = ۱۲)', 'type' => 'number'],
-                    ['key' => 'columns', 'label' => 'تعداد ستون‌ها (دسکتاپ)', 'type' => 'select', 'options' => [
-                        '3' => '۳ ستون', '4' => '۴ ستون', '5' => '۵ ستون',
+                    ['key' => 'heading', 'label' => 'Section Title', 'type' => 'text'],
+                    ['key' => 'subtitle', 'label' => 'Subtitle (optional)', 'type' => 'text'],
+                    ['key' => 'products', 'label' => 'Selected Products (search and choose; empty = use the source below)', 'type' => 'multipicker', 'source' => 'products'],
+                    ['key' => 'feed', 'label' => 'Product Source (when no products are selected — category or collection)', 'type' => 'picker', 'source' => 'product_feed'],
+                    ['key' => 'limit', 'label' => 'Number to Show (empty = 12)', 'type' => 'number'],
+                    ['key' => 'columns', 'label' => 'Columns (desktop)', 'type' => 'select', 'options' => [
+                        '3' => '3 Columns', '4' => '4 Columns', '5' => '5 Columns',
                     ]],
-                    ['key' => 'mobile_columns', 'label' => 'تعداد ستون‌ها (موبایل)', 'type' => 'select', 'options' => [
-                        '2' => '۲ ستون', '3' => '۳ ستون',
+                    ['key' => 'mobile_columns', 'label' => 'Columns (mobile)', 'type' => 'select', 'options' => [
+                        '2' => '2 Columns', '3' => '3 Columns',
                     ]],
-                    ['key' => 'gap', 'label' => 'فاصلهٔ بین کاشی‌ها', 'type' => 'select', 'options' => [
-                        'tight' => 'فشرده', 'normal' => 'معمولی', 'wide' => 'بازتر',
+                    ['key' => 'gap', 'label' => 'Gap Between Tiles', 'type' => 'select', 'options' => [
+                        'tight' => 'Tight', 'normal' => 'Normal', 'wide' => 'Wider',
                     ]],
-                    ['key' => 'container', 'label' => 'پهنای ناحیه', 'type' => 'select', 'options' => [
-                        'default' => 'پیش‌فرض', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'container', 'label' => 'Section Width', 'type' => 'select', 'options' => [
+                        'default' => 'Default', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'none' => 'بدون', 'sm' => 'کم', 'md' => 'متوسط', 'lg' => 'زیاد',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large',
                     ]],
                 ],
             ],
             'editorial_hero' => [
-                'label' => 'هیرو/بنر ادیتوریال (اسلایدر)',
+                'label' => 'Editorial Hero / Banner (Slider)',
                 'icon' => '🎞',
                 'fields' => [
                     // Block-level: height + autoplay + global overlay style
-                    ['key' => 'height', 'label' => 'ارتفاع', 'type' => 'select', 'options' => [
-                        'natural' => 'طبیعی — اندازهٔ خود تصویر (بدون برش)',
-                        'strip'   => 'نوار (۲۰vh — بنر باریک)',
-                        'short'   => 'کوتاه (۴۰vh — بنر متوسط)',
-                        'banner'  => 'بنر (۵۵vh)',
-                        'med'     => 'متوسط (۷۵vh)',
-                        'tall'    => 'تمام‌صفحه (۱۰۰vh — هیرو کامل، عمودی روی موبایل)',
-                        'custom'  => 'سفارشی — با اسلایدر پایین تنظیم کنید',
+                    ['key' => 'height', 'label' => 'Height', 'type' => 'select', 'options' => [
+                        'natural' => 'Natural — the image\'s own size (no crop)',
+                        'strip'   => 'Strip (20vh — thin banner)',
+                        'short'   => 'Short (40vh — medium banner)',
+                        'banner'  => 'Banner (55vh)',
+                        'med'     => 'Medium (75vh)',
+                        'tall'    => 'Full Screen (100vh — full hero, portrait on mobile)',
+                        'custom'  => 'Custom — set with the slider below',
                     ]],
-                    ['key' => 'height_custom', 'label' => 'ارتفاع سفارشی (فقط وقتی حالت «سفارشی» انتخاب شده)', 'type' => 'range', 'min' => 10, 'max' => 120, 'default' => 55, 'unit' => 'vh'],
-                    ['key' => 'interval', 'label' => 'فاصله جابه‌جایی اسلاید (ثانیه؛ ۰ = بدون چرخش خودکار)', 'type' => 'number'],
-                    ['key' => 'overlay', 'label' => 'لایهٔ تیره روی تصاویر (مشترک همه اسلایدها)', 'type' => 'select', 'options' => [
-                        'none' => 'بدون',
-                        'soft' => 'ملایم (۲۰٪)',
-                        'medium' => 'متوسط (۳۵٪)',
-                        'strong' => 'قوی (۵۰٪)',
+                    ['key' => 'height_custom', 'label' => 'Custom Height (only when "Custom" is selected)', 'type' => 'range', 'min' => 10, 'max' => 120, 'default' => 55, 'unit' => 'vh'],
+                    ['key' => 'interval', 'label' => 'Slide Transition Interval (seconds; 0 = no autoplay)', 'type' => 'number'],
+                    ['key' => 'overlay', 'label' => 'Dark Overlay on Images (shared by all slides)', 'type' => 'select', 'options' => [
+                        'none' => 'None',
+                        'soft' => 'Soft (20%)',
+                        'medium' => 'Medium (35%)',
+                        'strong' => 'Strong (50%)',
                     ]],
 
                     // ----- Full-bleed background layer (block-level) -----
                     // bg_color paints the entire block; bg_image sits over it
                     // at bg_opacity %; bg_blend optionally mixes them.
-                    ['key' => 'bg_color', 'label' => 'رنگ پس‌زمینهٔ بلاک (پشت تصویر)', 'type' => 'color'],
-                    ['key' => 'bg_image', 'label' => 'تصویر پس‌زمینهٔ بلاک (اختیاری — پشت اسلایدها)', 'type' => 'image'],
-                    ['key' => 'bg_opacity', 'label' => 'شفافیت تصویر پس‌زمینه', 'type' => 'range', 'min' => 0, 'max' => 100, 'default' => 100, 'unit' => '٪'],
+                    ['key' => 'bg_color', 'label' => 'Block Background Color (behind the image)', 'type' => 'color'],
+                    ['key' => 'bg_image', 'label' => 'Block Background Image (optional — behind the slides)', 'type' => 'image'],
+                    ['key' => 'bg_opacity', 'label' => 'Background Image Opacity', 'type' => 'range', 'min' => 0, 'max' => 100, 'default' => 100, 'unit' => '%'],
 
                     // ----- Floating PNG overlay (block-level) -----
                     // Sits ABOVE the slide image and overlay; positioned by
                     // x/y % per breakpoint so the admin can drop a logo,
                     // sticker or seal anywhere on the banner.
-                    ['key' => 'overlay_png', 'label' => 'تصویر روی بنر (PNG شناور — اختیاری)', 'type' => 'image'],
-                    ['key' => 'overlay_png_link', 'label' => 'لینک روی PNG (اختیاری — کلیک روی تصویر شناور)', 'type' => 'text'],
-                    ['key' => 'overlay_width', 'label' => 'عرض PNG شناور (٪ از عرض بلاک)', 'type' => 'range', 'min' => 1, 'max' => 100, 'default' => 25, 'unit' => '٪'],
-                    // Position unit — درصد (٪, scales with the banner) or پیکسل (px,
+                    ['key' => 'overlay_png', 'label' => 'Image over Banner (floating PNG — optional)', 'type' => 'image'],
+                    ['key' => 'overlay_png_link', 'label' => 'Link on PNG (optional — click on the floating image)', 'type' => 'text'],
+                    ['key' => 'overlay_width', 'label' => 'Floating PNG Width (% of block width)', 'type' => 'range', 'min' => 1, 'max' => 100, 'default' => 25, 'unit' => '%'],
+                    // Position unit — percent (%, scales with the banner) or pixels (px,
                     // exact). Drag the PNG on the canvas or type an exact value.
-                    ['key' => 'overlay_unit', 'label' => 'واحد موقعیت PNG', 'type' => 'select', 'options' => ['%' => 'درصد (٪)', 'px' => 'پیکسل (px)']],
-                    ['key' => 'overlay_x_desktop', 'label' => 'موقعیت افقی PNG (دسکتاپ)', 'type' => 'number'],
-                    ['key' => 'overlay_y_desktop', 'label' => 'موقعیت عمودی PNG (دسکتاپ)', 'type' => 'number'],
-                    ['key' => 'overlay_x_mobile', 'label' => 'موقعیت افقی PNG (موبایل)', 'type' => 'number'],
-                    ['key' => 'overlay_y_mobile', 'label' => 'موقعیت عمودی PNG (موبایل)', 'type' => 'number'],
+                    ['key' => 'overlay_unit', 'label' => 'PNG Position Unit', 'type' => 'select', 'options' => ['%' => 'Percent (%)', 'px' => 'Pixels (px)']],
+                    ['key' => 'overlay_x_desktop', 'label' => 'PNG Horizontal Position (desktop)', 'type' => 'number'],
+                    ['key' => 'overlay_y_desktop', 'label' => 'PNG Vertical Position (desktop)', 'type' => 'number'],
+                    ['key' => 'overlay_x_mobile', 'label' => 'PNG Horizontal Position (mobile)', 'type' => 'number'],
+                    ['key' => 'overlay_y_mobile', 'label' => 'PNG Vertical Position (mobile)', 'type' => 'number'],
 
                     // Per-slide: image (desktop) + image_mobile + all overlay
                     // elements + per-breakpoint position and font size.
-                    ['key' => 'slides', 'label' => 'اسلایدها (هر اسلاید عکس، متن و موقعیت مستقل)', 'type' => 'repeater', 'sub' => [
-                        ['key' => 'image', 'label' => 'تصویر دسکتاپ (افقی)', 'type' => 'image'],
-                        ['key' => 'image_mobile', 'label' => 'تصویر موبایل (عمودی — اختیاری؛ خالی = همان تصویر دسکتاپ)', 'type' => 'image'],
-                        ['key' => 'link', 'label' => 'لینک کل تصویر (اختیاری — کلیک روی هر جای اسلاید)', 'type' => 'text'],
-                        ['key' => 'kicker', 'label' => 'بالا‌نویس (مثلاً «حالا فعال»)', 'type' => 'text'],
-                        ['key' => 'title', 'label' => 'تیتر بزرگ', 'type' => 'text'],
-                        ['key' => 'subtitle', 'label' => 'زیر‌نویس کوچک', 'type' => 'text'],
-                        ['key' => 'cta_text', 'label' => 'متن دکمه', 'type' => 'text'],
-                        ['key' => 'cta_link', 'label' => 'لینک دکمه', 'type' => 'text'],
-                        ['key' => 'ends_at', 'label' => 'تایمر شمارش معکوس (تاریخ و ساعت پایان)', 'type' => 'datetime'],
-                        ['key' => 'text_color', 'label' => 'رنگ متن', 'type' => 'select', 'options' => [
-                            'white' => 'سفید', 'dark' => 'تیره',
+                    ['key' => 'slides', 'label' => 'Slides (each slide has its own image, text and position)', 'type' => 'repeater', 'sub' => [
+                        ['key' => 'image', 'label' => 'Desktop Image (landscape)', 'type' => 'image'],
+                        ['key' => 'image_mobile', 'label' => 'Mobile Image (portrait — optional; empty = same as desktop image)', 'type' => 'image'],
+                        ['key' => 'link', 'label' => 'Link for Entire Image (optional — click anywhere on the slide)', 'type' => 'text'],
+                        ['key' => 'kicker', 'label' => 'Kicker (e.g. "Now Live")', 'type' => 'text'],
+                        ['key' => 'title', 'label' => 'Large Title', 'type' => 'text'],
+                        ['key' => 'subtitle', 'label' => 'Small Subtitle', 'type' => 'text'],
+                        ['key' => 'cta_text', 'label' => 'Button Text', 'type' => 'text'],
+                        ['key' => 'cta_link', 'label' => 'Button Link', 'type' => 'text'],
+                        ['key' => 'ends_at', 'label' => 'Countdown Timer (end date and time)', 'type' => 'datetime'],
+                        ['key' => 'text_color', 'label' => 'Text Color', 'type' => 'select', 'options' => [
+                            'white' => 'White', 'dark' => 'Dark',
                         ]],
-                        ['key' => 'title_size', 'label' => 'اندازه تیتر', 'type' => 'select', 'options' => [
-                            'sm' => 'کوچک', 'md' => 'متوسط', 'lg' => 'بزرگ', 'xl' => 'عظیم',
+                        ['key' => 'title_size', 'label' => 'Title Size', 'type' => 'select', 'options' => [
+                            'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large', 'xl' => 'Huge',
                         ]],
-                        ['key' => 'position_desktop', 'label' => 'موقعیت متن (دسکتاپ)', 'type' => 'select', 'options' => [
-                            'tl' => '↖ بالا چپ', 'tc' => '↑ بالا وسط', 'tr' => '↗ بالا راست',
-                            'ml' => '← وسط چپ', 'mc' => '○ وسط',          'mr' => '→ وسط راست',
-                            'bl' => '↙ پایین چپ','bc' => '↓ پایین وسط','br' => '↘ پایین راست',
+                        ['key' => 'position_desktop', 'label' => 'Text Position (desktop)', 'type' => 'select', 'options' => [
+                            'tl' => '↖ Top Left', 'tc' => '↑ Top Center', 'tr' => '↗ Top Right',
+                            'ml' => '← Middle Left', 'mc' => '○ Center',          'mr' => '→ Middle Right',
+                            'bl' => '↙ Bottom Left','bc' => '↓ Bottom Center','br' => '↘ Bottom Right',
                         ]],
-                        ['key' => 'position_mobile', 'label' => 'موقعیت متن (موبایل)', 'type' => 'select', 'options' => [
-                            'tl' => '↖ بالا چپ', 'tc' => '↑ بالا وسط', 'tr' => '↗ بالا راست',
-                            'ml' => '← وسط چپ', 'mc' => '○ وسط',          'mr' => '→ وسط راست',
-                            'bl' => '↙ پایین چپ','bc' => '↓ پایین وسط','br' => '↘ پایین راست',
+                        ['key' => 'position_mobile', 'label' => 'Text Position (mobile)', 'type' => 'select', 'options' => [
+                            'tl' => '↖ Top Left', 'tc' => '↑ Top Center', 'tr' => '↗ Top Right',
+                            'ml' => '← Middle Left', 'mc' => '○ Center',          'mr' => '→ Middle Right',
+                            'bl' => '↙ Bottom Left','bc' => '↓ Bottom Center','br' => '↘ Bottom Right',
                         ]],
                         // ---- Font + overlay + CTA styling per slide ----
-                        ['key' => 'title_font', 'label' => 'فونت تیتر', 'type' => 'select', 'options' => [
-                            'sans'    => 'وزیر — متن فارسی',
-                            'display' => 'Jost — لاتین/ادیتوریال',
-                            'mono'    => 'JetBrains Mono — تایپ ماشینی',
+                        ['key' => 'title_font', 'label' => 'Title Font', 'type' => 'select', 'options' => [
+                            'sans'    => 'Vazir — Persian text',
+                            'display' => 'Jost — Latin/editorial',
+                            'mono'    => 'JetBrains Mono — typewriter',
                         ]],
-                        ['key' => 'title_weight', 'label' => 'وزن تیتر', 'type' => 'select', 'options' => [
-                            'light' => 'نازک', 'normal' => 'معمولی', 'semibold' => 'نیمه‌پررنگ', 'bold' => 'پررنگ', 'extrabold' => 'فوق‌پررنگ',
+                        ['key' => 'title_weight', 'label' => 'Title Weight', 'type' => 'select', 'options' => [
+                            'light' => 'Light', 'normal' => 'Normal', 'semibold' => 'Semibold', 'bold' => 'Bold', 'extrabold' => 'Extra Bold',
                         ]],
-                        ['key' => 'title_tracking', 'label' => 'فاصلهٔ حروف تیتر', 'type' => 'select', 'options' => [
-                            'tight' => 'فشرده', 'normal' => 'معمولی', 'wide' => 'باز', 'wider' => 'بازتر',
+                        ['key' => 'title_tracking', 'label' => 'Title Letter Spacing', 'type' => 'select', 'options' => [
+                            'tight' => 'Tight', 'normal' => 'Normal', 'wide' => 'Wide', 'wider' => 'Wider',
                         ]],
-                        ['key' => 'kicker_font', 'label' => 'فونت بالا‌نویس', 'type' => 'select', 'options' => [
-                            'sans-italic'    => 'وزیر ایتالیک',
-                            'display-italic' => 'Jost ایتالیک',
-                            'display-upper'  => 'Jost بزرگ‌نویس',
+                        ['key' => 'kicker_font', 'label' => 'Kicker Font', 'type' => 'select', 'options' => [
+                            'sans-italic'    => 'Vazir Italic',
+                            'display-italic' => 'Jost Italic',
+                            'display-upper'  => 'Jost Uppercase',
                         ]],
                         // Per-slide overlay tint + opacity (overrides the block-level overlay for this slide)
-                        ['key' => 'slide_overlay_color', 'label' => 'رنگ لایهٔ روی تصویر', 'type' => 'select', 'options' => [
-                            'none' => 'بدون', 'dark' => 'تیره', 'light' => 'روشن', 'red' => 'قرمز برند', 'gradient-bottom' => 'گرادیان از پایین',
+                        ['key' => 'slide_overlay_color', 'label' => 'Overlay Color on Image', 'type' => 'select', 'options' => [
+                            'none' => 'None', 'dark' => 'Dark', 'light' => 'Light', 'red' => 'Brand Clay', 'gradient-bottom' => 'Gradient from Bottom',
                         ]],
-                        ['key' => 'slide_overlay_opacity', 'label' => 'شفافیت لایه', 'type' => 'select', 'options' => [
-                            '0' => '۰٪', '20' => '۲۰٪', '35' => '۳۵٪', '50' => '۵۰٪', '70' => '۷۰٪', '85' => '۸۵٪',
+                        ['key' => 'slide_overlay_opacity', 'label' => 'Overlay Opacity', 'type' => 'select', 'options' => [
+                            '0' => '0%', '20' => '20%', '35' => '35%', '50' => '50%', '70' => '70%', '85' => '85%',
                         ]],
                         // CTA appearance — underlined link or filled pill
-                        ['key' => 'cta_style', 'label' => 'سبک دکمه CTA', 'type' => 'select', 'options' => [
-                            'underline' => 'لینک با خط‌زیرین (ادیتوریال)',
-                            'pill-light' => 'دکمه روشن (پر)',
-                            'pill-dark'  => 'دکمه تیره (پر)',
-                            'pill-accent'=> 'دکمه قرمز برند',
-                            'ghost'      => 'دکمه شبح (بدون پر)',
+                        ['key' => 'cta_style', 'label' => 'CTA Button Style', 'type' => 'select', 'options' => [
+                            'underline' => 'Underlined Link (editorial)',
+                            'pill-light' => 'Light Button (filled)',
+                            'pill-dark'  => 'Dark Button (filled)',
+                            'pill-accent'=> 'Brand Clay Button',
+                            'ghost'      => 'Ghost Button (no fill)',
                         ]],
                         // Padding inside the slide for the overlay text container
-                        ['key' => 'text_padding', 'label' => 'فاصله متن از لبهٔ تصویر', 'type' => 'select', 'options' => [
-                            'tight' => 'فشرده', 'normal' => 'معمولی', 'loose' => 'بازتر',
+                        ['key' => 'text_padding', 'label' => 'Text Spacing from Image Edge', 'type' => 'select', 'options' => [
+                            'tight' => 'Tight', 'normal' => 'Normal', 'loose' => 'Looser',
                         ]],
                     ]],
                 ],
             ],
             'collection_feature' => [
-                'label' => 'معرفی کالکشن (ادیتوریال)',
+                'label' => 'Collection Feature (Editorial)',
                 'icon' => '📰',
                 'fields' => [
-                    ['key' => 'collection', 'label' => 'کالکشن (جستجو و انتخاب)', 'type' => 'picker', 'source' => 'collections'],
-                    ['key' => 'eyebrow', 'label' => 'برچسب کوچک (مثلاً CHIACO COLLECTION)', 'type' => 'text'],
-                    ['key' => 'cta_text', 'label' => 'متن دکمه (پیش‌فرض: «مشاهده همه»)', 'type' => 'text'],
+                    ['key' => 'collection', 'label' => 'Collection (search and choose)', 'type' => 'picker', 'source' => 'collections'],
+                    ['key' => 'eyebrow', 'label' => 'Small Label (e.g. RACKET CLUB COLLECTION)', 'type' => 'text'],
+                    ['key' => 'cta_text', 'label' => 'Button Text (default: "View All")', 'type' => 'text'],
 
                     // Manual product override: if set, these exact products show
                     // in this exact order instead of the collection's auto-feed.
-                    ['key' => 'products', 'label' => 'محصولات انتخابی (خالی = جدیدترین‌های همین کالکشن)', 'type' => 'multipicker', 'source' => 'products'],
-                    ['key' => 'limit', 'label' => 'تعداد محصول کنار توضیح (۲ تا ۴)', 'type' => 'number'],
-                    ['key' => 'show_summary', 'label' => 'نمایش توضیح کوتاه زیر هر محصول', 'type' => 'select', 'options' => [
-                        'no' => 'خیر',
-                        'yes' => 'بله',
+                    ['key' => 'products', 'label' => 'Selected Products (empty = newest from this collection)', 'type' => 'multipicker', 'source' => 'products'],
+                    ['key' => 'limit', 'label' => 'Number of Products Beside the Text (2 to 4)', 'type' => 'number'],
+                    ['key' => 'show_summary', 'label' => 'Show Short Description Under Each Product', 'type' => 'select', 'options' => [
+                        'no' => 'No',
+                        'yes' => 'Yes',
                     ]],
 
                     // Image: override + size knob. Override beats the collection's image_path.
-                    ['key' => 'image_override', 'label' => 'تصویر سفارشی (اختیاری — جایگزین تصویر کالکشن)', 'type' => 'image'],
-                    ['key' => 'image_size', 'label' => 'اندازهٔ تصویر', 'type' => 'select', 'options' => [
-                        'sm' => 'کوچک (۴:۵)',
-                        'md' => 'متوسط (۳:۴)',
-                        'lg' => 'بزرگ (۲:۳)',
-                        'square' => 'مربع (۱:۱)',
-                        'wide'  => 'افقی (۴:۳)',
+                    ['key' => 'image_override', 'label' => 'Custom Image (optional — replaces the collection image)', 'type' => 'image'],
+                    ['key' => 'image_size', 'label' => 'Image Size', 'type' => 'select', 'options' => [
+                        'sm' => 'Small (4:5)',
+                        'md' => 'Medium (3:4)',
+                        'lg' => 'Large (2:3)',
+                        'square' => 'Square (1:1)',
+                        'wide'  => 'Landscape (4:3)',
                     ]],
-                    ['key' => 'image_side', 'label' => 'موقعیت تصویر (دسکتاپ)', 'type' => 'select', 'options' => [
-                        'start' => 'سمت راست (پیش‌فرض RTL)',
-                        'end' => 'سمت چپ',
+                    ['key' => 'image_side', 'label' => 'Image Position (desktop)', 'type' => 'select', 'options' => [
+                        'start' => 'Start Side (default RTL)',
+                        'end' => 'End Side',
                     ]],
-                    ['key' => 'image_size_mobile', 'label' => 'اندازهٔ تصویر — موبایل', 'type' => 'select', 'options' => [
-                        'sm' => 'کوچک ۴:۵', 'md' => 'متوسط ۳:۴', 'lg' => 'بزرگ ۲:۳', 'square' => 'مربع', 'wide' => 'افقی ۴:۳',
+                    ['key' => 'image_size_mobile', 'label' => 'Image Size — Mobile', 'type' => 'select', 'options' => [
+                        'sm' => 'Small 4:5', 'md' => 'Medium 3:4', 'lg' => 'Large 2:3', 'square' => 'Square', 'wide' => 'Landscape 4:3',
                     ]],
-                    ['key' => 'tone', 'label' => 'رنگ برشِ مورب', 'type' => 'select', 'options' => [
-                        'red' => 'قرمز ایرانی',
-                        'dark' => 'تیره چیاکو',
+                    ['key' => 'tone', 'label' => 'Diagonal Cut Color', 'type' => 'select', 'options' => [
+                        'red' => 'Club Clay',
+                        'dark' => 'Club Navy',
                     ]],
-                    ['key' => 'corner', 'label' => 'گوشهٔ برش', 'type' => 'select', 'options' => [
-                        'bottom' => 'پایین',
-                        'top' => 'بالا',
+                    ['key' => 'corner', 'label' => 'Cut Corner', 'type' => 'select', 'options' => [
+                        'bottom' => 'Bottom',
+                        'top' => 'Top',
                     ]],
-                    ['key' => 'container', 'label' => 'پهنای ناحیه', 'type' => 'select', 'options' => [
-                        'default' => 'پیش‌فرض', 'wide' => 'عریض', 'full' => 'تمام‌عرض',
+                    ['key' => 'container', 'label' => 'Section Width', 'type' => 'select', 'options' => [
+                        'default' => 'Default', 'wide' => 'Wide', 'full' => 'Full Width',
                     ]],
-                    ['key' => 'padding', 'label' => 'فاصله عمودی بخش', 'type' => 'select', 'options' => [
-                        'none' => 'بدون', 'sm' => 'کم', 'md' => 'متوسط', 'lg' => 'زیاد',
+                    ['key' => 'padding', 'label' => 'Section Vertical Spacing', 'type' => 'select', 'options' => [
+                        'none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large',
                     ]],
                 ],
             ],
             'velour_banner' => [
-                'label' => 'بنر مخملی (پارالاکس)',
+                'label' => 'Velour Banner (Parallax)',
                 'icon' => '🫧',
                 'fields' => [
-                    ['key' => 'image', 'label' => 'تصویر بنر', 'type' => 'image'],
-                    ['key' => 'image_x', 'label' => 'موقعیت افقی تصویر (۰=چپ تا ۱۰۰=راست)', 'type' => 'range', 'min' => 0, 'max' => 100, 'default' => 50, 'unit' => '٪'],
-                    ['key' => 'image_y', 'label' => 'موقعیت عمودی تصویر (۰=بالا تا ۱۰۰=پایین)', 'type' => 'range', 'min' => 0, 'max' => 100, 'default' => 44, 'unit' => '٪'],
-                    ['key' => 'image_zoom', 'label' => 'بزرگ‌نمایی تصویر', 'type' => 'range', 'min' => 100, 'max' => 220, 'default' => 132, 'unit' => '٪'],
-                    ['key' => 'image_mobile', 'label' => 'تصویر جایگزین برای گوشی (اختیاری)', 'type' => 'image'],
-                    ['key' => 'kicker', 'label' => 'بالا‌نویس (مثلاً «کالکشن ویژه»)', 'type' => 'text'],
-                    ['key' => 'title', 'label' => 'تیتر (خط اول)', 'type' => 'text'],
-                    ['key' => 'title_em', 'label' => 'تیتر ایتالیک (خط دوم — اختیاری)', 'type' => 'text'],
-                    ['key' => 'meta', 'label' => 'متن پایین (هر خط جدا)', 'type' => 'lines'],
-                    ['key' => 'link', 'label' => 'لینک بنر (اختیاری — کل بنر کلیک‌پذیر می‌شود)', 'type' => 'text'],
-                    ['key' => 'accent', 'label' => 'رنگ تأکید (طلایی پیش‌فرض)', 'type' => 'color'],
-                    ['key' => 'caption_position', 'label' => 'موقعیت متن', 'type' => 'select', 'options' => [
-                        'right' => 'راست', 'left' => 'چپ', 'center' => 'وسط',
+                    ['key' => 'image', 'label' => 'Banner Image', 'type' => 'image'],
+                    ['key' => 'image_x', 'label' => 'Image Horizontal Position (0=left to 100=right)', 'type' => 'range', 'min' => 0, 'max' => 100, 'default' => 50, 'unit' => '%'],
+                    ['key' => 'image_y', 'label' => 'Image Vertical Position (0=top to 100=bottom)', 'type' => 'range', 'min' => 0, 'max' => 100, 'default' => 44, 'unit' => '%'],
+                    ['key' => 'image_zoom', 'label' => 'Image Zoom', 'type' => 'range', 'min' => 100, 'max' => 220, 'default' => 132, 'unit' => '%'],
+                    ['key' => 'image_mobile', 'label' => 'Alternate Image for Mobile (optional)', 'type' => 'image'],
+                    ['key' => 'kicker', 'label' => 'Kicker (e.g. "Featured Collection")', 'type' => 'text'],
+                    ['key' => 'title', 'label' => 'Title (first line)', 'type' => 'text'],
+                    ['key' => 'title_em', 'label' => 'Italic Title (second line — optional)', 'type' => 'text'],
+                    ['key' => 'meta', 'label' => 'Bottom Text (one per line)', 'type' => 'lines'],
+                    ['key' => 'link', 'label' => 'Banner Link (optional — makes the whole banner clickable)', 'type' => 'text'],
+                    ['key' => 'accent', 'label' => 'Accent Color (gold by default)', 'type' => 'color'],
+                    ['key' => 'caption_position', 'label' => 'Text Position', 'type' => 'select', 'options' => [
+                        'right' => 'Right', 'left' => 'Left', 'center' => 'Center',
                     ]],
-                    ['key' => 'height', 'label' => 'ارتفاع', 'type' => 'select', 'options' => [
-                        'strip'  => 'نوار (۲۰vh)',
-                        'short'  => 'کوتاه (۴۰vh)',
-                        'banner' => 'بنر (۵۵vh)',
-                        'med'    => 'متوسط (۷۵vh)',
-                        'tall'   => 'تمام‌صفحه (۱۰۰vh)',
-                        'custom' => 'سفارشی — با اسلایدر پایین',
+                    ['key' => 'height', 'label' => 'Height', 'type' => 'select', 'options' => [
+                        'strip'  => 'Strip (20vh)',
+                        'short'  => 'Short (40vh)',
+                        'banner' => 'Banner (55vh)',
+                        'med'    => 'Medium (75vh)',
+                        'tall'   => 'Full Screen (100vh)',
+                        'custom' => 'Custom — with the slider below',
                     ]],
-                    ['key' => 'height_custom', 'label' => 'ارتفاع سفارشی (فقط وقتی «سفارشی» انتخاب شده)', 'type' => 'range', 'min' => 10, 'max' => 120, 'default' => 40, 'unit' => 'vh'],
-                    ['key' => 'bubbles', 'label' => 'حباب‌های شناور', 'type' => 'select', 'options' => [
-                        'subtle' => 'ملایم', 'rich' => 'پرحجم', 'none' => 'بدون',
+                    ['key' => 'height_custom', 'label' => 'Custom Height (only when "Custom" is selected)', 'type' => 'range', 'min' => 10, 'max' => 120, 'default' => 40, 'unit' => 'vh'],
+                    ['key' => 'bubbles', 'label' => 'Floating Bubbles', 'type' => 'select', 'options' => [
+                        'subtle' => 'Subtle', 'rich' => 'Rich', 'none' => 'None',
                     ]],
-                    ['key' => 'parallax', 'label' => 'حرکت پارالاکس با ماوس', 'type' => 'select', 'options' => [
-                        'on' => 'روشن', 'off' => 'خاموش',
+                    ['key' => 'parallax', 'label' => 'Mouse Parallax Motion', 'type' => 'select', 'options' => [
+                        'on' => 'On', 'off' => 'Off',
                     ]],
                 ],
             ],
             'countdown_banner' => [
-                'label' => 'بنر شمارش معکوس',
+                'label' => 'Countdown Banner',
                 'icon' => '⏳',
                 'fields' => [
-                    ['key' => 'heading', 'label' => 'عنوان', 'type' => 'text'],
-                    ['key' => 'subtitle', 'label' => 'زیرعنوان', 'type' => 'text'],
-                    ['key' => 'ends_at', 'label' => 'پایان (YYYY-MM-DD HH:MM، تایم‌زون تهران)', 'type' => 'text'],
-                    ['key' => 'cta_text', 'label' => 'متن دکمه', 'type' => 'text'],
-                    ['key' => 'cta_link', 'label' => 'لینک دکمه', 'type' => 'text'],
-                    ['key' => 'style', 'label' => 'پس‌زمینه', 'type' => 'select', 'options' => [
-                        'grad-dark-red' => 'گرادیان تیره‑قرمز', 'grad-red-light' => 'گرادیان قرمز', 'dark' => 'تیره', 'amber' => 'کهربایی',
+                    ['key' => 'heading', 'label' => 'Title', 'type' => 'text'],
+                    ['key' => 'subtitle', 'label' => 'Subtitle', 'type' => 'text'],
+                    ['key' => 'ends_at', 'label' => 'End (YYYY-MM-DD HH:MM, Tehran timezone)', 'type' => 'text'],
+                    ['key' => 'cta_text', 'label' => 'Button Text', 'type' => 'text'],
+                    ['key' => 'cta_link', 'label' => 'Button Link', 'type' => 'text'],
+                    ['key' => 'style', 'label' => 'Background', 'type' => 'select', 'options' => [
+                        'grad-dark-red' => 'Dark Clay Gradient', 'grad-red-light' => 'Clay Gradient', 'dark' => 'Dark', 'amber' => 'Amber',
                     ]],
                 ],
             ],

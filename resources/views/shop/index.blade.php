@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', ($activeCollection->name ?? $activeCategory->name ?? null) ? (($activeCollection->name ?? $activeCategory->name).' | چیاکو') : 'فروشگاه | چیاکو')
+@section('title', ($activeCollection->name ?? $activeCategory->name ?? null) ? (($activeCollection->name ?? $activeCategory->name).' | Racket Club') : 'Shop | Racket Club')
 
 @section('content')
 
@@ -15,7 +15,7 @@
             {{-- Signature diagonal red cut --}}
             <div class="pointer-events-none absolute inset-y-0 end-0 w-1/3 bg-accent-600/90" style="clip-path: polygon(100% 0, 100% 100%, 30% 100%);"></div>
             <div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
-                <p class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/60"><x-brand-dot class="h-2.5 w-2.5 text-accent-500" />کالکشن</p>
+                <p class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/60"><x-brand-dot class="h-2.5 w-2.5 text-accent-500" />Collection</p>
                 <h1 class="mt-2 text-4xl font-bold text-white sm:text-5xl">{{ $activeCollection->name }}</h1>
                 @if ($activeCollection->description)
                     <p class="mt-4 max-w-xl text-base leading-7 text-white/70">{{ $activeCollection->description }}</p>
@@ -28,7 +28,7 @@
                  class="absolute inset-0 h-full w-full object-cover object-center opacity-25">
             <x-brand-pattern-2 class="pointer-events-none absolute inset-0 h-full w-full text-white" :opacity="'0.07'" />
             <div class="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-18">
-                <p class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/60"><x-brand-dot class="h-2.5 w-2.5 text-accent-500" />دسته‌بندی</p>
+                <p class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-white/60"><x-brand-dot class="h-2.5 w-2.5 text-accent-500" />Category</p>
                 <h1 class="mt-2 text-4xl font-bold text-white sm:text-5xl">{{ $activeCategory->name }}</h1>
             </div>
         </section>
@@ -47,17 +47,17 @@
         <div class="mb-6 flex items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-brand-900">
-                    {{ $activeCollection?->name ?? $activeCategory?->name ?? 'فروشگاه' }}
+                    {{ $activeCollection?->name ?? $activeCategory?->name ?? 'Shop' }}
                 </h1>
-                <p class="mt-0.5 text-sm text-brand-500 fa-num">{{ \App\Support\Money::toPersianDigits((string) $products->total()) }} محصول</p>
+                <p class="mt-0.5 text-sm text-brand-500 fa-num">{{ $products->total() }} products</p>
             </div>
             <button type="button" id="filter-toggle"
                     class="flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2.5 text-sm font-medium text-brand-700 shadow-sm transition hover:bg-brand-50 lg:hidden">
                 <svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12"/></svg>
-                فیلتر
+                Filter
                 @php($activeFiltersCount = collect(['category','size','q','min','max','in_stock'])->filter(fn($k) => request($k))->count())
                 @if ($activeFiltersCount > 0)
-                    <span class="grid h-5 w-5 place-items-center rounded-full bg-accent-600 text-[10px] font-bold text-white fa-num">{{ \App\Support\Money::toPersianDigits((string) $activeFiltersCount) }}</span>
+                    <span class="grid h-5 w-5 place-items-center rounded-full bg-accent-600 text-[10px] font-bold text-white fa-num">{{ $activeFiltersCount }}</span>
                 @endif
             </button>
         </div>
@@ -69,41 +69,41 @@
                 @if (request('q'))
                     <a href="{{ request()->fullUrlWithQuery(['q' => null, 'page' => null]) }}"
                        class="flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1.5 text-xs font-medium text-brand-700 transition hover:bg-brand-200">
-                        جستجو: {{ request('q') }}
+                        Search: {{ request('q') }}
                         <svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                 @endif
                 @if (request('category'))
                     <a href="{{ request()->fullUrlWithQuery(['category' => null, 'page' => null]) }}"
                        class="flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1.5 text-xs font-medium text-brand-700 transition hover:bg-brand-200">
-                        دسته: {{ $categories->firstWhere('slug', request('category'))?->name ?? request('category') }}
+                        Category: {{ $categories->firstWhere('slug', request('category'))?->name ?? request('category') }}
                         <svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                 @endif
                 @if (request('size'))
                     <a href="{{ request()->fullUrlWithQuery(['size' => null, 'page' => null]) }}"
                        class="flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1.5 text-xs font-medium text-brand-700 transition hover:bg-brand-200">
-                        سایز: {{ request('size') }}
+                        Size: {{ request('size') }}
                         <svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                 @endif
                 @if (request('min') || request('max'))
                     <a href="{{ request()->fullUrlWithQuery(['min' => null, 'max' => null, 'page' => null]) }}"
                        class="flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1.5 text-xs font-medium text-brand-700 transition hover:bg-brand-200">
-                        قیمت: {{ request('min') ? \App\Support\Money::toman((int)request('min')) : '' }}{{ request('min') && request('max') ? ' — ' : '' }}{{ request('max') ? \App\Support\Money::toman((int)request('max')) : '' }}
+                        Price: {{ request('min') ? \App\Support\Money::toman((int)request('min')) : '' }}{{ request('min') && request('max') ? ' — ' : '' }}{{ request('max') ? \App\Support\Money::toman((int)request('max')) : '' }}
                         <svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                 @endif
                 @if (request()->boolean('in_stock'))
                     <a href="{{ request()->fullUrlWithQuery(['in_stock' => null, 'page' => null]) }}"
                        class="flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1.5 text-xs font-medium text-brand-700 transition hover:bg-brand-200">
-                        فقط موجود
+                        In Stock
                         <svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
                     </a>
                 @endif
                 <a href="{{ route('shop.index') }}"
                    class="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs text-brand-400 transition hover:text-brand-700">
-                    حذف همه فیلترها
+                    Clear All
                 </a>
             </div>
         @endif
@@ -127,7 +127,7 @@
 
                     {{-- Mobile drawer header --}}
                     <div class="flex items-center justify-between lg:hidden">
-                        <span class="font-bold text-brand-900">فیلترها</span>
+                        <span class="font-bold text-brand-900">Filters</span>
                         <button type="button" data-filter-close class="grid h-8 w-8 place-items-center rounded-lg text-brand-500 hover:bg-brand-50">
                             <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
@@ -136,9 +136,9 @@
                     <input type="hidden" name="sort" value="{{ request('sort') }}">
 
                     <div>
-                        <label class="mb-2 block text-sm font-semibold text-brand-800">جستجو</label>
+                        <label class="mb-2 block text-sm font-semibold text-brand-800">Search</label>
                         <div class="relative" data-search-autocomplete>
-                            <input type="search" name="q" value="{{ request('q') }}" placeholder="نام محصول..."
+                            <input type="search" name="q" value="{{ request('q') }}" placeholder="Product name..."
                                    autocomplete="off"
                                    class="w-full rounded-xl border border-brand-200 py-2.5 ps-9 pe-3 text-sm outline-none transition placeholder:text-brand-300 focus:border-brand-400 focus:ring-2 focus:ring-brand-100">
                             <svg aria-hidden="true" class="pointer-events-none absolute start-3 top-3 h-4 w-4 text-brand-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -147,10 +147,10 @@
                     </div>
 
                     <div>
-                        <span class="mb-2 block text-sm font-semibold text-brand-800">دسته‌بندی</span>
+                        <span class="mb-2 block text-sm font-semibold text-brand-800">Category</span>
                         <div class="space-y-1.5">
                             <label class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-brand-600 transition hover:bg-brand-50">
-                                <input type="radio" name="category" value="" @checked(! request('category')) onchange="this.form.requestSubmit()" class="accent-brand-900"> همه
+                                <input type="radio" name="category" value="" @checked(! request('category')) onchange="this.form.requestSubmit()" class="accent-brand-900"> All
                             </label>
                             @foreach ($categories as $category)
                                 <label class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-brand-600 transition hover:bg-brand-50">
@@ -162,7 +162,7 @@
                     </div>
 
                     <div>
-                        <span class="mb-2 block text-sm font-semibold text-brand-800">سایز</span>
+                        <span class="mb-2 block text-sm font-semibold text-brand-800">Size</span>
                         <div class="flex flex-wrap gap-2">
                             @foreach ($sizes as $size)
                                 <label class="cursor-pointer">
@@ -180,9 +180,9 @@
                         minRange: 0,
                         maxRange: {{ $_maxRange }},
                         step: 10000,
-                        format(n) { return n.toLocaleString('fa-IR'); }
+                        format(n) { return n.toLocaleString('en-US'); }
                     }">
-                        <span class="mb-2 block text-sm font-semibold text-brand-800">محدوده قیمت (تومان)</span>
+                        <span class="mb-2 block text-sm font-semibold text-brand-800">Price Range (Toman)</span>
                         <div class="relative h-2 rounded-full bg-brand-100 mt-6 mb-3">
                             <div class="absolute h-full rounded-full bg-brand-900"
                                 :style="'right:' + ((min - minRange) / (maxRange - minRange) * 100) + '%' +
@@ -206,14 +206,14 @@
 
                     <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-brand-700 transition hover:bg-brand-50">
                         <input type="checkbox" name="in_stock" value="1" @checked(request()->boolean('in_stock')) onchange="this.form.requestSubmit()" class="accent-brand-900">
-                        فقط کالاهای موجود
+                        In stock only
                     </label>
 
                     <div class="flex gap-2">
                         <button type="submit"
-                                class="flex-1 rounded-xl bg-brand-900 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-800 active:scale-[0.98]">اعمال فیلتر</button>
+                                class="flex-1 rounded-xl bg-brand-900 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-800 active:scale-[0.98]">Apply Filters</button>
                         <a href="{{ route('shop.index') }}"
-                           class="grid place-items-center rounded-xl px-3 text-sm text-brand-500 ring-1 ring-brand-200 transition hover:bg-brand-50">پاک</a>
+                           class="grid place-items-center rounded-xl px-3 text-sm text-brand-500 ring-1 ring-brand-200 transition hover:bg-brand-50">Clear</a>
                     </div>
                 </form>
             </aside>
@@ -225,30 +225,30 @@
                 {{-- Sort bar --}}
                 <div class="mb-5 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-brand-400">مرتب‌سازی:</span>
+                        <span class="text-xs text-brand-400">Sort:</span>
                         <form action="{{ route('shop.index') }}" method="GET" id="sort-form">
                             @foreach (request()->except('sort', 'page') as $k => $v)
                                 <input type="hidden" name="{{ $k }}" value="{{ $v }}">
                             @endforeach
                             <select name="sort" onchange="document.getElementById('sort-form').requestSubmit()"
                                     class="cursor-pointer rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-400">
-                                <option value="newest" @selected(request('sort') === 'newest' || ! request('sort'))>جدیدترین</option>
-                                <option value="price_asc" @selected(request('sort') === 'price_asc')>ارزان‌ترین</option>
-                                <option value="price_desc" @selected(request('sort') === 'price_desc')>گران‌ترین</option>
-                                <option value="popular" @selected(request('sort') === 'popular')>پربازدیدترین</option>
-                                <option value="bestseller" @selected(request('sort') === 'bestseller')>پرفروش‌ترین</option>
+                                <option value="newest" @selected(request('sort') === 'newest' || ! request('sort'))>Newest</option>
+                                <option value="price_asc" @selected(request('sort') === 'price_asc')>Price: Low to High</option>
+                                <option value="price_desc" @selected(request('sort') === 'price_desc')>Price: High to Low</option>
+                                <option value="popular" @selected(request('sort') === 'popular')>Most Viewed</option>
+                                <option value="bestseller" @selected(request('sort') === 'bestseller')>Best Selling</option>
                             </select>
                         </form>
                     </div>
                     <div class="flex items-center gap-1 rounded-xl border border-brand-200 p-0.5">
                         <button @click="view = 'grid'; localStorage.setItem('shop_view', 'grid')"
                                 :class="view === 'grid' ? 'bg-brand-900 text-white' : 'text-brand-400 hover:text-brand-600'"
-                                class="rounded-lg p-1.5 transition" aria-label="نمایش گرید">
+                                class="rounded-lg p-1.5 transition" aria-label="Grid view">
                             <svg aria-hidden="true" class="h-4 w-4" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5z"/></svg>
                         </button>
                         <button @click="view = 'list'; localStorage.setItem('shop_view', 'list')"
                                 :class="view === 'list' ? 'bg-brand-900 text-white' : 'text-brand-400 hover:text-brand-600'"
-                                class="rounded-lg p-1.5 transition" aria-label="نمایش لیست">
+                                class="rounded-lg p-1.5 transition" aria-label="List view">
                             <svg aria-hidden="true" class="h-4 w-4" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5"/></svg>
                         </button>
                     </div>
@@ -288,9 +288,9 @@
                 @if ($products->isEmpty())
                     <x-empty-state
                         icon="search"
-                        title="نتیجه‌ای پیدا نشد"
-                        caption="با این فیلترها محصولی موجود نیست. می‌توانید فیلترها را پاک کنید یا یک عبارت دیگر را امتحان کنید."
-                        :cta="['label' => 'حذف فیلترها', 'href' => route('shop.index')]" />
+                        title="No results found"
+                        caption="Nothing matches these filters. Clear them or try a different search."
+                        :cta="['label' => 'Clear Filters', 'href' => route('shop.index')]" />
                 @else
                     <div :class="view === 'list' ? 'space-y-4' : 'grid grid-cols-2 gap-4 sm:grid-cols-3'">
                         @foreach ($products as $product)
@@ -314,7 +314,7 @@
                                                 @csrf
                                                 <input type="hidden" name="variant_id" value="{{ $product->variants->first()?->id }}">
                                                 <input type="hidden" name="quantity" value="1">
-                                                <button class="rounded-full bg-brand-900 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-800">افزودن</button>
+                                                <button class="rounded-full bg-brand-900 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-800">Add to Bag</button>
                                             </form>
                                         </div>
                                     </div>
@@ -337,7 +337,7 @@
         {{-- Scroll-to-top --}}
         <button x-data="{ visible: false }" x-init="window.addEventListener('scroll', () => visible = window.scrollY > 600)" x-show="visible" x-cloak
                 @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
-                class="fixed bottom-6 start-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-brand-900 text-white shadow-lg transition hover:bg-brand-800 active:scale-95" aria-label="رفتن به بالا">
+                class="fixed bottom-6 start-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-brand-900 text-white shadow-lg transition hover:bg-brand-800 active:scale-95" aria-label="Back to top">
             <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg>
         </button>
     </div>

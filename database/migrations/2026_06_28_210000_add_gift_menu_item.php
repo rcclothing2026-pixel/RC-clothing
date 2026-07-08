@@ -32,7 +32,7 @@ return new class extends Migration
         MenuItem::create([
             'location'  => 'header',
             'parent_id' => null,
-            'label'     => 'هدیه',
+            'label'     => 'Gifting',
             'url'       => '/gift',
             'position'  => $maxPosition + 10,
             'is_active' => true,

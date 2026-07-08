@@ -21,7 +21,7 @@
                 @php($img = ($slide['image'] ?? null) ?: '/placeholder?w=800&h=900&seed=mb'.$k)
                 <div data-slide="{{ $k }}" class="absolute inset-0 transition-opacity duration-700 ease-out {{ $k === 0 ? 'opacity-100' : 'opacity-0' }}" @if($k) style="pointer-events:none" @endif>
                     <div class="grid h-full items-center gap-4 p-6 sm:p-12 md:grid-cols-2">
-                        <div class="relative z-10 order-2 text-center md:order-1 md:text-right">
+                        <div class="relative z-10 order-2 text-center md:order-1 md:text-left">
                             @if (!empty($slide['title']))
                                 <h2 class="text-2xl font-bold leading-tight text-brand-900 sm:text-4xl md:text-5xl">{{ $slide['title'] }}</h2>
                             @endif
@@ -45,7 +45,7 @@
             @if (count($slides) > 1)
                 <div class="absolute inset-x-0 bottom-5 z-20 flex justify-center gap-2">
                     @foreach ($slides as $k => $slide)
-                        <button type="button" data-dot="{{ $k }}" aria-label="اسلاید {{ $k + 1 }}"
+                        <button type="button" data-dot="{{ $k }}" aria-label="Slide {{ $k + 1 }}"
                                 class="h-2.5 w-2.5 rounded-full transition {{ $k === 0 ? 'bg-brand-900' : 'bg-brand-300' }}"></button>
                     @endforeach
                 </div>

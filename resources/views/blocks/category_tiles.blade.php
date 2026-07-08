@@ -21,8 +21,8 @@
 @if ($categories->isNotEmpty())
     <section class="mx-auto {{ $containerClass }} {{ $padClass }} px-4 sm:px-6">
         <div class="reveal mb-8 flex items-end justify-between">
-            <h2 class="text-2xl font-bold text-brand-900">{{ ($data['heading'] ?? null) ?: 'دسته‌بندی‌ها' }}</h2>
-            <a href="{{ route('shop.index') }}" class="text-sm font-medium text-accent-600 hover:underline">مشاهده همه</a>
+            <h2 class="text-2xl font-bold text-brand-900">{{ ($data['heading'] ?? null) ?: 'Categories' }}</h2>
+            <a href="{{ route('shop.index') }}" class="text-sm font-medium text-accent-600 hover:underline">View All</a>
         </div>
 
         @if ($layout === 'marquee')
@@ -56,12 +56,12 @@
                 {{-- Prev / Next arrows. In RTL «next» visually points left
                      (matches the reading flow direction). --}}
                 <button type="button" data-marquee-prev="{{ $marqueeId }}"
-                        aria-label="قبلی"
+                        aria-label="Previous"
                         class="absolute end-2 top-1/2 z-10 hidden -translate-y-1/2 place-items-center rounded-full bg-white/95 text-brand-900 shadow-md ring-1 ring-brand-100 transition hover:bg-white sm:grid sm:h-10 sm:w-10">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
                 <button type="button" data-marquee-next="{{ $marqueeId }}"
-                        aria-label="بعدی"
+                        aria-label="Next"
                         class="absolute start-2 top-1/2 z-10 hidden -translate-y-1/2 place-items-center rounded-full bg-white/95 text-brand-900 shadow-md ring-1 ring-brand-100 transition hover:bg-white sm:grid sm:h-10 sm:w-10">
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
                 </button>

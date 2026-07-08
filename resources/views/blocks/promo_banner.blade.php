@@ -15,7 +15,7 @@
     <div class="relative overflow-hidden rounded-card {{ $bg }} px-6 py-12 text-center sm:px-12">
         <x-brand-pattern class="absolute inset-0 h-full w-full" :color="$dark ? '#ffffff' : '#282828'" opacity="0.05" />
         <div class="relative">
-            <h2 class="text-2xl font-bold sm:text-3xl {{ $dark ? 'text-white' : 'text-brand-900' }}">{{ ($data['heading'] ?? null) ?: 'پیشنهاد ویژه' }}</h2>
+            <h2 class="text-2xl font-bold sm:text-3xl {{ $dark ? 'text-white' : 'text-brand-900' }}">{{ ($data['heading'] ?? null) ?: 'Special Offer' }}</h2>
             @if (!empty($data['text']))
                 <p class="mx-auto mt-3 max-w-xl text-sm leading-7 {{ $dark ? 'text-white/85' : 'text-brand-600' }}">{{ $data['text'] }}</p>
             @endif

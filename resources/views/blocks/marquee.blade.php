@@ -1,7 +1,7 @@
 @php
     $items = $data['items'] ?? [];
     if (! is_array($items) || ! $items) {
-        $items = ['ارسال رایگان برای خرید بالای ۱٬۰۰۰٬۰۰۰ تومان', '۷ روز ضمانت بازگشت کالا', 'پرداخت امن', 'پشتیبانی همه‌روزه'];
+        $items = ['Complimentary delivery on orders over 1,000,000 Toman', '7-day returns', 'Secure checkout', 'Support every day'];
     }
     $bg = ($data['style'] ?? 'dark') === 'red' ? 'bg-accent-600 text-white' : 'bg-brand-900 text-brand-100';
 @endphp

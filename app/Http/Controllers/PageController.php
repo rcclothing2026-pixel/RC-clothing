@@ -14,12 +14,12 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class PageController extends Controller
 {
     private const PAGES = [
-        'about' => 'درباره چیاکو',
-        'faq' => 'سوالات متداول',
-        'terms' => 'قوانین و مقررات',
-        'privacy' => 'حریم خصوصی',
-        'shipping-returns' => 'شرایط ارسال و بازگشت کالا',
-        'size-guide' => 'راهنمای سایز',
+        'about' => 'About',
+        'faq' => 'FAQ',
+        'terms' => 'Terms',
+        'privacy' => 'Privacy',
+        'shipping-returns' => 'Shipping & Returns',
+        'size-guide' => 'Size Guide',
     ];
 
     public function show(string $slug): View

@@ -1,4 +1,4 @@
-@props(['name' => 'province', 'value' => '', 'placeholder' => 'استان', 'required' => false])
+@props(['name' => 'province', 'value' => '', 'placeholder' => 'Province', 'required' => false])
 
 @php $provinces = config('provinces'); @endphp
 

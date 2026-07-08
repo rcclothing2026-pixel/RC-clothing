@@ -49,6 +49,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 
+// Language toggle (en/fa) — persists the choice in the session, then returns
+// the visitor to the page they were on. Read by App\Http\Middleware\SetLocale.
+Route::get('/locale/{locale}', function (string $locale) {
+    if (in_array($locale, (array) config('app.available_locales', ['en', 'fa']), true)) {
+        session(['locale' => $locale]);
+    }
+
+    return redirect()->back();
+})->name('locale.switch');
+
 // /gift — interactive gift discovery (page-builder hero + AJAX filter grid).
 Route::get('/gift', [GiftController::class, 'index'])->name('gift.index');
 Route::get('/gift/surprise', [GiftController::class, 'surprise'])->name('gift.surprise');

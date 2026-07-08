@@ -5,9 +5,9 @@
         'grad-red-light' => 'bg-grad-red-light',
         'grad-dark-red' => 'bg-grad-dark-red',
         'dark' => 'bg-brand-900',
-        default => 'bg-gradient-to-bl from-brand-100 via-paper to-brand-50',
+        default => 'bg-paper',
     };
-    $img = ($data['image'] ?? null) ?: '/placeholder?w=900&h=1100&seed=hero&label='.urlencode('کالکشن چیاکو');
+    $img = ($data['image'] ?? null) ?: '/placeholder?w=900&h=1100&seed=hero&label='.urlencode('Racket Club Collection');
     $ctaLink = ($data['cta_link'] ?? null) ?: route('shop.index');
 @endphp
 <section class="relative overflow-hidden {{ $bg }}">
@@ -16,8 +16,8 @@
             @if (!empty($data['badge']))
                 <span class="inline-block rounded-full px-4 py-1.5 text-xs font-medium ring-1 {{ $dark ? 'bg-white/15 text-white ring-white/30' : 'bg-white/70 text-brand-600 ring-brand-200' }}" data-edit="badge">{{ $data['badge'] }}</span>
             @endif
-            <h1 class="mt-6 text-4xl font-bold leading-tight sm:text-5xl md:text-6xl {{ $dark ? 'text-white' : 'text-brand-900' }}">
-                <span data-edit="title">{{ ($data['title'] ?? null) ?: 'استایلِ امروزِ تو،' }}</span>
+            <h1 class="mt-6 font-display text-4xl font-bold uppercase leading-tight sm:text-5xl md:text-6xl {{ $dark ? 'text-white' : 'text-brand-900' }}">
+                <span data-edit="title">{{ ($data['title'] ?? null) ?: 'Style for your leisure moments' }}</span>
                 @if (!empty($data['accent']))<br><span class="{{ $dark ? 'text-accent-400' : 'text-accent-600' }}" data-edit="accent">{{ $data['accent'] }}</span>@endif
             </h1>
             @if (!empty($data['subtitle']))
@@ -31,7 +31,7 @@
         </div>
         <div class="reveal relative" style="transition-delay:120ms">
             <div class="aspect-[4/5] overflow-hidden rounded-[2rem] bg-brand-100 shadow-xl ring-1 ring-white/50">
-                <img src="{{ $img }}" alt="{{ $data['title'] ?? 'کالکشن چیاکو' }}" class="h-full w-full object-cover">
+                <img src="{{ $img }}" alt="{{ $data['title'] ?? 'Racket Club Collection' }}" class="h-full w-full object-cover">
             </div>
         </div>
     </div>

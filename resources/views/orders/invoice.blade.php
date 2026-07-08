@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>فاکتور سفارش {{ $order->number }}</title>
+    <title>Order Invoice {{ $order->number }}</title>
     @php($s = \App\Models\Setting::map())
     <style>
         @font-face { font-family: Vazirmatn; src: local('Vazirmatn'); }
@@ -17,7 +17,7 @@
         .box { background: #f7f8fa; border-radius: 8px; padding: 12px 14px; flex: 1; min-width: 220px; }
         .box b { display: block; margin-bottom: 4px; }
         table { width: 100%; border-collapse: collapse; margin-top: 18px; }
-        th, td { padding: 9px 8px; text-align: right; border-bottom: 1px solid #e5e7eb; }
+        th, td { padding: 9px 8px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         thead th { background: #f0f1f4; font-size: 12px; color: #4b5563; }
         tfoot td { border: none; padding: 4px 8px; }
         .totals { margin-top: 8px; margin-inline-start: auto; width: 280px; }
@@ -30,45 +30,45 @@
     </style>
 </head>
 <body>
-    <div class="actions"><button class="btn" onclick="window.print()">چاپ فاکتور</button></div>
+    <div class="actions"><button class="btn" onclick="window.print()">Print Invoice</button></div>
     <div class="sheet">
         <div class="head">
             <div>
-                <h1>{{ ($s['site.store_name'] ?? null) ?: 'چیاکو' }}</h1>
-                <div class="muted">فاکتور فروش</div>
+                <h1>{{ ($s['site.store_name'] ?? null) ?: 'Racket Club' }}</h1>
+                <div class="muted">Sales Invoice</div>
             </div>
-            <div style="text-align:left">
-                <div>شماره: <b class="fa-num" dir="ltr">{{ $order->number }}</b></div>
-                <div class="muted">تاریخ: {{ \App\Support\Jalali::format($order->placed_at ?? $order->created_at, true) }}</div>
-                <div class="muted">وضعیت: {{ $order->statusLabel() }}</div>
+            <div style="text-align:right">
+                <div>Number: <b class="fa-num" dir="ltr">{{ $order->number }}</b></div>
+                <div class="muted">Date: {{ \App\Support\Jalali::format($order->placed_at ?? $order->created_at, true) }}</div>
+                <div class="muted">Status: {{ $order->statusLabel() }}</div>
             </div>
         </div>
 
         <div class="meta">
             <div class="box">
-                <b>خریدار</b>
+                <b>Customer</b>
                 {{ $order->customer_name }} — <span class="fa-num" dir="ltr">{{ $order->customer_phone }}</span>
             </div>
             @if ($order->shipping_address)
                 @php($a = (array) $order->shipping_address)
                 <div class="box">
-                    <b>نشانی ارسال</b>
-                    {{ $a['province'] ?? '' }}، {{ $a['city'] ?? '' }} — {{ $a['line'] ?? '' }}
-                    @if (!empty($a['postal_code']))<div class="muted fa-num">کدپستی: {{ $a['postal_code'] }}</div>@endif
+                    <b>Shipping Address</b>
+                    {{ $a['province'] ?? '' }}, {{ $a['city'] ?? '' }} — {{ $a['line'] ?? '' }}
+                    @if (!empty($a['postal_code']))<div class="muted fa-num">Postal code: {{ $a['postal_code'] }}</div>@endif
                 </div>
             @endif
         </div>
 
         <table>
             <thead>
-                <tr><th>#</th><th>کالا</th><th>تعداد</th><th>قیمت واحد</th><th>جمع</th></tr>
+                <tr><th>#</th><th>Item</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr>
             </thead>
             <tbody>
                 @foreach ($order->items as $i => $item)
                     <tr>
-                        <td class="fa-num">{{ \App\Support\Money::toPersianDigits((string) ($i + 1)) }}</td>
+                        <td class="fa-num">{{ $i + 1 }}</td>
                         <td>{{ $item->name }}@if($item->size) <span class="muted">({{ $item->size }}@if($item->color) / {{ $item->color }}@endif)</span>@endif</td>
-                        <td class="fa-num">{{ \App\Support\Money::toPersianDigits((string) $item->quantity) }}</td>
+                        <td class="fa-num">{{ $item->quantity }}</td>
                         <td>{{ \App\Support\Money::toman($item->unit_price) }}</td>
                         <td>{{ \App\Support\Money::toman($item->line_total) }}</td>
                     </tr>
@@ -77,19 +77,19 @@
         </table>
 
         <div class="totals">
-            <div class="row"><span>جمع کالاها</span><span>{{ \App\Support\Money::toman($order->subtotal) }}</span></div>
+            <div class="row"><span>Subtotal</span><span>{{ \App\Support\Money::toman($order->subtotal) }}</span></div>
             @if ($order->discount > 0)
-                <div class="row"><span>تخفیف{{ $order->coupon_code ? ' ('.$order->coupon_code.')' : '' }}</span><span>−{{ \App\Support\Money::toman($order->discount) }}</span></div>
+                <div class="row"><span>Discount{{ $order->coupon_code ? ' ('.$order->coupon_code.')' : '' }}</span><span>−{{ \App\Support\Money::toman($order->discount) }}</span></div>
             @endif
-            <div class="row"><span>هزینه ارسال{{ $order->shipping_method_name ? ' ('.$order->shipping_method_name.')' : '' }}</span><span>{{ $order->shipping_cost > 0 ? \App\Support\Money::toman($order->shipping_cost) : 'رایگان' }}</span></div>
-            <div class="row grand"><span>مبلغ کل</span><span>{{ \App\Support\Money::toman($order->total) }}</span></div>
+            <div class="row"><span>Shipping{{ $order->shipping_method_name ? ' ('.$order->shipping_method_name.')' : '' }}</span><span>{{ $order->shipping_cost > 0 ? \App\Support\Money::toman($order->shipping_cost) : 'Free' }}</span></div>
+            <div class="row grand"><span>Total</span><span>{{ \App\Support\Money::toman($order->total) }}</span></div>
         </div>
 
         @if ($order->payment && $order->payment->ref_id)
-            <p class="muted" style="margin-top:18px">کد پیگیری پرداخت: <span class="fa-num" dir="ltr">{{ $order->payment->ref_id }}</span></p>
+            <p class="muted" style="margin-top:18px">Payment reference: <span class="fa-num" dir="ltr">{{ $order->payment->ref_id }}</span></p>
         @endif
         @if ($phone = ($s['site.contact_phone'] ?? null))
-            <p class="muted">پشتیبانی: <span dir="ltr">{{ $phone }}</span></p>
+            <p class="muted">Support: <span dir="ltr">{{ $phone }}</span></p>
         @endif
     </div>
 </body>
