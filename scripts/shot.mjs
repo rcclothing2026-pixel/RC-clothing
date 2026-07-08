@@ -1,8 +1,9 @@
 // Dev-only screenshot helper. Usage: node scripts/shot.mjs <path> <outfile> [width]
 import { chromium } from 'playwright';
-const [path = '/', out = 'shot.png', width = '1440'] = process.argv.slice(2);
+const [path = '/', out = 'shot.png', width = '1440', locale = ''] = process.argv.slice(2);
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
 const page = await browser.newPage({ viewport: { width: +width, height: 1000 } });
+if (locale) await page.goto('http://127.0.0.1:8000/locale/' + locale, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
 await page.goto('http://127.0.0.1:8000' + path, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
 // Scroll through the page to trigger lazy-loaded images, then back to top.
 await page.evaluate(async () => {
