@@ -19,6 +19,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // <html lang/dir>, currency formatting, and translated chrome copy.
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
+            // Cron-less scheduler: web traffic kicks `schedule:run` once a minute
+            // (in terminate(), after the response) since this host's OS cron does
+            // not reliably fire. Safe to keep even if a real cron is added later.
+            \App\Http\Middleware\RunDueSchedule::class,
         ]);
         // Inbound webhooks authenticate via signature / path secret, not CSRF.
         $middleware->validateCsrfTokens(except: [
