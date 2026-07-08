@@ -21,8 +21,10 @@
 #
 # Flags:
 #   --pull         git pull --ff-only the current branch before building
-#   --code-only    FAST deploy: ship app code only, keep the server's vendor/
-#                  (safe UNLESS you changed composer deps — then do a full deploy)
+#   --code-only    FAST deploy: ship app code only; keep the server's vendor/,
+#                  campaign images (public/img) and fonts (public/fonts). Safe
+#                  unless you changed composer deps, images, or fonts — then run
+#                  a full deploy (omit this flag) once.
 #   --no-build     reuse the newest RELEASE/*.zip instead of rebuilding
 #   --no-migrate   skip database migrations (files/assets only)
 #   --seed         run the production seeder after migrating (first deploy)
@@ -130,16 +132,26 @@ if [ "$DO_BUILD" -eq 1 ]; then
 
   STAGE="$(mktemp -d)"
   ok "staging app (excluding dev/local files)…"
-  rsync -a \
-    --exclude='.git' --exclude='.github' --exclude='node_modules' \
-    --exclude='.claude' --exclude='.cursor' \
-    --exclude='.env' --exclude='.env.*' \
-    --exclude='storage' --exclude='tests' --exclude='scripts' --exclude='RELEASE' \
-    --exclude='bootstrap/cache/*' --exclude='database/*.sqlite' \
-    --exclude='public/storage' --exclude='public/hot' \
-    --exclude='vendor' \
-    --exclude='.DS_Store' --exclude='auth.json' \
-    ./ "$STAGE/"
+  # design-system/ is brand-book + client source material (PDFs, fonts, ~70M) —
+  # never runtime; the assets the site uses already live in public/. Always skip.
+  RSYNC_EXCLUDES=(
+    --exclude='.git' --exclude='.github' --exclude='node_modules'
+    --exclude='.claude' --exclude='.cursor'
+    --exclude='.env' --exclude='.env.*'
+    --exclude='storage' --exclude='tests' --exclude='scripts' --exclude='RELEASE'
+    --exclude='bootstrap/cache/*' --exclude='database/*.sqlite'
+    --exclude='public/storage' --exclude='public/hot'
+    --exclude='vendor'
+    --exclude='design-system'
+    --exclude='.DS_Store' --exclude='auth.json'
+  )
+  # Fast (code-only) also skips the big STATIC assets the server already has —
+  # campaign photos + self-hosted fonts don't change between code deploys. Do a
+  # full deploy when you add/change images or fonts.
+  if [ "$DO_VENDOR" -eq 0 ]; then
+    RSYNC_EXCLUDES+=( --exclude='public/img' --exclude='public/fonts' )
+  fi
+  rsync -a "${RSYNC_EXCLUDES[@]}" ./ "$STAGE/"
 
   if [ "$DO_VENDOR" -eq 1 ]; then
     ok "composer install --no-dev (prune dev deps, optimize autoloader)…"
