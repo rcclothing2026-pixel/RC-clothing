@@ -118,8 +118,12 @@ if [ "$DO_BUILD" -eq 1 ]; then
   done < <(find app config routes bootstrap -name '*.php' 2>/dev/null)
   ok "preflight: no merge markers, no PHP syntax errors"
 
+  if [ ! -d node_modules ]; then
+    ok "installing npm deps (first build; may be slow)…"
+    npm install || die "npm install failed — run 'npm install' manually to see the error"
+  fi
   ok "vite build (production assets)…"
-  npm run build >/dev/null 2>&1 || die "npm run build failed — run it manually to see the error"
+  npm run build || die "npm run build failed (output above) — try 'npm install' then re-run"
 
   STAGE="$(mktemp -d)"
   ok "staging app (excluding dev/local files)…"
