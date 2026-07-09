@@ -45,4 +45,14 @@ return [
         'body_url' => env('MELIPAYAMAK_BODY_URL', 'https://console.melipayamak.com/api/send/shared'),
     ],
 
+    // NJ Focus central event hub (nj-focus-IR). When NJ_FOCUS_API_KEY is set,
+    // unhandled exceptions (server) and window errors (browser) are forwarded
+    // to the hub alongside Sentry. Empty key → no-op.
+    'nj_focus' => [
+        'key' => env('NJ_FOCUS_API_KEY', ''),
+        'base_url' => env('NJ_FOCUS_URL', 'https://chiacoservice.ir'),
+        'app' => env('NJ_FOCUS_APP', 'rc-clothing'),
+        'env' => env('NJ_FOCUS_ENV', env('APP_ENV', 'production')),
+    ],
+
 ];

@@ -53,6 +53,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Racket Club">
     <link rel="apple-touch-icon" href="/favicon.svg">
+    @if(config('services.nj_focus.key'))
+    {{-- NJ Focus browser error capture → central event hub (nj-focus-IR) --}}
+    <script>
+    (function(){
+      var E=@json(rtrim((string) config('services.nj_focus.base_url'), '/').'/api/hub/report'),K=@json(config('services.nj_focus.key')),APP=@json(config('services.nj_focus.app','rc-clothing'));
+      function send(d){d.app=APP;fetch(E,{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':K},body:JSON.stringify(d)}).catch(function(){});}
+      window.onerror=function(msg,src,l,c,err){send({message:String(msg),stack:err&&err.stack,url:src,severity:'high'});};
+      window.addEventListener('unhandledrejection',function(e){send({message:e.reason&&e.reason.message||String(e.reason),stack:e.reason&&e.reason.stack,severity:'medium'});});
+      var _ce=console.error.bind(console);
+      console.error=function(){_ce.apply(console,arguments);try{send({message:Array.from(arguments).map(String).join(' '),severity:'low'});}catch(e){}};
+    })();
+    </script>
+    @endif
 </head>
 <body class="min-h-dvh flex flex-col bg-paper text-ink pb-[calc(3.75rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
     @if ($gtm = ($site['site.gtm_id'] ?? null))
