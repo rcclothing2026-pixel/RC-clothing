@@ -321,6 +321,15 @@
             <label class="flex items-center gap-2 text-sm text-brand-600"><input type="checkbox" name="is_featured" value="1" @checked(old('is_featured', $product->is_featured))> منتخب</label>
             <label class="flex items-center gap-2 text-sm text-brand-600"><input type="checkbox" name="is_bundle" value="1" data-bundle-toggle @checked(old('is_bundle', $product->is_bundle))> پک هدیه (ترکیبی از چند تنوع موجود)</label>
 
+            {{-- External purchase: when on, the storefront buy button links to the
+                 retailer URL below instead of adding to the cart. --}}
+            <label class="flex items-center gap-2 text-sm text-brand-600"><input type="checkbox" name="external_enabled" value="1" @checked(old('external_enabled', $product->external_enabled))> خرید از سایت خارجی (لینک به فروشنده)</label>
+            <div>
+                <label class="mb-1 block text-sm text-brand-600">آدرس خرید خارجی</label>
+                <input name="external_url" type="url" dir="ltr" value="{{ old('external_url', $product->external_url) }}" placeholder="https://example.com/product" class="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm">
+                <p class="mt-1 text-xs text-brand-400">اگر گزینهٔ بالا روشن باشد، دکمهٔ خرید به‌جای افزودن به سبد به این آدرس می‌رود.</p>
+            </div>
+
             <button class="w-full rounded-lg bg-brand-900 py-2.5 text-sm font-semibold text-white">{{ $product->exists ? 'ذخیره تغییرات' : 'ایجاد محصول' }}</button>
         </aside>
     </form>

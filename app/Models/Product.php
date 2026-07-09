@@ -16,6 +16,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'collection_id', 'size_guide_id', 'brand', 'name', 'slug', 'summary', 'description',
         'price', 'compare_at_price', 'is_active', 'is_featured', 'is_bundle',
+        'external_enabled', 'external_url',
         'stockkeeping_id', 'stock_synced_at', 'broadcast_at',
     ];
 
@@ -27,9 +28,20 @@ class Product extends Model
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'is_bundle' => 'boolean',
+            'external_enabled' => 'boolean',
             'stock_synced_at' => 'datetime',
             'broadcast_at' => 'datetime',
         ];
+    }
+
+    /**
+     * "Buy externally" mode: the storefront links out to the retailer's page
+     * instead of selling on-site. On only when the toggle is set AND a URL is
+     * present, so a stray toggle never yields a dead button.
+     */
+    public function isExternal(): bool
+    {
+        return $this->external_enabled && filled($this->external_url);
     }
 
     public function category(): BelongsTo

@@ -228,7 +228,7 @@
                 @endif
 
                 {{-- Sizes --}}
-                @if ($sizes->isNotEmpty())
+                @if ($sizes->isNotEmpty() && ! $product->isExternal())
                     <div class="mt-6">
                         <div class="mb-2 flex items-center justify-between">
                             <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-800"><x-brand-dot class="h-2.5 w-2.5 text-accent-600" />{{ __('Size') }}</span>
@@ -257,6 +257,12 @@
 
                 {{-- Stock + quantity + add to cart --}}
                 <div class="mt-8 flex items-center gap-3">
+                    @if ($product->isExternal())
+                        <a href="{{ $product->external_url }}" target="_blank" rel="noopener nofollow sponsored"
+                           class="flex-1 rounded-full bg-brand-900 py-3.5 text-center text-sm font-semibold text-white transition hover:bg-brand-800 active:scale-[0.98]">
+                            {{ __('Buy from Seller') }}
+                        </a>
+                    @else
                     {{-- Quantity stepper (outside form; JS writes to #qty-input) --}}
                     <div class="flex shrink-0 items-center rounded-xl border border-brand-200 bg-white">
                         <button type="button" id="qty-minus"
@@ -281,6 +287,7 @@
                             {{ $product->inStock() ? __('Add to Bag') : __('Sold Out') }}
                         </button>
                     </form>
+                    @endif
 
                     {{-- Wishlist form (sibling, not nested) --}}
                     @auth
@@ -374,6 +381,7 @@
     </div>
 
     {{-- Sticky mobile add-to-cart bar — only on small screens, slides up when main form scrolls out --}}
+    @unless ($product->isExternal())
     <div id="sticky-atc"
          class="lg:hidden fixed inset-x-0 bottom-0 z-40 translate-y-full bg-white border-t border-brand-100 shadow-[0_-4px_24px_rgba(0,0,0,0.10)] transition-transform duration-300 ease-out"
          aria-hidden="true">
@@ -394,6 +402,7 @@
             </form>
         </div>
     </div>
+    @endunless
 
     {{-- Size guide modal — opens over the product page, no navigation away --}}
     @if ($product->sizeGuide && $product->sizeGuide->is_active)

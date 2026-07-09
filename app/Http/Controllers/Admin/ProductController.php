@@ -161,6 +161,8 @@ class ProductController extends Controller
             'is_active' => ['nullable', 'boolean'],
             'is_featured' => ['nullable', 'boolean'],
             'is_bundle' => ['nullable', 'boolean'],
+            'external_enabled' => ['nullable', 'boolean'],
+            'external_url' => ['nullable', 'url', 'max:2048'],
             'bundle_items' => ['nullable', 'array'],
             'bundle_items.*.variant_id' => ['required_with:bundle_items', 'integer', 'exists:product_variants,id'],
             'bundle_items.*.quantity' => ['required_with:bundle_items', 'integer', 'min:1', 'max:99'],
@@ -187,6 +189,8 @@ class ProductController extends Controller
                 'is_active' => $request->boolean('is_active'),
                 'is_featured' => $request->boolean('is_featured'),
                 'is_bundle' => $request->boolean('is_bundle'),
+                'external_enabled' => $request->boolean('external_enabled'),
+                'external_url' => $validated['external_url'] ?? null,
             ],
         ];
     }

@@ -87,6 +87,16 @@ class CartController extends Controller
 
         $variant = ProductVariant::with('product')->findOrFail($data['variant_id']);
 
+        // External-purchase products are sold on the retailer's site, not here —
+        // reject any add-to-cart attempt (root-cause guard for every POST path:
+        // product page, card quick-add, sticky bar).
+        if ($variant->product && $variant->product->isExternal()) {
+            if ($request->wantsJson()) {
+                return response()->json(['ok' => false, 'message' => 'این محصول از سایت فروشنده خریداری می‌شود.'], 422);
+            }
+            return back()->with('error', 'این محصول از سایت فروشنده خریداری می‌شود.');
+        }
+
         if (! $variant->inStock()) {
             if ($request->wantsJson()) {
                 return response()->json(['ok' => false, 'message' => 'این مورد موجود نیست.'], 422);

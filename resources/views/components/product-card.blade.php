@@ -50,7 +50,7 @@
              shopper adds the RIGHT size straight from the grid (fewer wrong-size
              adds / returns). --}}
         @php($inStockVariants = $product->variants->filter(fn ($v) => $v->inStock())->values())
-        @if ($product->inStock() && $inStockVariants->isNotEmpty())
+        @if ($product->inStock() && $inStockVariants->isNotEmpty() && ! $product->isExternal())
             @if ($inStockVariants->count() === 1)
                 <form action="{{ route('cart.add') }}" method="POST"
                       class="absolute end-2 top-[calc(75%-2.25rem)] sm:top-auto sm:bottom-[3.25rem]"
@@ -122,7 +122,7 @@
                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><circle cx="12" cy="12" r="3"/></svg>
                     {{ __('View Product') }}
                 </div>
-                @if ($firstVariant)
+                @if ($firstVariant && ! $product->isExternal())
                     <form action="{{ route('cart.add') }}" method="POST" class="pointer-events-auto" onclick="event.stopPropagation()">
                         @csrf
                         <input type="hidden" name="variant_id" value="{{ $firstVariant->id }}">
@@ -194,7 +194,7 @@
             </div>
 
             {{-- Touch: always-visible quick-add button (hidden on hover devices) --}}
-            @if ($firstVariant && $product->inStock())
+            @if ($firstVariant && $product->inStock() && ! $product->isExternal())
             <form action="{{ route('cart.add') }}" method="POST" class="[@media(hover:hover)]:hidden z-[2] relative" onclick="event.stopPropagation()">
                 @csrf
                 <input type="hidden" name="variant_id" value="{{ $firstVariant->id }}">
