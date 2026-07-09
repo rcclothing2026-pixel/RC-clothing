@@ -1,6 +1,7 @@
 <header data-header
         x-data="{ navOpen: false, searchOpen: false }"
         x-effect="document.documentElement.style.overflow = navOpen ? 'hidden' : ''"
+        @open-search.window="searchOpen = true; navOpen = false"
         @keydown.escape.window="navOpen = false; searchOpen = false"
         class="sticky top-0 z-50 border-b border-brand-100 bg-paper/85 backdrop-blur transition-colors duration-300">
     {{-- Layout: mobile = flex row (hamburger · logo · search · actions). On lg+
@@ -129,7 +130,7 @@
                   ? 'flex absolute start-3 end-3 top-full z-40 mt-1 rounded-2xl bg-paper p-2 shadow-xl ring-1 ring-brand-200 md:static md:z-auto md:mt-0 md:rounded-none md:bg-transparent md:p-0 md:shadow-none md:ring-0'
                   : 'relative hidden'">
             <div class="relative w-full">
-                <input type="search" name="q" x-model="q" autocomplete="off"
+                <input type="search" name="q" x-model="q" autocomplete="off" id="site-search-input"
                        @input.debounce.250ms="fetchResults()" @focus="results.length && (open = true)"
                        placeholder="{{ __('Search') }}"
                        class="w-full rounded-full border border-brand-200 bg-brand-50/60 py-2 ps-9 pe-3 text-sm outline-none transition placeholder:text-brand-300 focus:border-brand-400 focus:bg-white focus:shadow-sm focus:ring-2 focus:ring-brand-100 md:ps-10 md:pe-4">

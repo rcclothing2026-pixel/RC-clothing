@@ -54,7 +54,7 @@
     <meta name="apple-mobile-web-app-title" content="Racket Club">
     <link rel="apple-touch-icon" href="/favicon.svg">
 </head>
-<body class="min-h-dvh flex flex-col bg-paper text-ink">
+<body class="min-h-dvh flex flex-col bg-paper text-ink pb-[calc(3.75rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
     @if ($gtm = ($site['site.gtm_id'] ?? null))
         {{-- Google Tag Manager (noscript fallback). Must sit immediately after <body>. --}}
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtm }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -91,6 +91,7 @@
     </main>
 
     @include('partials.footer')
+    @include('partials.bottom-nav')
     @include('partials.popups')
     @include('partials.mini-cart')
     @include('partials.free-ship-widget')
