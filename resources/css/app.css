@@ -1,8 +1,15 @@
 @import 'tailwindcss';
 
-/* Pinyon Script — the Racket Club slogan face ("Legends & Legacy"). Used at
-   most once per view; loaded from Google Fonts. */
-@import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap');
+/* Pinyon Script — the Racket Club slogan face ("Legends & Legacy"). Self-hosted:
+   Google Fonts is blocked/filtered in Iran, so the CDN @import failed on mobile
+   and the crest slogan fell back to a sans-serif. Latin subset, OFL. */
+@font-face {
+    font-family: 'Pinyon Script';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/pinyon/pinyon-script.woff2') format('woff2');
+}
 
 /* Alpine x-cloak — REQUIRED, or every x-cloak element (mini-cart drawer,
    cookie bar, alerts) renders visible on load until Alpine hydrates and then
