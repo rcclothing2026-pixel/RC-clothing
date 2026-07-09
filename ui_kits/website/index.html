@@ -18,6 +18,19 @@
 <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
 <script src="./image-slot.js"></script>
 <script src="../../_ds_bundle.js"></script>
+<!-- NJ Focus browser error capture -> central event hub (nj-focus-IR).
+     Static site: no server to hold the key, so this stays a NO-OP until the
+     operator defines window.NJ_FOCUS_KEY (set it in a small script tag on the
+     actually-served page). Nothing secret is committed here. -->
+<script>
+(function(){
+  var K=(window.NJ_FOCUS_KEY||''); if(!K) return;
+  var E=(window.NJ_FOCUS_URL||'https://chiacoservice.ir')+'/api/hub/report',APP='rc-clothing';
+  function send(d){d.app=APP;fetch(E,{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':K},body:JSON.stringify(d)}).catch(function(){});}
+  window.onerror=function(msg,src,l,c,err){send({message:String(msg),stack:err&&err.stack,url:src,severity:'high'});};
+  window.addEventListener('unhandledrejection',function(e){send({message:e.reason&&e.reason.message||String(e.reason),stack:e.reason&&e.reason.stack,severity:'medium'});});
+})();
+</script>
 </head>
 <body>
 <div id="root"></div>
