@@ -3,7 +3,11 @@
         x-effect="document.documentElement.style.overflow = navOpen ? 'hidden' : ''"
         @open-search.window="searchOpen = true; navOpen = false"
         @keydown.escape.window="navOpen = false; searchOpen = false"
-        class="sticky top-0 z-50 border-b border-brand-100 bg-paper/85 backdrop-blur transition-colors duration-300">
+        {{-- NOTE: no backdrop-blur here. backdrop-filter makes the header the
+             containing block for position:fixed descendants, which collapses the
+             mobile drawer + scrim (fixed inset-y-0) to the header's own height
+             instead of the viewport. Near-opaque bg instead of blur. --}}
+        class="sticky top-0 z-50 border-b border-brand-100 bg-paper/95 transition-colors duration-300">
     {{-- Layout: mobile = flex row (hamburger · logo · search · actions). On lg+
          switches to a 3-column grid (nav · CENTERED wordmark · search+actions)
          so the wordmark sits dead-centre regardless of nav width. --}}
