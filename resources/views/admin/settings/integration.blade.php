@@ -12,7 +12,10 @@
          the automatic stock pull / sales flush). Red = cron broken or missing. --}}
     @php($hb = $status['scheduler_last_run'] ?? null)
     @php($hbAge = $hb !== null ? (now()->timestamp - (int) $hb) : null)
-    @php($hbOk = $hbAge !== null && $hbAge <= 180)
+    {{-- 15-min window: the scheduler is driven by web traffic + an optional
+         external minute-pinger, so brief idle gaps are normal and shouldn't
+         alarm. Red only means nothing has ticked for a quarter hour. --}}
+    @php($hbOk = $hbAge !== null && $hbAge <= 900)
     <div class="mb-6 rounded-card p-4 ring-1 {{ $hbOk ? 'bg-green-50 ring-green-200' : 'bg-red-50 ring-red-200' }}">
         <div class="flex flex-wrap items-center gap-2">
             <span class="inline-block h-2.5 w-2.5 rounded-full {{ $hbOk ? 'bg-green-500' : 'bg-red-500' }}"></span>
@@ -31,18 +34,20 @@
         </div>
         @unless ($hbOk)
             <p class="mt-2 text-xs leading-6 text-red-600">
-                همگام‌سازی خودکار موجودی و فروش غیرفعال است. کرون «هر دقیقه» زیر را در cPanel بررسی کنید
-                (مسیر دقیق php و artisan را تطبیق دهید): <code dir="ltr" class="rounded bg-white px-1.5 py-0.5 ring-1 ring-red-100">php artisan schedule:run</code>
+                همگام‌سازی خودکار با ترافیک سایت اجرا می‌شود؛ در ۱۵ دقیقهٔ گذشته هیچ اجرایی ثبت نشده.
+                برای اجرای مطمئن و مستقل از ترافیک، یک سرویس «هر دقیقه» بیرونی (مثل cron-job.org)
+                را به آدرس زیر وصل کنید:
             </p>
-            {{-- Terminal-free alternative: point the host cron at this URL (wget/curl).
-                 Runs the scheduler in the web process — the same path the manual-sync
-                 buttons use — so it works even where the CLI cron can't. --}}
+            {{-- Reliable minute-tick: any external uptime/cron service (cron-job.org,
+                 etc.) hitting this URL every 60s drives the scheduler regardless of
+                 site traffic or the host's (broken) cron. Same in-process path the
+                 manual-sync buttons use. --}}
             @php($cronUrl = url('/cron/run/'.\App\Support\CronToken::value()))
             <div class="mt-3 rounded bg-white p-2.5 ring-1 ring-red-100">
-                <p class="text-xs font-bold text-red-700">بدون ترمینال؟ به‌جای دستور php، این آدرس را در کرون «هر دقیقه» بگذارید:</p>
-                <code dir="ltr" class="mt-1 block break-all rounded bg-red-50 px-2 py-1.5 text-[11px] leading-5 text-red-800 select-all">wget -q -O /dev/null "{{ $cronUrl }}"</code>
+                <code dir="ltr" class="block break-all rounded bg-red-50 px-2 py-1.5 text-[11px] leading-5 text-red-800 select-all">{{ $cronUrl }}</code>
                 <p class="mt-1.5 text-[11px] leading-5 text-brand-500">
-                    برای تست، همین حالا <a href="{{ $cronUrl }}" target="_blank" rel="noopener" class="font-medium text-red-700 underline">این لینک را باز کنید</a> — اگر «OK» دیدید، این صفحه را تازه کنید تا سبز شود.
+                    برای تست، همین حالا <a href="{{ $cronUrl }}" target="_blank" rel="noopener" class="font-medium text-red-700 underline">این لینک را باز کنید</a> — اگر «OK» دیدید، سپس این صفحه را تازه کنید.
+                    ضمناً هر بازدید از سایت هم زمان‌بند را یک بار اجرا می‌کند.
                 </p>
             </div>
         @endunless
