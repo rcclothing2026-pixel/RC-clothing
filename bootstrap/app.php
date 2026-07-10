@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Report meaningful 4xx (403/419/429; 404/422 throttled) to the hub.
+        $middleware->append(\App\Http\Middleware\ReportClientErrors::class);
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
         ]);
