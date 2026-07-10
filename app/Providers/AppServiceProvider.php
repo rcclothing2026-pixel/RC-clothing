@@ -54,6 +54,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Forward Log::error()/critical() to the NJ Focus hub (not just uncaught
+        // exceptions). Attaches to the default channel's Monolog logger; guarded
+        // so a non-Monolog logger or empty key is a silent no-op.
+        if (config('services.nj_focus.key')) {
+            try {
+                $logger = \Illuminate\Support\Facades\Log::getLogger();
+                if ($logger instanceof \Monolog\Logger) {
+                    $logger->pushHandler(new \App\Logging\HubLogHandler(\Monolog\Level::Error));
+                }
+            } catch (\Throwable $e) {
+                // no-op
+            }
+        }
+
         // Let admin-managed settings override env-based config (stock-keeping + SMS).
         if (Schema::hasTable('settings')) {
             $stored = \App\Models\Setting::map();
