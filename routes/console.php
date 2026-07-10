@@ -92,14 +92,21 @@ Schedule::call(function () use ($due) {
     }
 })->everyMinute()->name('cart-recover-email')->withoutOverlapping();
 
-// Import search index from DB to Meilisearch (keeps Scout in sync).
+// Reconcile the Scout search index. Uses the model API (makeAllSearchable)
+// instead of the `scout:import` Artisan command: Scout registers that command
+// ONLY in console context, but the scheduler runs in-process from a web request
+// (soft-cron), where it doesn't exist — calling it there throws
+// CommandNotFoundException. The Searchable trait already reindexes on every save
+// (catalog import, admin edits), so this is just a periodic safety reconcile;
+// swallow errors so a search-driver hiccup can't spam the error log.
 Schedule::call(function () use ($due) {
-    if ($due('scout-products', 60)) {
-        Artisan::call('scout:import', ['model' => \App\Models\Product::class]);
+    if (! $due('scout-reindex', 60)) {
+        return;
     }
-})->everyMinute()->name('scout-products')->withoutOverlapping();
-Schedule::call(function () use ($due) {
-    if ($due('scout-variants', 60)) {
-        Artisan::call('scout:import', ['model' => \App\Models\ProductVariant::class]);
+    try {
+        \App\Models\Product::makeAllSearchable();
+        \App\Models\ProductVariant::makeAllSearchable();
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::warning('[scheduler] scout reindex failed', ['error' => $e->getMessage()]);
     }
-})->everyMinute()->name('scout-variants')->withoutOverlapping();
+})->everyMinute()->name('scout-reindex')->withoutOverlapping();
