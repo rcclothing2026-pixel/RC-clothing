@@ -8,14 +8,59 @@
     <title>@yield('title', ($site['site.seo_title'] ?? null) ?: 'Racket Club | The Art of Leisure')</title>
     <meta name="description" content="@yield('meta_description', ($site['site.seo_description'] ?? null) ?: 'Racket Club — quiet-luxury leisurewear for the life off the court. Legends & Legacy.')">
     @if ($kw = ($site['site.seo_keywords'] ?? null))<meta name="keywords" content="{{ $kw }}">@endif
-    <link rel="canonical" href="{{ url()->current() }}">
+    {{-- hreflang: the storefront is bilingual on ONE url (locale lives in the
+         session). Persian (the default) is the clean URL; English is ?lang=en.
+         Canonical is self-referencing per language; x-default → Persian. A
+         sessionless bot fetching each URL gets the right language via SetLocale. --}}
+    @php($__urlFa = request()->fullUrlWithoutQuery(['lang']))
+    @php($__urlEn = request()->fullUrlWithQuery(['lang' => 'en']))
+    @php($__canonical = $__locale === config('app.locale', 'fa') ? $__urlFa : $__urlEn)
+    <link rel="canonical" href="{{ $__canonical }}">
+    <link rel="alternate" hreflang="fa" href="{{ $__urlFa }}">
+    <link rel="alternate" hreflang="en" href="{{ $__urlEn }}">
+    <link rel="alternate" hreflang="x-default" href="{{ $__urlFa }}">
     {{-- Open Graph / social --}}
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:site_name" content="{{ ($site['site.store_name'] ?? null) ?: 'Racket Club' }}">
     <meta property="og:title" content="@yield('title', 'Racket Club | The Art of Leisure')">
     <meta property="og:description" content="@yield('meta_description', 'Racket Club — quiet-luxury leisurewear. Legends & Legacy.')">
-    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:url" content="{{ $__canonical }}">
+    <meta property="og:locale" content="{{ $__locale === 'fa' ? 'fa_IR' : 'en_US' }}">
     <meta name="twitter:card" content="summary_large_image">
+    @hasSection('og_image')
+        <meta property="og:image" content="@yield('og_image')">
+        <meta name="twitter:image" content="@yield('og_image')">
+    @elseif (trim((string) ($site['site.og_image'] ?? '')) !== '')
+        <meta property="og:image" content="{{ $site['site.og_image'] }}">
+        <meta name="twitter:image" content="{{ $site['site.og_image'] }}">
+    @endif
+    {{-- Site-wide structured data: Organization (brand knowledge panel) + WebSite
+         (enables Google's sitelinks search box). --}}
+    @php($__brand = ($site['site.store_name'] ?? null) ?: 'Racket Club')
+    @php($__social = array_values(array_filter([
+        ($ig = ($site['site.instagram'] ?? null)) ? 'https://instagram.com/'.ltrim($ig, '@') : null,
+        ($tg = ($site['site.telegram'] ?? null)) ? 'https://t.me/'.ltrim($tg, '@') : null,
+        ($wa = ($site['site.whatsapp'] ?? null)) ? 'https://wa.me/'.preg_replace('/\D/', '', $wa) : null,
+    ])))
+    <script type="application/ld+json">@json(array_filter([
+        '@context' => 'https://schema.org',
+        '@type' => 'Organization',
+        'name' => $__brand,
+        'url' => url('/'),
+        'logo' => asset('brand/mark-navy.svg'),
+        'sameAs' => $__social ?: null,
+    ]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
+    <script type="application/ld+json">@json([
+        '@context' => 'https://schema.org',
+        '@type' => 'WebSite',
+        'name' => $__brand,
+        'url' => url('/'),
+        'potentialAction' => [
+            '@type' => 'SearchAction',
+            'target' => url('/shop').'?q={search_term_string}',
+            'query-input' => 'required name=search_term_string',
+        ],
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)</script>
     @stack('head')
     @if ($gv = ($site['site.google_verification'] ?? null))
         <meta name="google-site-verification" content="{{ $gv }}">

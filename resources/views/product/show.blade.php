@@ -1,7 +1,11 @@
 @extends('layouts.app')
 
 @section('title', $product->name.' | Racket Club')
-@section('meta_description', $product->summary)
+@section('meta_description', $product->summary ?: \Illuminate\Support\Str::limit(strip_tags((string) $product->description), 155) ?: $product->name.' — Racket Club')
+@section('og_type', 'product')
+@if ($product->primary_image_url)
+    @section('og_image', url($product->primary_image_url))
+@endif
 
 @push('head')
 <script type="application/ld+json">
@@ -20,6 +24,19 @@
             ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
         'url' => route('product.show', $product),
     ],
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+</script>
+{{-- Breadcrumb structured data (mirrors the visible trail): Home › Shop › [Category] › Product --}}
+<script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'BreadcrumbList',
+    'itemListElement' => array_values(array_filter([
+        ['@type' => 'ListItem', 'position' => 1, 'name' => __('Home'), 'item' => route('home')],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => __('Shop'), 'item' => route('shop.index')],
+        $product->category ? ['@type' => 'ListItem', 'position' => 3, 'name' => $product->category->name, 'item' => route('shop.index', ['category' => $product->category->slug])] : null,
+        ['@type' => 'ListItem', 'position' => $product->category ? 4 : 3, 'name' => $product->name, 'item' => route('product.show', $product)],
+    ])),
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
 </script>
 @endpush
