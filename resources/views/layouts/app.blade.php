@@ -57,7 +57,7 @@
     {{-- NJ Focus browser error capture → central event hub (nj-focus-IR) --}}
     <script>
     (function(){
-      var E=@json(rtrim((string) config('services.nj_focus.base_url'), '/').'/api/hub/report'),K=@json(config('services.nj_focus.key')),APP=@json(config('services.nj_focus.app','rc-clothing'));
+      var E=@json((rtrim((string) config('services.nj_focus.base_url'), '/') ?: 'https://chiacoservice.ir').'/api/hub/report'),K=@json(config('services.nj_focus.key')),APP=@json(config('services.nj_focus.app','rc-clothing'));
       function send(d){d.app=APP;fetch(E,{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':K},body:JSON.stringify(d)}).catch(function(){});}
       window.onerror=function(msg,src,l,c,err){send({message:String(msg),stack:err&&err.stack,url:src,severity:'high'});};
       window.addEventListener('unhandledrejection',function(e){send({message:e.reason&&e.reason.message||String(e.reason),stack:e.reason&&e.reason.stack,severity:'medium'});});
