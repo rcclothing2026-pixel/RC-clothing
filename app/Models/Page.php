@@ -74,6 +74,28 @@ class Page extends Model
     }
 
     /**
+     * The shop page as an editable builder page. Auto-provisioned with just the
+     * product-listing block, so /shop looks/works identically until an admin
+     * adds blocks (banner, text…) around it. Falls back to null pre-migration.
+     */
+    public static function provisionShop(): ?self
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('pages')) {
+            return null;
+        }
+        if ($shop = static::query()->where('slug', 'shop')->first()) {
+            return $shop;
+        }
+
+        return static::create([
+            'title' => 'فروشگاه',
+            'slug' => 'shop',
+            'is_published' => true,
+            'blocks' => [['type' => 'shop_products', 'data' => []]],
+        ]);
+    }
+
+    /**
      * Pre-composed page templates — admin can apply any of these to a page
      * in one click. Each entry returns a blocks array ready to be saved.
      *

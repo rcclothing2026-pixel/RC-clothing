@@ -30,6 +30,13 @@ class BlockRegistry
                 'icon' => '🛒',
                 'fields' => [], // edited in the dedicated Hero admin (admin → بنر هیرو)
             ],
+            'shop_products' => [
+                'label' => 'Shop Product List',
+                'icon' => '🛍',
+                // Renders the full shop (filters + grid + live AJAX). Data comes
+                // from ShopController; only meaningful on the /shop page.
+                'fields' => [],
+            ],
             'motion_banner' => [
                 'label' => 'Motion Banner (Slideshow)',
                 'icon' => '🎞',

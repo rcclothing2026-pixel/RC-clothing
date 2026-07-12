@@ -84,7 +84,23 @@ class ShopController extends Controller
         $catalogueMax = (int) (Product::active()->max('price') ?: 5_000_000);
         $maxPrice = (int) ceil($catalogueMax / 100_000) * 100_000;
 
-        return view('shop.index', compact('products', 'categories', 'sizes', 'activeCategory', 'activeCollection', 'maxPrice'));
+        $shopData = compact('products', 'categories', 'sizes', 'activeCategory', 'activeCollection', 'maxPrice');
+
+        // Render the shop through the page builder so admins can add blocks
+        // (banners, text…) around the product listing. The provisioned page
+        // holds just the `shop_products` block, so this is identical to the old
+        // view by default. Keep the dynamic category/collection title for SEO by
+        // overriding the page title in-memory. Fall back to the legacy view if
+        // pages aren't available (pre-migration) so the shop never 500s.
+        if ($shopPage = \App\Models\Page::provisionShop()) {
+            if ($dynTitle = $activeCollection?->name ?? $activeCategory?->name) {
+                $shopPage->title = $dynTitle;
+            }
+
+            return view('page', ['page' => $shopPage] + $shopData);
+        }
+
+        return view('shop.index', $shopData);
     }
 
     public function suggest(Request $request): \Illuminate\Http\JsonResponse
