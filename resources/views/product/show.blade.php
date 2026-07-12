@@ -94,6 +94,7 @@
                         <span class="pointer-events-none absolute bottom-3 end-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-brand-800 shadow-md opacity-0 transition group-hover:opacity-100" aria-hidden="true">
                             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M8 11h6M11 8v6"/></svg>
                         </span>
+                        <x-product-badge-overlay :product="$product" />
                     </div>
                 </div>
             </div>

@@ -14,7 +14,7 @@ class Product extends Model
     use Searchable;
 
     protected $fillable = [
-        'category_id', 'collection_id', 'size_guide_id', 'brand', 'name', 'slug', 'summary', 'description',
+        'category_id', 'collection_id', 'size_guide_id', 'brand', 'name', 'slug', 'summary', 'description', 'badges',
         'price', 'compare_at_price', 'is_active', 'is_featured', 'is_bundle',
         'external_enabled', 'external_url',
         'stockkeeping_id', 'stock_synced_at', 'broadcast_at',
@@ -31,7 +31,31 @@ class Product extends Model
             'external_enabled' => 'boolean',
             'stock_synced_at' => 'datetime',
             'broadcast_at' => 'datetime',
+            'badges' => 'array',
         ];
+    }
+
+    /**
+     * Non-empty corner badges for rendering, keyed by corner (ts/te/bs/be).
+     * A badge counts as set when it has text (text type) or an image.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function badgeList(): array
+    {
+        $out = [];
+        foreach ((array) ($this->badges ?? []) as $corner => $b) {
+            if (! in_array($corner, ['ts', 'te', 'bs', 'be'], true) || ! is_array($b)) {
+                continue;
+            }
+            $type = ($b['type'] ?? 'text') === 'image' ? 'image' : 'text';
+            $has = $type === 'image' ? (($b['image'] ?? '') !== '') : (trim((string) ($b['text'] ?? '')) !== '');
+            if ($has) {
+                $out[$corner] = $b;
+            }
+        }
+
+        return $out;
     }
 
     /**

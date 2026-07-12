@@ -166,6 +166,18 @@ class ProductController extends Controller
             'bundle_items' => ['nullable', 'array'],
             'bundle_items.*.variant_id' => ['required_with:bundle_items', 'integer', 'exists:product_variants,id'],
             'bundle_items.*.quantity' => ['required_with:bundle_items', 'integer', 'min:1', 'max:99'],
+            // Corner badges (ts/te/bs/be). Free-text keys are normalised below.
+            'badges' => ['nullable', 'array'],
+            'badges.*.type' => ['nullable', 'in:text,image'],
+            'badges.*.text' => ['nullable', 'string', 'max:40'],
+            'badges.*.text_color' => ['nullable', 'string', 'max:9'],
+            'badges.*.bg_color' => ['nullable', 'string', 'max:9'],
+            'badges.*.image' => ['nullable', 'string', 'max:2048'],
+            'badges.*.link' => ['nullable', 'string', 'max:500'],
+            'badges.*.size' => ['nullable', 'in:sm,md,lg'],
+            'badges.*.weight' => ['nullable', 'in:normal,bold'],
+            'badges.*.radius' => ['nullable', 'in:pill,rounded,square'],
+            'badges.*.rotate' => ['nullable', 'integer', 'min:-45', 'max:45'],
         ]);
 
         // Multiple categories (category_ids[]); fall back to the legacy single.
@@ -191,8 +203,51 @@ class ProductController extends Controller
                 'is_bundle' => $request->boolean('is_bundle'),
                 'external_enabled' => $request->boolean('external_enabled'),
                 'external_url' => $validated['external_url'] ?? null,
+                'badges' => $this->normalizeBadges($request->input('badges', [])),
             ],
         ];
+    }
+
+    /**
+     * Keep only the four valid corners with real content, sanitise colours and
+     * clamp the rotation. Returns null when nothing is set (clean column).
+     *
+     * @param  mixed  $raw
+     * @return array<string, array<string, mixed>>|null
+     */
+    private function normalizeBadges($raw): ?array
+    {
+        if (! is_array($raw)) {
+            return null;
+        }
+        $hex = fn ($v) => preg_match('/^#[0-9a-fA-F]{3,8}$/', (string) $v) ? (string) $v : '';
+        $out = [];
+        foreach (['ts', 'te', 'bs', 'be'] as $corner) {
+            $b = $raw[$corner] ?? null;
+            if (! is_array($b)) {
+                continue;
+            }
+            $type = ($b['type'] ?? 'text') === 'image' ? 'image' : 'text';
+            $text = trim((string) ($b['text'] ?? ''));
+            $image = trim((string) ($b['image'] ?? ''));
+            if ($type === 'image' ? $image === '' : $text === '') {
+                continue; // empty corner
+            }
+            $out[$corner] = [
+                'type' => $type,
+                'text' => mb_substr($text, 0, 40),
+                'text_color' => $hex($b['text_color'] ?? ''),
+                'bg_color' => $hex($b['bg_color'] ?? ''),
+                'image' => $image,
+                'link' => mb_substr(trim((string) ($b['link'] ?? '')), 0, 500),
+                'size' => in_array($b['size'] ?? '', ['sm', 'md', 'lg'], true) ? $b['size'] : 'md',
+                'weight' => ($b['weight'] ?? '') === 'bold' ? 'bold' : 'normal',
+                'radius' => in_array($b['radius'] ?? '', ['pill', 'rounded', 'square'], true) ? $b['radius'] : 'rounded',
+                'rotate' => max(-45, min(45, (int) ($b['rotate'] ?? 0))),
+            ];
+        }
+
+        return $out ?: null;
     }
 
     /**

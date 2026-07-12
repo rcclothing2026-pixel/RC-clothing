@@ -38,6 +38,7 @@
                 @unless ($product->inStock())
                     <span class="absolute start-2 top-2 rounded-sm bg-white px-1.5 py-0.5 text-[10px] font-medium text-brand-900 ring-1 ring-brand-100">{{ __('Sold Out') }}</span>
                 @endunless
+                <x-product-badge-overlay :product="$product" />
             </div>
             <div class="mt-3 px-1">
                 <p class="line-clamp-1 text-xs font-medium uppercase tracking-wide text-brand-900 sm:text-sm">{{ $product->name }}</p>
@@ -112,6 +113,8 @@
 
         {{-- Gradient scrim on hover --}}
         <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-950/60 via-brand-950/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+
+        <x-product-badge-overlay :product="$product" />
 
         {{-- Hover CTAs — slides up from bottom on hover (in-stock only, so it never
              collides with the out-of-stock banner; z-[2] sits above the cover link) --}}

@@ -161,6 +161,93 @@
                 <div id="img-preview" class="mt-3 hidden grid-cols-4 gap-3"></div>
             </section>
 
+            {{-- Corner badges — up to 4, shown on every product card + the product page --}}
+            <section class="rounded-card bg-white p-6 ring-1 ring-brand-100">
+                <h2 class="mb-1 text-base font-bold text-brand-900">نشان‌ها (Badges)</h2>
+                <p class="mb-4 text-xs text-brand-400">تا ۴ نشان، یکی در هر گوشهٔ تصویر محصول. متن یا تصویر، با رنگ/اندازه/چرخش و لینک دلخواه. گوشه‌های خالی نمایش داده نمی‌شوند.</p>
+                @php($corners = ['ts' => 'بالا-راست', 'te' => 'بالا-چپ', 'bs' => 'پایین-راست', 'be' => 'پایین-چپ'])
+                <div class="grid gap-4 sm:grid-cols-2">
+                    @foreach ($corners as $c => $label)
+                        @php($bd = old("badges.$c", $product->badges[$c] ?? []))
+                        <div x-data="{ type: '{{ $bd['type'] ?? 'text' }}' }" class="space-y-3 rounded-xl p-4 ring-1 ring-brand-100">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-semibold text-brand-800">{{ $label }}</span>
+                                <select name="badges[{{ $c }}][type]" x-model="type" class="rounded-lg border border-brand-200 bg-white px-2 py-1 text-xs">
+                                    <option value="text">متن</option>
+                                    <option value="image">تصویر</option>
+                                </select>
+                            </div>
+
+                            <div x-show="type === 'text'" class="space-y-2">
+                                <input type="text" name="badges[{{ $c }}][text]" value="{{ $bd['text'] ?? '' }}" maxlength="40" placeholder="مثلاً «جدید»" class="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm">
+                                <div class="flex flex-wrap items-center gap-3 text-xs text-brand-600">
+                                    <label class="flex items-center gap-1">رنگ متن <input type="color" name="badges[{{ $c }}][text_color]" value="{{ $bd['text_color'] ?? '#ffffff' }}" class="h-7 w-9 cursor-pointer rounded border border-brand-200"></label>
+                                    <label class="flex items-center gap-1">رنگ زمینه <input type="color" name="badges[{{ $c }}][bg_color]" value="{{ $bd['bg_color'] ?? '#282828' }}" class="h-7 w-9 cursor-pointer rounded border border-brand-200"></label>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <select name="badges[{{ $c }}][weight]" class="rounded-lg border border-brand-200 bg-white px-2 py-1.5 text-xs">
+                                        <option value="normal" @selected(($bd['weight'] ?? '') === 'normal')>وزن معمولی</option>
+                                        <option value="bold" @selected(($bd['weight'] ?? '') === 'bold')>وزن ضخیم</option>
+                                    </select>
+                                    <select name="badges[{{ $c }}][radius]" class="rounded-lg border border-brand-200 bg-white px-2 py-1.5 text-xs">
+                                        <option value="rounded" @selected(($bd['radius'] ?? 'rounded') === 'rounded')>گوشه‌گرد</option>
+                                        <option value="pill" @selected(($bd['radius'] ?? '') === 'pill')>کپسولی</option>
+                                        <option value="square" @selected(($bd['radius'] ?? '') === 'square')>گوشه‌تیز</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div x-show="type === 'image'" x-cloak class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <button type="button" data-badge-upload="{{ $c }}" class="rounded-lg bg-brand-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800">آپلود تصویر</button>
+                                    <img data-badge-preview="{{ $c }}" src="{{ $bd['image'] ?? '' }}" alt="" class="{{ ($bd['image'] ?? '') === '' ? 'hidden' : '' }} h-10 w-auto rounded ring-1 ring-brand-100">
+                                    <input type="file" accept="image/png,image/jpeg,image/webp" data-badge-file="{{ $c }}" class="hidden">
+                                </div>
+                                <p class="text-xs text-brand-400">PNG / JPG / WEBP</p>
+                            </div>
+                            <input type="hidden" name="badges[{{ $c }}][image]" value="{{ $bd['image'] ?? '' }}" data-badge-image="{{ $c }}">
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <select name="badges[{{ $c }}][size]" class="rounded-lg border border-brand-200 bg-white px-2 py-1.5 text-xs">
+                                    <option value="sm" @selected(($bd['size'] ?? 'md') === 'sm')>اندازه کوچک</option>
+                                    <option value="md" @selected(($bd['size'] ?? 'md') === 'md')>اندازه متوسط</option>
+                                    <option value="lg" @selected(($bd['size'] ?? 'md') === 'lg')>اندازه بزرگ</option>
+                                </select>
+                                <label class="flex items-center gap-1 text-xs text-brand-600">چرخش° <input type="number" name="badges[{{ $c }}][rotate]" value="{{ (int) ($bd['rotate'] ?? 0) }}" min="-45" max="45" class="w-full rounded-lg border border-brand-200 px-2 py-1.5 text-xs"></label>
+                            </div>
+                            <input type="url" dir="ltr" name="badges[{{ $c }}][link]" value="{{ $bd['link'] ?? '' }}" placeholder="لینک (اختیاری)" class="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm">
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+
+            @push('scripts')
+            <script>
+            document.querySelectorAll('[data-badge-upload]').forEach(function (btn) {
+                var c = btn.getAttribute('data-badge-upload');
+                var file = document.querySelector('[data-badge-file="' + c + '"]');
+                var hidden = document.querySelector('[data-badge-image="' + c + '"]');
+                var preview = document.querySelector('[data-badge-preview="' + c + '"]');
+                var tokenEl = document.querySelector('input[name=_token]');
+                var token = tokenEl ? tokenEl.value : '';
+                btn.addEventListener('click', function () { file.click(); });
+                file.addEventListener('change', function () {
+                    var f = file.files && file.files[0]; if (!f) return;
+                    var fd = new FormData(); fd.append('files[]', f);
+                    var lbl = btn.textContent; btn.disabled = true; btn.textContent = '…';
+                    fetch('{{ route('admin.media.upload') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' }, body: fd })
+                        .then(function (r) { return r.json(); })
+                        .then(function (d) {
+                            var u = d && d.files && d.files[0] && d.files[0].url; if (!u) throw new Error('no url');
+                            hidden.value = u; preview.src = u; preview.classList.remove('hidden');
+                        })
+                        .catch(function () { alert('آپلود تصویر ناموفق بود.'); })
+                        .finally(function () { btn.disabled = false; btn.textContent = lbl; file.value = ''; });
+                });
+            });
+            </script>
+            @endpush
+
             @push('scripts')
             <script>
             (function () {
