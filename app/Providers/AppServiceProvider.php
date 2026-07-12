@@ -100,7 +100,53 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\Page::observe(\App\Observers\PageObserver::class);
 
         // Make admin-managed site settings available to every view (footer, meta…).
-        View::share('site', Schema::hasTable('settings') ? \App\Models\Setting::map() : []);
+        $site = Schema::hasTable('settings') ? \App\Models\Setting::map() : [];
+        View::share('site', $site);
+
+        // SEO for the storefront layout — canonical, hreflang and JSON-LD are
+        // built HERE in PHP (not Blade). Schema keys like "@context"/"@type" and
+        // multi-line arrays collide badly with Blade's directive scanner
+        // (@php/@json), so the layout only echoes these pre-built strings.
+        View::composer('layouts.app', function ($view) use ($site) {
+            $req = request();
+            $locale = app()->getLocale();
+            $urlFa = $req->fullUrlWithoutQuery(['lang']);   // Persian = clean URL
+            $urlEn = $req->fullUrlWithQuery(['lang' => 'en']);
+            $brand = ($site['site.store_name'] ?? null) ?: 'Racket Club';
+            $social = array_values(array_filter([
+                ! empty($site['site.instagram']) ? 'https://instagram.com/'.ltrim($site['site.instagram'], '@') : null,
+                ! empty($site['site.telegram']) ? 'https://t.me/'.ltrim($site['site.telegram'], '@') : null,
+                ! empty($site['site.whatsapp']) ? 'https://wa.me/'.preg_replace('/\D/', '', $site['site.whatsapp']) : null,
+            ]));
+            $org = array_filter([
+                '@context' => 'https://schema.org',
+                '@type' => 'Organization',
+                'name' => $brand,
+                'url' => url('/'),
+                'logo' => asset('brand/mark-navy.svg'),
+                'sameAs' => $social ?: null,
+            ]);
+            $website = [
+                '@context' => 'https://schema.org',
+                '@type' => 'WebSite',
+                'name' => $brand,
+                'url' => url('/'),
+                'potentialAction' => [
+                    '@type' => 'SearchAction',
+                    'target' => url('/shop').'?q={search_term_string}',
+                    'query-input' => 'required name=search_term_string',
+                ],
+            ];
+            $view->with([
+                'seoCanonical' => $locale === config('app.locale', 'fa') ? $urlFa : $urlEn,
+                'seoUrlFa' => $urlFa,
+                'seoUrlEn' => $urlEn,
+                'seoBrand' => $brand,
+                'seoOgLocale' => $locale === 'fa' ? 'fa_IR' : 'en_US',
+                'orgJsonLd' => json_encode($org, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                'siteJsonLd' => json_encode($website, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            ]);
+        });
 
         // Share active categories + live cart count with the site header/nav.
         View::composer('partials.header', function ($view) {
