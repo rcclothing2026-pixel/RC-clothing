@@ -21,6 +21,9 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
+// Purge LiteSpeed's full-page cache on every deploy so new HTML/CSS is served
+// immediately instead of a stale cached copy. Harmless on non-LiteSpeed hosts.
+header('X-LiteSpeed-Purge: *');
 
 $public = __DIR__;                       // .../public_html (web root)
 $home   = dirname($public);              // .../<account home>
