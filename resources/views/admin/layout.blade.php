@@ -91,6 +91,7 @@
                         ['admin.pages.index', 'صفحه‌ساز'],
                         ['admin.menus.index', 'منوها'],
                         ['admin.popups.index', 'پاپ‌آپ‌ها'],
+                        ['admin.settings.fonts', 'فونت‌ها'],
                         ['admin.settings.home', 'صفحه اصلی (سریع)'],
                     ],
                     'تنظیمات' => [

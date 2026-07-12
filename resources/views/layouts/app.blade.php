@@ -61,6 +61,8 @@
     <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <link rel="alternate icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Admin-chosen fonts/size — after @vite so the :root overrides win. --}}
+    @include('partials.font-overrides')
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#18234f">
     <meta name="mobile-web-app-capable" content="yes">

@@ -266,6 +266,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/settings/site/footer-image', [AdminSettingController::class, 'uploadFooterImage'])->name('settings.site.footer-image.upload');
     Route::delete('/settings/site/footer-image', [AdminSettingController::class, 'deleteFooterImage'])->name('settings.site.footer-image.delete');
 
+    // Fonts — upload/assign body + heading fonts and base text size
+    Route::get('/settings/fonts', [\App\Http\Controllers\Admin\FontController::class, 'edit'])->name('settings.fonts');
+    Route::post('/settings/fonts', [\App\Http\Controllers\Admin\FontController::class, 'update'])->name('settings.fonts.update');
+
     // Homepage content (legacy quick-edit)
     Route::get('/settings/home', [AdminHomeContentController::class, 'edit'])->name('settings.home');
     Route::patch('/settings/home', [AdminHomeContentController::class, 'update'])->name('settings.home.update');
