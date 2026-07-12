@@ -51,7 +51,8 @@ class PopupController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'html' => ['nullable', 'string', 'max:20000'],
+            'html' => ['nullable', 'string', 'max:200000'],
+            'css' => ['nullable', 'string', 'max:200000'],
             'trigger' => ['required', 'in:'.implode(',', array_keys(Popup::TRIGGERS))],
             'delay' => ['nullable', 'integer', 'min:0', 'max:120'],
             'frequency' => ['required', 'in:'.implode(',', array_keys(Popup::FREQUENCIES))],
@@ -60,6 +61,12 @@ class PopupController extends Controller
         ]);
         $data['delay'] = (int) ($data['delay'] ?? 3);
         $data['is_active'] = $request->boolean('is_active');
+
+        // Recombine the optional CSS pane into the single `html` column, in a
+        // marked <style> block the editor splits back out on next load.
+        $css = trim((string) ($data['css'] ?? ''));
+        $data['html'] = ($css !== '' ? "<style data-popup-css>\n{$css}\n</style>\n" : '').(string) ($data['html'] ?? '');
+        unset($data['css']); // not a column
 
         return $data;
     }
