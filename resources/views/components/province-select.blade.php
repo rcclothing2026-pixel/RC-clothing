@@ -1,7 +1,8 @@
 @props(['name' => 'province', 'value' => '', 'placeholder' => null, 'required' => false])
-@php($placeholder ??= __('Province'))
-
-@php $provinces = config('provinces'); @endphp
+@php
+    $placeholder ??= __('Province');
+    $provinces = config('provinces');
+@endphp
 
 <select name="{{ $name }}"
         {{ $required ? 'required' : '' }}

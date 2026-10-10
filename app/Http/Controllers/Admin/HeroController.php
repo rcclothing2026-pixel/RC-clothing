@@ -154,7 +154,7 @@ class HeroController extends Controller
             'animationSpeedMs' => $animSpeed,
             'autoplay' => filter_var($in['autoplay'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'pauseOnHover' => filter_var($in['pauseOnHover'] ?? true, FILTER_VALIDATE_BOOLEAN),
-            'bgPattern' => in_array($in['bgPattern'] ?? 'none', ['none', 'gate', 'quatrefoil'], true) ? $in['bgPattern'] : 'none',
+            'bgPattern' => in_array($in['bgPattern'] ?? null, ['none', 'gate', 'quatrefoil'], true) ? $in['bgPattern'] : 'none',
             'toolbar' => [
                 'sizes' => $str(($in['toolbar']['sizes'] ?? '#') ?: '#'),
                 'edit' => $str(($in['toolbar']['edit'] ?? '#') ?: '#'),
