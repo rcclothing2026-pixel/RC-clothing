@@ -258,10 +258,16 @@ class SmsService
         return is_array($resp->json()) ? $resp->json() : [];
     }
 
-    /** The Melipayamak account key (admin setting wins over env). */
+    /**
+     * The Melipayamak account key (admin setting wins over env). The console
+     * shows the key inside a full send URL; if that URL was pasted, keep only
+     * its last segment — a "/" in the key makes the endpoint answer 405.
+     */
     private function key(): string
     {
-        return (string) (Setting::get('sms.api_key') ?: config('services.melipayamak.api_key', ''));
+        $key = trim((string) (Setting::get('sms.api_key') ?: config('services.melipayamak.api_key', '')));
+
+        return str_contains($key, '/') ? basename(rtrim((string) parse_url($key, PHP_URL_PATH), '/')) : $key;
     }
 
     /* --------------------------------------------------------------------- */
