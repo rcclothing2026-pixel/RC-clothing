@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="824" height="824" viewBox="0 0 824 824" font-family="Cinzel, serif">
+  <defs>
+    
+    <pattern id="stripes" width="66" height="1" patternUnits="userSpaceOnUse">
+      <rect width="33" height="1" fill="#18234F"></rect>
+      <rect x="33" width="33" height="1" fill="#672C24"></rect>
+    </pattern>
+  </defs>
+  <rect width="824" height="824" fill="url(#stripes)"></rect>
+  
+  <path d="M206.5,269.5 L617.5,269.5 L630.5,282.5 L630.5,541.5 L617.5,554.5 L206.5,554.5 L193.5,541.5 L193.5,282.5 Z" fill="#18234F"></path>
+  <path d="M207.5,271.5 L616.5,271.5 L628.5,283.5 L628.5,540.5 L616.5,552.5 L207.5,552.5 L195.5,540.5 L195.5,283.5 Z" fill="#ECE7D0"></path>
+  
+  <g stroke="#18234F" stroke-width="1.5">
+    <line x1="255.5" y1="303.5" x2="568.5" y2="303.5"></line>
+    <line x1="255.5" y1="520.5" x2="568.5" y2="520.5"></line>
+    <line x1="239.5" y1="319.5" x2="239.5" y2="504.5"></line>
+    <line x1="584.5" y1="319.5" x2="584.5" y2="504.5"></line>
+  </g>
+  
+  <text x="412" y="331.5" text-anchor="middle" font-weight="600" font-size="15" letter-spacing="2.7">RACKET CLUB</text>
+  <text x="294" y="405.5" text-anchor="middle" font-weight="500" font-size="10" letter-spacing="2">EST</text>
+  <text x="294" y="420.5" text-anchor="middle" font-weight="500" font-size="10" letter-spacing="2">2025</text>
+  <text x="412" y="439.5" text-anchor="middle" font-weight="600" font-size="84" letter-spacing="1.7">RC</text>
+  <text x="532" y="413.5" text-anchor="middle" font-weight="500" font-size="10" letter-spacing="2">TEHRAN</text>
+  <text x="412" y="503.5" text-anchor="middle" font-family="&#39;Pinyon Script&#39;, cursive" font-size="34">Legends <tspan fill="#A72F23">&amp;</tspan> Legacy</text>
+</svg>

@@ -1,0 +1,438 @@
+@import 'tailwindcss';
+
+/* Pinyon Script — the Racket Club slogan face ("Legends & Legacy"). Self-hosted:
+   Google Fonts is blocked/filtered in Iran, so the CDN @import failed on mobile
+   and the crest slogan fell back to a sans-serif. Latin subset, OFL. */
+@font-face {
+    font-family: 'Pinyon Script';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/pinyon/pinyon-script.woff2') format('woff2');
+}
+
+/* Alpine x-cloak — REQUIRED, or every x-cloak element (mini-cart drawer,
+   cookie bar, alerts) renders visible on load until Alpine hydrates and then
+   animates *closed* — the "basket opens then closes" flash. This rule keeps
+   them hidden until Alpine removes the attribute. */
+[x-cloak] { display: none !important; }
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views';
+
+/* ---------------------------------------------------------------------------
+   Vazirmatn — self-hosted (CDNs can be blocked in Iran). Files in public/fonts.
+--------------------------------------------------------------------------- */
+@font-face {
+    font-family: 'Vazirmatn';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/vazirmatn/Vazirmatn-Regular.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Vazirmatn';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/vazirmatn/Vazirmatn-Medium.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Vazirmatn';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/vazirmatn/Vazirmatn-SemiBold.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Vazirmatn';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/vazirmatn/Vazirmatn-Bold.woff2') format('woff2');
+}
+
+/* ---------------------------------------------------------------------------
+   Mansory — the Racket Club brand typeface (headings, logo, display lockups).
+   Client-supplied, self-hosted from public/fonts/mansory.
+--------------------------------------------------------------------------- */
+@font-face {
+    font-family: 'Mansory';
+    font-style: normal;
+    font-weight: 400 500;
+    font-display: swap;
+    src: url('/fonts/mansory/Mansory-Medium.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Mansory';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/mansory/Mansory-SemiBold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Mansory';
+    font-style: normal;
+    font-weight: 700 900;
+    font-display: swap;
+    src: url('/fonts/mansory/Mansory-Bold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Mansory';
+    font-style: italic;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('/fonts/mansory/Mansory-Oblique.ttf') format('truetype');
+}
+
+/* ---------------------------------------------------------------------------
+   DESIGN TOKENS — the theming layer.
+   When the new CI (visual identity) arrives, the design drops in by editing
+   ONLY the values below. Nothing else in the app references raw colors.
+--------------------------------------------------------------------------- */
+@theme {
+    /* Body copy — Helvetica Neue (system) with graceful fallbacks; Vazirmatn
+       kept at the tail so Persian glyphs (admin panel) still shape correctly. */
+    --font-sans: 'Helvetica Neue', Helvetica, Arial, 'Vazirmatn', system-ui, sans-serif;
+    /* Display — Mansory, the brand typeface (headings, logo, eyebrows).
+       Use the `font-display` utility. Vazirmatn tails the stack so Persian
+       glyphs (fa locale) fall back cleanly while Latin stays Mansory. */
+    --font-display: 'Mansory', 'Archivo', 'Vazirmatn', Georgia, serif;
+    /* Slogan face — Pinyon Script. Use the `font-script` utility, ≤ once/view. */
+    --font-script: 'Pinyon Script', 'Snell Roundhand', cursive;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    /* -----------------------------------------------------------------------
+       RACKET CLUB visual identity — "The Art of Leisure".
+       CI palette: Navy #18234F, Forest #034326, Clay #A72F23,
+       Brick Brown #672C24, Warm Beige/Sand #C6AF92, Cream #ECE7D0.
+       Balance 60 cream / 30 navy / 10 accents. Solid colours, no gradients.
+       The neutral "brand" scale IS the navy ramp; "accent" is clay.
+       Values mirror design-system/racket-club/tokens/colors.css verbatim.
+    ----------------------------------------------------------------------- */
+
+    /* CI bases (raw) — referenced by legacy focus ring / utilities below */
+    --color-persian-red: #a72f23; /* -> clay (accent base) */
+    --color-chiaco-dark: #18234f; /* -> navy */
+    --color-chiaco-light: #c6af92; /* -> warm beige/sand */
+
+    /* Forest green (secondary) + warm neutrals used by the studio grounds */
+    --color-forest: #034326;
+    --color-sand: #c6af92;
+    --color-cream: #ece7d0;
+    --color-terracotta: #a8492c;
+    --color-petrol: #1e3d46;
+
+    /* Neutral scale — the NAVY ramp, for text/surfaces/borders */
+    --color-brand-50: #edeef3;
+    --color-brand-100: #d5d8e4;
+    --color-brand-200: #a6abc4;
+    --color-brand-300: #6e77a0;
+    --color-brand-400: #3a4680;
+    --color-brand-500: #232f63;
+    --color-brand-600: #18234f; /* Navy — CI base (primary) */
+    --color-brand-700: #141e45;
+    --color-brand-800: #10173a;
+    --color-brand-900: #0b1024; /* deep navy — dark surfaces */
+    --color-brand-950: #070a18;
+
+    /* Accent — Clay (call-to-action, links, sale) */
+    --color-accent-400: #d46456;
+    --color-accent-500: #c13e30;
+    --color-accent-600: #a72f23; /* Clay — CI base (primary accent) */
+    --color-accent-700: #8a251a; /* darker, for hover/pressed */
+
+    --color-ink: #18234f;   /* Navy — primary text/headings */
+    --color-paper: #ece7d0; /* Cream — page surface (the 60%) */
+
+    /* Corners — keep it crisp (RC effects.css: 4px default) */
+    --radius-card: 4px;
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --radius-lg: 4px;
+    --radius-xl: 4px;
+    --radius-2xl: 6px;
+    --radius-3xl: 10px;
+
+    /* Motion — quiet, confident; ease-out, no bounce */
+    --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------------- */
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+    body {
+        background-color: var(--color-paper);
+        color: var(--color-ink);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* Text selection highlight */
+    ::selection {
+        background-color: var(--color-accent-600);
+        color: #fff;
+    }
+
+    /* Brand-coloured focus ring for keyboard nav */
+    :focus-visible {
+        outline: 2px solid var(--color-accent-600);
+        outline-offset: 2px;
+        border-radius: 0.375rem;
+    }
+
+    /* Thin scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-brand-200); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--color-brand-400); }
+    * { scrollbar-width: thin; scrollbar-color: var(--color-brand-200) transparent; }
+
+    /* Eliminate 300ms tap delay on all mobile clickable elements */
+    a, button, [role="button"], label[for], summary {
+        touch-action: manipulation;
+    }
+
+    /* Smooth base transitions for interactive elements */
+    a, button { transition-property: color, background-color, border-color, box-shadow, opacity, transform; transition-duration: 150ms; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+
+    /* Input baseline */
+    input, textarea, select {
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Accessibility — visible keyboard focus. `:where()` keeps specificity 0 so
+   any element's own focus-visible style still wins; this is the sitewide
+   fallback so keyboard users always see where they are. Mouse clicks don't
+   trigger :focus-visible, so it never shows on tap/click. Persian-red ring.
+--------------------------------------------------------------------------- */
+@layer base {
+    :where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
+        outline: 2px solid var(--color-persian-red);
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Editorial typography polish — balance heading line lengths (no lonely
+   one-word last line) and avoid paragraph orphans. Pure line-breaking hints,
+   direction-agnostic (safe for Persian/RTL), and silently ignored by browsers
+   that don't support them. Gives the luxury-editorial feel without touching
+   any component markup.
+--------------------------------------------------------------------------- */
+@layer base {
+    h1, h2, h3 { text-wrap: balance; }
+    p { text-wrap: pretty; }
+
+    /* Crisper text rendering — the single biggest "premium" tell, and safe
+       for Persian/RTL (rendering hints only, no metrics change). */
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+
+    /* Tighten large headings a touch for editorial density. Line-height only —
+       NO letter-spacing on Persian, which would break the connected script.
+       Tailwind leading-* utilities still override this per-heading. */
+    h1, h2 { line-height: 1.15; }
+
+    /* Letter-spacing is applied ONLY to Latin display lockups (Jost
+       wordmarks/eyebrows), where negative tracking reads tighter and there's
+       no Persian shaping to harm. */
+    .font-display { letter-spacing: -0.01em; }
+
+    /* Prices/quantities align in columns with tabular figures. */
+    .fa-num { font-variant-numeric: tabular-nums; }
+}
+
+/* ---------------------------------------------------------------------------
+   Scroll-reveal animation utility (driven by JS IntersectionObserver)
+--------------------------------------------------------------------------- */
+@layer utilities {
+    .reveal {
+        opacity: 0;
+        transform: translateY(28px);
+        transition:
+            opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+            transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+    }
+    .reveal.is-visible {
+        opacity: 1;
+        transform: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .reveal {
+            opacity: 1;
+            transform: none;
+            transition: none;
+        }
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Legacy "gradient" utilities — neutralised to SOLID fills. The Racket Club
+   client chose solid colours over gradients; these classes stay defined so any
+   existing markup keeps a valid, on-brand background instead of a gradient.
+--------------------------------------------------------------------------- */
+@layer utilities {
+    .bg-grad-red-light {
+        background-color: var(--color-accent-600); /* clay */
+    }
+    .bg-grad-dark-light {
+        background-color: var(--color-brand-600); /* navy */
+    }
+    .bg-grad-dark-red {
+        background-color: var(--color-brand-600); /* navy */
+    }
+    .bg-grad-bw {
+        background-color: var(--color-brand-900); /* deep navy */
+    }
+}
+
+/* Slogan face utility — Pinyon Script, for "Legends & Legacy" (≤ once/view). */
+@layer utilities {
+    .font-script { font-family: var(--font-script); letter-spacing: 0; }
+}
+
+/* ---------------------------------------------------------------------------
+   Chiaco display type (BrandBook: CHIACO TYPE DESIGN).
+   Geometric monoline emulation — uppercase, wide-tracked, with the ⊙ bullseye
+   replacing every "O". Words stay whole and wrap as units (phone-first).
+   When the real Chiaco webfont lands, drop its family at the front of --stack.
+--------------------------------------------------------------------------- */
+@layer components {
+    .type-chiaco {
+        --type-chiaco-stack: 'Futura', 'Century Gothic', 'Avenir Next', 'Avenir',
+            'Twentieth Century', var(--font-sans);
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.1em 0.4em; /* row-gap, word-gap */
+        font-family: var(--type-chiaco-stack);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        line-height: 1.05;
+        direction: ltr; /* Latin display always reads left-to-right, even on RTL pages */
+        unicode-bidi: isolate;
+    }
+    .type-chiaco-word {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.08em; /* letter tracking inside a word */
+        white-space: nowrap;
+    }
+    .type-chiaco svg.type-chiaco-o {
+        width: 0.78em; /* match cap height of the geometric letters */
+        height: 0.78em;
+        flex: none;
+        transform: translateY(-0.02em);
+    }
+}
+
+/* Marquee (promo strip / marquee block) */
+@keyframes marquee {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(50%);
+    }
+}
+.animate-marquee {
+    animation: marquee 28s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .animate-marquee {
+        animation: none;
+    }
+}
+
+/* Transparent header overlay — applied by initTransparentHeader() in app.js
+   when the first content block on the page is an editorial_hero. The header
+   floats over the hero with white text; on scroll past the hero, the JS
+   removes the class and the header reverts to its solid default. */
+.header-over-hero {
+    position: absolute !important;
+    inset-inline: 0;
+    top: 0;
+    background: transparent !important;
+    border-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #fff;
+}
+.header-over-hero a,
+.header-over-hero button,
+.header-over-hero svg {
+    color: #fff;
+}
+.header-over-hero a:hover,
+.header-over-hero button:hover {
+    background: rgba(255, 255, 255, 0.10);
+}
+.header-over-hero [ring-1],
+.header-over-hero .ring-brand-200,
+.header-over-hero .ring-brand-100 {
+    --tw-ring-color: rgba(255, 255, 255, 0.25);
+}
+.header-over-hero input[type="search"] {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.20);
+    color: #fff;
+}
+.header-over-hero input[type="search"]::placeholder {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+/* Prevent pull-to-refresh on scrollable drawers/sidebars */
+.overscroll-contain {
+    overscroll-behavior: contain;
+}
+
+/* RTL prose for product descriptions and CMS content */
+.prose-sm {
+    line-height: 2;
+    text-align: justify;
+}
+.prose-sm p {
+    margin-bottom: 0.75rem;
+}
+.prose-sm ul,
+.prose-sm ol {
+    padding-right: 1.25rem;
+    padding-left: 0;
+    margin-bottom: 0.75rem;
+}
+.prose-sm li {
+    margin-bottom: 0.25rem;
+}
+.prose-sm ul {
+    list-style-type: disc;
+}
+.prose-sm ol {
+    list-style-type: decimal;
+}
+
+@keyframes float-slow {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-12px);
+    }
+}
+.animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+}

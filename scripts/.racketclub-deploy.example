@@ -1,0 +1,23 @@
+# Racket Club deploy credentials — copy to ~/.racketclub-deploy and chmod 600.
+#   cp scripts/.racketclub-deploy.example ~/.racketclub-deploy
+#   chmod 600 ~/.racketclub-deploy
+# Then fill in FTP_PASS. This file is sourced by scripts/deploy.sh; never commit it.
+
+# --- FTP (cPanel) — the account's main FTP login ---
+FTP_HOST=ftp.racketclub.ir      # or the server host/IP if DNS isn't pointed yet (e.g. 45.139.11.145)
+FTP_USER=chiiac                 # cPanel username
+FTP_PASS=                       # cPanel / FTP password  ← fill this in
+
+# --- Public site (used for the HTTPS trigger + verify) ---
+PUBLIC_HOST=racketclub.ir       # no https:// — just the host
+
+# --- Server layout (defaults are fine for a standard cPanel primary domain) ---
+# PUBLIC_DIR=public_html        # web root for the domain
+# APP_DIR=racketclub_app        # Laravel app dir, kept ABOVE public_html
+
+# --- FTP transport ---
+FTP_SECURE=1                    # 1 = explicit FTPS (AUTH TLS); set 0 if the host only allows plain FTP
+FTP_INSECURE=1                  # 1 = accept the host's self-signed FTP cert
+
+# --- Pre-DNS only: deploy before racketclub.ir points at this server ---
+# TRIGGER_IP=45.139.11.145      # resolves the HTTPS trigger/verify to the server IP (uses -k)

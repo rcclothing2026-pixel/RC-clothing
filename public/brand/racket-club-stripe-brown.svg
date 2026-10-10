@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="824" height="824" viewBox="0 0 824 824">
+  <defs>
+    <pattern id="stripes" width="66" height="1" patternUnits="userSpaceOnUse">
+      <rect width="33" height="1" fill="#18234F"></rect>
+      <rect x="33" width="33" height="1" fill="#672C24"></rect>
+    </pattern>
+  </defs>
+  <rect width="824" height="824" fill="url(#stripes)"></rect>
+</svg>

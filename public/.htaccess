@@ -1,0 +1,60 @@
+# Far-future caching for static assets — uploads are content-hashed
+# (hashName) and Vite build files are fingerprinted, so they can be cached
+# hard. Big win on the slow link: repeat views reuse the browser cache
+# instead of re-downloading every photo. No-op if the modules are disabled.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/webp        "access plus 1 year"
+    ExpiresByType image/jpeg        "access plus 1 year"
+    ExpiresByType image/png         "access plus 1 year"
+    ExpiresByType image/gif         "access plus 1 year"
+    ExpiresByType image/svg+xml     "access plus 1 year"
+    ExpiresByType image/x-icon      "access plus 1 year"
+    ExpiresByType font/woff2        "access plus 1 year"
+    ExpiresByType text/css          "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(webp|jpe?g|png|gif|svg|ico|woff2?)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Force HTTPS — send every http request to https so visitors never see the
+    # "Not Secure" warning. Both conditions guard against a redirect loop when
+    # TLS is terminated upstream (proxy sends X-Forwarded-Proto: https).
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Never let the server cache (LiteSpeed LSCache) store/serve admin pages —
+    # otherwise different admins get different stale snapshots (e.g. the orders
+    # list). Harmless no-op on non-LiteSpeed servers. index.php strips the
+    # leading public path, so admin requests arrive as `admin/...` here.
+    RewriteRule ^admin(/|$) - [E=Cache-Control:no-cache,E=cache-control:no-cache]
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle X-XSRF-Token Header
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
