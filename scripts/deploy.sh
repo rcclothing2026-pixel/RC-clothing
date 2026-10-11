@@ -169,7 +169,7 @@ if [ "$DO_BUILD" -eq 1 ]; then
     --exclude='public/storage' --exclude='public/hot'
     --exclude='vendor'
     --exclude='design-system'
-    --exclude='.DS_Store' --exclude='auth.json'
+    --exclude='.DS_Store' --exclude='._*' --exclude='auth.json'
   )
   # Static assets (campaign photos + self-hosted fonts) only ship when they
   # actually changed (auto-detected above) — otherwise the server keeps them.
