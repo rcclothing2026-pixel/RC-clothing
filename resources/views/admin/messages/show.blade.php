@@ -53,6 +53,13 @@
             <div class="flex {{ $isOut ? 'justify-start' : 'justify-end' }}">
                 <div class="max-w-[80%] rounded-2xl px-4 py-3 text-sm ring-1
                             {{ $isOut ? 'bg-brand-900 text-white ring-brand-900' : 'bg-white text-brand-800 ring-brand-100' }}">
+                    @if ($m->photo)
+                        <a href="{{ $m->photo }}" target="_blank" class="mb-2 block">
+                            <img src="{{ $m->photo }}" alt="پیوست" class="max-h-64 w-auto rounded-lg">
+                        </a>
+                    @elseif ($m->photo_file_id)
+                        <p class="mb-1 text-xs {{ $isOut ? 'text-white/70' : 'text-brand-400' }}">📷 عکس (در تلگرام ارسال شد)</p>
+                    @endif
                     <p class="whitespace-pre-line leading-7">{{ $m->message }}</p>
                     <p class="mt-1 text-[10px] {{ $isOut ? 'text-white/60' : 'text-brand-400' }}">
                         {{ $isOut ? 'پاسخ پشتیبانی' : 'مشتری' }} · {{ $m->created_at->diffForHumans() }}
@@ -64,11 +71,16 @@
 
     {{-- Reply form — only meaningful when we have a chat_id to forward into. --}}
     @if ($head->telegram_chat_id)
-        <form method="POST" action="{{ route('admin.messages.reply', $head) }}" class="mt-5">
+        <form method="POST" action="{{ route('admin.messages.reply', $head) }}" enctype="multipart/form-data" class="mt-5">
             @csrf
             <label class="mb-1 block text-sm font-medium text-brand-700">پاسخ شما (در تلگرام مشتری ارسال می‌شود)</label>
-            <textarea name="reply" rows="4" required maxlength="4000" class="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="پاسخ خود را اینجا بنویسید..."></textarea>
+            <textarea name="reply" rows="4" maxlength="4000" class="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm" placeholder="پاسخ خود را اینجا بنویسید..."></textarea>
             @error('reply')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
+            <label class="mt-2 flex items-center gap-2 text-sm text-brand-600">
+                📷 پیوست عکس (اختیاری):
+                <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" class="text-sm text-brand-500 file:me-3 file:rounded-lg file:border-0 file:bg-brand-100 file:px-3 file:py-1.5 file:text-sm file:text-brand-700">
+            </label>
+            @error('photo')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
             <button class="mt-3 rounded-lg bg-brand-900 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-800">ارسال پاسخ</button>
         </form>
     @else

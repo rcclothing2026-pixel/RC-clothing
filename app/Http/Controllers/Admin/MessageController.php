@@ -45,13 +45,23 @@ class MessageController extends Controller
 
     public function reply(Request $request, ContactMessage $message, TelegramNotifier $tg): RedirectResponse
     {
-        $data = $request->validate(['reply' => ['required', 'string', 'max:4000']]);
+        $data = $request->validate([
+            'reply' => ['nullable', 'required_without:photo', 'string', 'max:4000'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
+        ]);
 
         if (! $message->telegram_chat_id) {
             return back()->with('error', 'این مکالمه از تلگرام نیست — برای پاسخ از تلفن/ایمیل/واتساپ استفاده کنید.');
         }
 
-        $ok = $tg->sendSupportReply($message, $data['reply'], $request->user()?->id);
+        // Upload the attached photo onto chiiaco; Telegram fetches it by URL.
+        $photoUrl = null;
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('support', 'public');
+            $photoUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        }
+
+        $ok = $tg->sendSupportReply($message, (string) ($data['reply'] ?? ''), $request->user()?->id, $photoUrl);
 
         return back()->with($ok ? 'success' : 'error',
             $ok ? 'پاسخ شما برای مشتری در تلگرام ارسال شد.' : 'ارسال پاسخ ناموفق بود — اتصال تلگرام را بررسی کنید.');

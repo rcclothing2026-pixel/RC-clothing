@@ -23,7 +23,7 @@ class ContactMessage extends Model
     public const DIR_OUT = 'out';
 
     protected $fillable = [
-        'name', 'phone', 'email', 'message', 'is_read',
+        'name', 'phone', 'email', 'message', 'photo', 'photo_file_id', 'is_read',
         'telegram_chat_id', 'source', 'direction', 'admin_user_id',
     ];
 

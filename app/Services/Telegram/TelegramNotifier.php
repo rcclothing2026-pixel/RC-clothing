@@ -194,6 +194,66 @@ class TelegramNotifier
         }
     }
 
+    /**
+     * Send a photo. $photo may be a Telegram file_id (re-send an inbound photo)
+     * or a public https URL (Telegram fetches it — e.g. a chiiaco-hosted upload).
+     */
+    public function sendPhoto(string $chatId, string $photo, string $caption = '', ?array $replyMarkup = null): bool
+    {
+        if (! $this->enabled() || $photo === '') {
+            return false;
+        }
+        try {
+            $params = ['chat_id' => $chatId, 'photo' => $photo, 'parse_mode' => 'HTML'];
+            if ($caption !== '') {
+                $params['caption'] = mb_substr($caption, 0, 1024); // Telegram caption limit
+            }
+            if ($replyMarkup) {
+                $params['reply_markup'] = json_encode($replyMarkup);
+            }
+
+            return (bool) ($this->api('sendPhoto', $params)['ok'] ?? false);
+        } catch (Throwable $e) {
+            Log::warning('[telegram] sendPhoto failed', ['chat' => $chatId, 'error' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Best-effort fetch of an inbound photo's bytes onto chiiaco so the web inbox
+     * can render it. Returns a public URL, or null if the download isn't
+     * reachable (Iran filtering) — callers still have the file_id to re-send.
+     */
+    public function downloadTelegramFile(string $fileId): ?string
+    {
+        try {
+            $info = $this->api('getFile', ['file_id' => $fileId]);
+            $path = $info['result']['file_path'] ?? null;
+            if (! $path) {
+                return null;
+            }
+            $fileUrl = "https://api.telegram.org/file/bot{$this->token()}/{$path}";
+            $req = Http::timeout(20);
+            if ($proxy = (string) config('telegram.proxy')) {
+                $req = $req->withOptions(['proxy' => $proxy]);
+            }
+            $res = $req->get($fileUrl);
+            if (! $res->successful()) {
+                return null;
+            }
+            $ext = pathinfo($path, PATHINFO_EXTENSION) ?: 'jpg';
+            $rel = 'support/'.\Illuminate\Support\Str::random(24).'.'.$ext;
+            \Illuminate\Support\Facades\Storage::disk('public')->put($rel, $res->body());
+
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($rel);
+        } catch (Throwable $e) {
+            Log::warning('[telegram] file download failed', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
     /* ----------------------------- Targeting ----------------------------- */
 
     /** Send to every assigned admin chat. Returns the number delivered. */
@@ -464,18 +524,29 @@ class TelegramNotifier
 
         $text = trim((string) ($message['text'] ?? ''));
 
+        // Photo attachment (Telegram sends an array of sizes, largest last) + its
+        // caption. Enables customers to send photos and admins to reply with one.
+        $photoSizes = $message['photo'] ?? null;
+        $photoFileId = is_array($photoSizes) && $photoSizes
+            ? ($photoSizes[array_key_last($photoSizes)]['file_id'] ?? null)
+            : null;
+        $caption = trim((string) ($message['caption'] ?? ''));
+
         // Admin reply mode: if this admin just pressed «✍️ پاسخ» on a support
         // alert, their next message is forwarded into that customer's chat. The
         // cache target survives 5 minutes; clearing it releases the per-message
         // lock so another admin can pick up the next round.
         $chatRow = $this->chatFor((string) $chat['id']);
-        if ($chatRow && $chatRow->isAdmin() && $text !== '' && ! str_starts_with($text, '/')) {
+        if ($chatRow && $chatRow->isAdmin() && ($text !== '' || $photoFileId) && ! str_starts_with($text, '/')) {
             $targetKey = 'tg_reply_target:'.$chat['id'];
             $messageId = Cache::pull($targetKey);
             if ($messageId && ($parent = \App\Models\ContactMessage::find((int) $messageId))) {
                 Cache::forget('tg_reply_lock:'.$parent->id);
                 $adminUserId = optional($chatRow->user_id ? User::find($chatRow->user_id) : null)?->id;
-                $ok = $this->sendSupportReply($parent, $text, $adminUserId);
+                // Admin replied with a photo → forward it (file_id) to the customer.
+                $ok = $photoFileId
+                    ? $this->sendSupportReply($parent, $caption, $adminUserId, $photoFileId)
+                    : $this->sendSupportReply($parent, $text, $adminUserId);
                 $this->sendMessage((string) $chat['id'], $ok
                     ? '✅ پاسخ شما برای مشتری ارسال شد.'
                     : '⚠️ ارسال پاسخ ناموفق بود (شناسهٔ مشتری در دسترس نیست).');
@@ -506,7 +577,7 @@ class TelegramNotifier
                     Cache::put('tg_support_order:'.$chat['id'], $orderNumber, now()->addMinutes(30));
                     $this->sendMessage((string) $chat['id'], "👋 درباره سفارش <b>".e($orderNumber)."</b> چطور می‌توانم کمک کنم؟\nپیام، عکس یا صوت خود را همین‌جا بفرستید.");
                 } else {
-                    $this->sendMessage((string) $chat['id'], '👋 سلام! پیام خود را بفرستید تا تیم پشتیبانی چیاکو به‌زودی پاسخ بدهد.');
+                    $this->sendMessage((string) $chat['id'], '👋 سلام! پیام، عکس یا صوت خود را بفرستید تا تیم پشتیبانی چیاکو به‌زودی پاسخ بدهد.');
                 }
 
                 return;
@@ -524,8 +595,16 @@ class TelegramNotifier
             return;
         }
 
-        // Otherwise: a tapped menu button or free text → route to a pull action.
+        // A photo (with optional caption) from a customer/pending chat = a support
+        // message with an attachment. (Admin photos were handled above.)
         $row = $this->chatFor((string) $chat['id']) ?? $this->registerPendingChat($chat);
+        if ($photoFileId && ! $row?->isAdmin()) {
+            $this->captureSupportMessage($row, $chat, $caption, $photoFileId);
+
+            return;
+        }
+
+        // Otherwise: a tapped menu button or free text → route to a pull action.
         $this->routeMenu($row, $chat, $text);
     }
 
@@ -753,7 +832,7 @@ class TelegramNotifier
      * /start payload was order_<NUMBER>, the order number is prepended to the
      * message body so the admin alert + inbox show which order it's about.
      */
-    private function captureSupportMessage(?TelegramChat $chat, array $tgChat, string $text): void
+    private function captureSupportMessage(?TelegramChat $chat, array $tgChat, string $text, ?string $photoFileId = null): void
     {
         $chatId = (string) $tgChat['id'];
 
@@ -767,12 +846,21 @@ class TelegramNotifier
         $orderKey = 'tg_support_order:'.$chatId;
         $orderNumber = Cache::pull($orderKey);
         $body = $orderNumber ? "(سفارش {$orderNumber})\n".$text : $text;
+        if (trim($body) === '' && $photoFileId) {
+            $body = '📷 تصویر';
+        }
+
+        // Best-effort fetch onto chiiaco for the web inbox; the file_id is always
+        // kept so the admin alert can re-send the photo reliably via the bot.
+        $photoUrl = $photoFileId ? $this->downloadTelegramFile($photoFileId) : null;
 
         $message = \App\Models\ContactMessage::create([
             'name' => $name,
             'phone' => $user?->phone,
             'email' => $user?->email,
             'message' => $body,
+            'photo' => $photoUrl,
+            'photo_file_id' => $photoFileId,
             'is_read' => false,
             'telegram_chat_id' => $chatId,
             'source' => \App\Models\ContactMessage::SOURCE_TELEGRAM,
@@ -1135,6 +1223,26 @@ class TelegramNotifier
         if ($message->email) {
             $lines[] = '<b>ایمیل:</b> <code>'.e($message->email).'</code>';
         }
+
+        // Prepend the last 10 messages of this conversation so admins have
+        // context without opening the panel. threadMessages() groups by
+        // telegram_chat_id → phone → email, matching the panel's own logic.
+        $prior = $message->threadMessages()
+            ->where('id', '!=', $message->id)
+            ->sortByDesc('created_at')
+            ->take(10)
+            ->reverse();
+        if ($prior->isNotEmpty()) {
+            $lines[] = '';
+            $lines[] = '<b>📜 ۱۰ پیام آخر:</b>';
+            foreach ($prior as $m) {
+                $who    = $m->direction === 'out' ? 'پشتیبانی' : ($m->name ?: 'مشتری');
+                $when   = optional($m->created_at)->diffForHumans() ?? '';
+                $snippet = mb_substr(preg_replace('/\s+/u', ' ', (string) $m->message), 0, 120);
+                $lines[] = '• <i>'.e($when).' — '.e($who).':</i> '.e($snippet);
+            }
+        }
+
         $lines[] = '';
         $lines[] = '<b>پیام:</b>';
         $lines[] = e($message->message);
@@ -1148,28 +1256,58 @@ class TelegramNotifier
             ]]];
         }
 
-        $this->notifyAdmins(implode("\n", $lines), $markup);
+        $textOut = implode("\n", $lines);
+
+        // A photo message re-sends the image to admins (file_id is most reliable
+        // via the hub; a chiiaco URL is the fallback) with the details as caption.
+        $photo = $message->photo_file_id ?: $message->photo;
+        if ($photo) {
+            $delivered = 0;
+            foreach (TelegramChat::admins()->get() as $adminChat) {
+                if ($this->sendPhoto($adminChat->chat_id, $photo, $textOut, $markup)) {
+                    $delivered++;
+                }
+            }
+            if ($delivered === 0) {
+                $this->notifyAdmins($textOut, $markup); // photo unreachable → at least the text
+            }
+
+            return;
+        }
+
+        $this->notifyAdmins($textOut, $markup);
     }
 
     /**
      * Forward an admin-typed reply into the customer's Telegram chat and log
      * the outbound message in ContactMessage. Returns true on send success.
      */
-    public function sendSupportReply(\App\Models\ContactMessage $parent, string $reply, ?int $adminUserId = null): bool
+    public function sendSupportReply(\App\Models\ContactMessage $parent, string $reply, ?int $adminUserId = null, ?string $photo = null): bool
     {
         $chatId = (string) ($parent->telegram_chat_id ?? '');
-        if ($chatId === '' || trim($reply) === '') {
+        if ($chatId === '' || (trim($reply) === '' && ! $photo)) {
             return false;
         }
-        $ok = $this->sendMessage($chatId, "💬 <b>پاسخ پشتیبانی چیاکو:</b>\n\n".e($reply));
+        $prefix = '💬 <b>پاسخ پشتیبانی چیاکو:</b>';
+        if ($photo) {
+            $caption = trim($reply) !== '' ? $prefix."\n\n".e($reply) : $prefix;
+            $ok = $this->sendPhoto($chatId, $photo, $caption);
+        } else {
+            $ok = $this->sendMessage($chatId, $prefix."\n\n".e($reply));
+        }
         if (! $ok) {
             return false;
         }
+        // A chiiaco URL (web-inbox upload) is stored as photo so the web thread
+        // can render it; a Telegram file_id (admin replied in-app) as photo_file_id.
+        $isUrl = $photo && \Illuminate\Support\Str::startsWith($photo, ['http://', 'https://']);
         \App\Models\ContactMessage::create([
             'name' => $parent->name,
             'phone' => $parent->phone,
             'email' => $parent->email,
             'message' => $reply,
+            'photo' => $isUrl ? $photo : null,
+            'photo_file_id' => (! $isUrl) ? $photo : null,
             'is_read' => true,
             'telegram_chat_id' => $chatId,
             'source' => \App\Models\ContactMessage::SOURCE_TELEGRAM,
@@ -1207,6 +1345,16 @@ class TelegramNotifier
             }
             if (! empty($addr['postal_code'])) {
                 $lines[] = 'کدپستی: '.$addr['postal_code'];
+            }
+            // GPS pin captured at checkout via the map picker's "موقعیت فعلی من"
+            // button. Two links so the courier can open in whichever they use;
+            // Google works for everyone, Neshan is Iran-native + more accurate
+            // for last-mile. Telegram auto-linkifies both.
+            if (! empty($addr['lat']) && ! empty($addr['lng'])) {
+                $lat = (float) $addr['lat'];
+                $lng = (float) $addr['lng'];
+                $lines[] = '📍 نقشه: https://maps.google.com/?q='.$lat.','.$lng
+                        .' — https://neshan.org/maps/#c'.$lat.'-'.$lng.'-17z';
             }
         }
         $lines[] = '';
