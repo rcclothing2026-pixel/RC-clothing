@@ -66,12 +66,16 @@
         @endphp
         {{-- Editorial split: gallery takes ~58% on desktop so the photo
              carries the page; details column stays compact at ~42%. --}}
-        <div class="grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:gap-16" data-product data-variants='@json($variantData)'
+        {{-- [data-product] now wraps both the two-column top block and the
+             full-width buy box below it, so app.js keeps finding the colour,
+             size and cart elements inside this root. --}}
+        <div data-product data-variants='@json($variantData)'
              data-product-id="{{ $product->id }}"
              data-product-name="{{ $product->name }}"
              data-product-url="{{ route('product.show', $product) }}"
              data-product-image="{{ $product->primary_image_url ?? '' }}"
              data-product-price="{{ $product->variants->min('price') ?? 0 }}">
+        <div class="grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:gap-16">
             {{-- Gallery --}}
             <div class="flex flex-col-reverse gap-4 sm:flex-row">
                 @if ($product->images->count() > 1)
@@ -103,7 +107,9 @@
             @php($lightboxImages = $product->images->count() > 0
                 ? $product->images->map(fn ($i) => ['src' => $i->path, 'alt' => $i->alt ?: $product->name])->values()
                 : collect([['src' => $product->primary_image_url ?? '', 'alt' => $product->name]]))
-            <div x-data="productLightbox({{ $lightboxImages->toJson() }})"
+            {{-- `contents` keeps this Alpine wrapper from taking up a grid
+                 cell of its own (its overlay child is position:fixed). --}}
+            <div class="contents" x-data="productLightbox({{ $lightboxImages->toJson() }})"
                  x-on:open-lightbox.window="open($event.detail?.index ?? 0)"
                  x-on:keydown.escape.window="close()"
                  x-on:keydown.arrow-right.window="prev()"
@@ -183,17 +189,30 @@
                     </button>
                 </div>
 
-                <div class="mt-4 flex items-center gap-3">
+                @if ($product->summary)
+                    <p class="mt-4 text-sm leading-7 text-brand-600">{{ $product->summary }}</p>
+                @endif
+
+                {{-- Description — lives beside the photo so this column fills
+                     the gallery's height instead of leaving an empty gutter. --}}
+                <div class="mt-6 border-t border-brand-100 pt-6">
+                    <h2 class="mb-3 text-lg font-bold text-brand-900">{{ __('Product Details') }}</h2>
+                    <div class="prose-sm leading-8 text-brand-700">{!! $product->description !!}</div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Buy box — full width under the two columns (price, pack contents,
+             colour/size, quantity, cart, stock notice, trust badges). --}}
+        <div class="mt-12 border-t border-brand-100 pt-10">
+            <div class="mx-auto max-w-3xl">
+                <div class="flex items-center gap-3">
                     <span class="text-2xl font-bold text-brand-900">{{ $product->formattedPrice() }}</span>
                     @if ($product->hasDiscount())
                         <span class="text-base text-brand-400 line-through">{{ $product->formattedCompareAtPrice() }}</span>
                         <span class="rounded-full bg-accent-500 px-2 py-0.5 text-xs font-bold text-white fa-num">{{ $product->discountPercent() }}% {{ __('Off') }}</span>
                     @endif
                 </div>
-
-                @if ($product->summary)
-                    <p class="mt-4 text-sm leading-7 text-brand-600">{{ $product->summary }}</p>
-                @endif
 
                 {{-- Gift-bundle contents: auto-rendered «شامل» list. Each row is a
                      child variant (qty, thumbnail, name, size/colour). Replaces the
@@ -372,11 +391,6 @@
                 </div>
             </div>
         </div>
-
-        {{-- Description --}}
-        <div class="mt-14 max-w-3xl">
-            <h2 class="mb-3 text-lg font-bold text-brand-900">{{ __('Product Details') }}</h2>
-            <div class="prose-sm leading-8 text-brand-700">{!! $product->description !!}</div>
         </div>
 
         {{-- Related --}}
