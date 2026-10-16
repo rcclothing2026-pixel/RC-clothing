@@ -1,5 +1,6 @@
 import '@majidh1/jalalidatepicker/dist/jalalidatepicker.min.css';
 import '@majidh1/jalalidatepicker/dist/jalalidatepicker.min.js';
+import Lenis from 'lenis';
 import Alpine from 'alpinejs';
 import collapse from '@alpinejs/collapse';
 Alpine.plugin(collapse);
@@ -309,6 +310,52 @@ function initReveal() {
     );
 
     els.forEach((el) => io.observe(el));
+}
+
+/* ---------------------------------------------------------------------------
+   Smooth scroll (Lenis) + image parallax — the "Rastah" feel. Inertia
+   scrolling on the storefront (body[data-smooth-scroll]) plus a gentle
+   vertical parallax on any [data-parallax] image. Both are disabled under
+   prefers-reduced-motion; without JS the page scrolls natively (CSS
+   scroll-behavior: smooth) and parallax images render normally (no crop,
+   since the baseline over-scale is applied in JS only).
+
+   Parallax safety: the image is over-scaled by SCALE so its box has slack on
+   every side; the vertical shift is clamped to that slack, so the frame never
+   reveals a gap regardless of viewport/element size.
+--------------------------------------------------------------------------- */
+function initSmoothScroll() {
+    if (!document.body.hasAttribute('data-smooth-scroll')) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const SCALE = 1.12;
+    const parallaxEls = Array.from(document.querySelectorAll('[data-parallax]'));
+    parallaxEls.forEach((el) => { el.style.willChange = 'transform'; });
+
+    const updateParallax = () => {
+        if (!parallaxEls.length) return;
+        const vh = window.innerHeight;
+        for (const el of parallaxEls) {
+            const r = el.getBoundingClientRect();
+            if (r.bottom < -120 || r.top > vh + 120) continue; // off-screen
+            const maxShift = (r.height * (SCALE - 1)) / 2;       // slack each side
+            // progress ≈ -1 (entering at bottom) → +1 (leaving at top)
+            const progress = (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2);
+            const ty = -Math.max(-1, Math.min(1, progress)) * maxShift;
+            el.style.transform = `translate3d(0, ${ty.toFixed(2)}px, 0) scale(${SCALE})`;
+        }
+    };
+    updateParallax();
+
+    const lenis = new Lenis({
+        duration: 1.1,
+        easing: (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)), // easeOutExpo
+        smoothWheel: true,
+    });
+    lenis.on('scroll', updateParallax);
+    const raf = (time) => { lenis.raf(time); requestAnimationFrame(raf); };
+    requestAnimationFrame(raf);
+    window.addEventListener('resize', updateParallax);
 }
 
 /* ---------------------------------------------------------------------------
@@ -895,6 +942,7 @@ function initSearchAutocomplete() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initReveal();
+    initSmoothScroll();
     initProduct();
     initQuantityStepper();
     initCartSteppers();

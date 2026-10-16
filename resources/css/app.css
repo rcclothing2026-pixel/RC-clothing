@@ -261,20 +261,32 @@
     .reveal {
         opacity: 0;
         transform: translateY(28px);
+        filter: blur(6px);
         transition:
-            opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-            transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-        will-change: opacity, transform;
+            opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+            transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+            filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        /* Per-element stagger: set --reveal-delay inline on a block to cascade
+           siblings in. Inline `transition-delay` still overrides this default. */
+        transition-delay: var(--reveal-delay, 0s);
+        will-change: opacity, transform, filter;
     }
     .reveal.is-visible {
         opacity: 1;
         transform: none;
+        filter: none;
     }
     @media (prefers-reduced-motion: reduce) {
         .reveal {
             opacity: 1;
             transform: none;
+            filter: none;
             transition: none;
+        }
+        /* Parallax is JS-gated off under reduced motion too; this is a belt-and
+           -braces reset in case the preference flips after init. */
+        [data-parallax] {
+            transform: none !important;
         }
     }
 }

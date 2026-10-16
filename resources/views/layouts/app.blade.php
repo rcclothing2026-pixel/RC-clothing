@@ -84,7 +84,7 @@
     </script>
     @endif
 </head>
-<body class="min-h-dvh flex flex-col bg-paper text-ink pb-[calc(3.75rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
+<body data-smooth-scroll class="min-h-dvh flex flex-col bg-paper text-ink pb-[calc(3.75rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
     @if ($gtm = ($site['site.gtm_id'] ?? null))
         {{-- Google Tag Manager (noscript fallback). Must sit immediately after <body>. --}}
         <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtm }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>

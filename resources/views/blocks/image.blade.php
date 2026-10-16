@@ -5,7 +5,7 @@
 @endphp
 <section class="mx-auto max-w-7xl px-4 py-8 sm:px-6">
     <{{ $link ? 'a' : 'div' }} @if($link) href="{{ $link }}" @endif class="reveal block overflow-hidden rounded-card ring-1 ring-brand-100">
-        <img src="{{ $img }}" alt="{{ $data['caption'] ?? '' }}" class="{{ $h }} w-full object-cover">
+        <img src="{{ $img }}" alt="{{ $data['caption'] ?? '' }}" data-parallax class="{{ $h }} w-full object-cover">
     </{{ $link ? 'a' : 'div' }}>
     @if (!empty($data['caption']))
         <p class="mt-3 text-center text-sm text-brand-500">{{ $data['caption'] }}</p>
