@@ -147,12 +147,16 @@ class BlockRegistry
                     ]],
                     ['key' => 'layout', 'label' => 'Layout', 'type' => 'select', 'options' => [
                         'wrap' => 'Fixed Grid (default)',
+                        'cards' => 'Editorial Cards (large image + name)',
                         'marquee' => 'Infinite Slider (Marquee)',
                     ]],
                     ['key' => 'speed', 'label' => 'Slider Speed (Marquee mode only)', 'type' => 'select', 'options' => [
                         'slow' => 'Slow',
                         'med' => 'Medium',
                         'fast' => 'Fast',
+                    ]],
+                    ['key' => 'card_ratio', 'label' => 'Card Shape (Editorial Cards only)', 'type' => 'select', 'options' => [
+                        'portrait' => 'Portrait 4:5', 'tall' => 'Tall 2:3', 'square' => 'Square', 'wide' => 'Landscape 4:3',
                     ]],
                     ['key' => 'columns_mobile', 'label' => 'Columns — Mobile (fixed grid)', 'type' => 'select', 'options' => [
                         '2' => '2', '3' => '3', '4' => '4',

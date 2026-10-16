@@ -25,7 +25,31 @@
             <a href="{{ route('shop.index') }}" class="text-sm font-medium text-accent-600 hover:underline">{{ __('View All') }}</a>
         </div>
 
-        @if ($layout === 'marquee')
+        @if ($layout === 'cards')
+            {{-- Editorial cards — large full-bleed category image with a dark
+                 gradient and the name overlaid (rastah.co category style).
+                 Falls back to a navy card with the name when a category has no
+                 image. 2 per row on mobile, columns_desktop on desktop. --}}
+            @php($cardRatio = match ($data['card_ratio'] ?? 'portrait') {
+                'tall' => 'aspect-[2/3]', 'square' => 'aspect-square', 'wide' => 'aspect-[4/3]', default => 'aspect-[4/5]',
+            })
+            @php($lgGrid = ['4' => 'lg:grid-cols-4', '5' => 'lg:grid-cols-5', '6' => 'lg:grid-cols-6', '7' => 'lg:grid-cols-7', '8' => 'lg:grid-cols-8'][$colsDesktop] ?? 'lg:grid-cols-5')
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 {{ $lgGrid }}">
+                @foreach ($categories as $category)
+                    <a href="{{ route('shop.index', ['category' => $category->slug]) }}"
+                       class="reveal group relative block overflow-hidden rounded-card bg-brand-900 ring-1 ring-brand-100">
+                        <div class="{{ $cardRatio }} overflow-hidden">
+                            @if ($category->image_path)
+                                <img src="{{ $category->image_path }}" alt="{{ $category->name }}" loading="lazy"
+                                     class="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-105">
+                            @endif
+                        </div>
+                        <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-950/75 via-brand-950/15 to-transparent"></div>
+                        <span class="absolute inset-x-0 bottom-0 p-3 text-center font-display text-sm font-semibold uppercase tracking-wide text-white sm:p-4 sm:text-lg">{{ $category->name }}</span>
+                    </a>
+                @endforeach
+            </div>
+        @elseif ($layout === 'marquee')
             {{-- Infinite-loop marquee, JS-driven (resources/js/app.js).
                  The track is a native overflow-x scroller so the user can
                  drag, swipe, wheel, or use the arrow buttons; the JS
