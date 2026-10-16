@@ -4,7 +4,7 @@
 @php($cardCls = $contain ? 'p-2' : 'p-3')
 @php($avatarCls = $contain ? '' : 'overflow-hidden rounded-full bg-brand-50')
 @php($imgCls = $contain ? 'object-contain' : 'object-cover transition duration-500 group-hover:scale-110')
-@php($layout = ($data['layout'] ?? 'wrap') === 'marquee' ? 'marquee' : 'wrap')
+@php($layout = in_array($data['layout'] ?? 'wrap', ['marquee', 'cards'], true) ? ($data['layout'] ?? 'wrap') : 'wrap')
 @php($colsMobile = (string) ($data['columns_mobile'] ?? '2'))
 @php($colsDesktop = (string) ($data['columns_desktop'] ?? '6'))
 @php($colsMobileMap  = ['2' => 'basis-[calc(50%-0.5rem)]', '3' => 'basis-[calc(33.333%-0.667rem)]', '4' => 'basis-[calc(25%-0.75rem)]'])
