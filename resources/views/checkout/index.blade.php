@@ -128,6 +128,10 @@
                 <section class="rounded-card bg-white p-6 ring-1 ring-brand-100">
                     <h2 class="mb-4 text-base font-bold text-brand-900">{{ __('Shipping Method') }}</h2>
                     <div class="space-y-2">
+                        @php
+                            // Returning customer → last order's method; otherwise the first one.
+                            $pickShipping = $shippingMethods->contains('id', $lastShippingId ?? null) ? $lastShippingId : $shippingMethods->first()?->id;
+                        @endphp
                         @foreach ($shippingMethods as $method)
                             <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-brand-200 p-3 text-sm has-[:checked]:border-brand-800 has-[:checked]:bg-brand-50">
                                 <span class="flex items-center gap-3">
@@ -135,7 +139,7 @@
                                            data-cost="{{ $method->costFor($subtotal) }}"
                                            data-base="{{ $method->price }}" data-free-over="{{ $method->free_over ?? 0 }}"
                                            data-cod="{{ $method->cost_on_delivery ? '1' : '0' }}"
-                                           data-zones='@json($method->zones ?? new stdClass)' @checked($loop->first) required>
+                                           data-zones='@json($method->zones ?? new stdClass)' @checked((int) $method->id === (int) $pickShipping) required>
                                     <span>
                                         <span class="font-medium text-brand-800">{{ $method->name }}</span>
                                         @if ($method->cost_on_delivery)
@@ -164,9 +168,15 @@
                         <p class="text-sm text-red-500">{{ __('No payment gateway is active.') }}</p>
                     @else
                         <div class="space-y-2">
+                            @php
+                                // Last order's gateway if still active; else the default (or first) — same as before.
+                                $pickPayment = $paymentMethods->contains('key', $lastPaymentKey ?? null)
+                                    ? $lastPaymentKey
+                                    : ($paymentMethods->firstWhere('is_default', true) ?? $paymentMethods->first())?->key;
+                            @endphp
                             @foreach ($paymentMethods as $pm)
                                 <label class="flex cursor-pointer items-center gap-3 rounded-lg border border-brand-200 p-3 text-sm has-[:checked]:border-brand-800 has-[:checked]:bg-brand-50">
-                                    <input type="radio" name="payment_method" value="{{ $pm->key }}" @checked($pm->is_default || $loop->first) required>
+                                    <input type="radio" name="payment_method" value="{{ $pm->key }}" @checked($pm->key === $pickPayment) required>
                                     <span>
                                         <span class="font-medium text-brand-800">{{ $pm->label }}</span>
                                         @if ($pm->description)<span class="block text-xs text-brand-400">{{ $pm->description }}</span>@endif

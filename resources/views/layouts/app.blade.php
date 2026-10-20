@@ -125,6 +125,7 @@
     @include('partials.popups')
     @include('partials.mini-cart')
     @include('partials.free-ship-widget')
+    @include('partials.sell-resume')
 
     <div x-data="{ show: !localStorage.getItem('cookie_consent') }" x-show="show" x-cloak
          class="fixed inset-x-0 bottom-0 z-50 border-t border-brand-200 bg-white p-4 text-sm shadow-lg">

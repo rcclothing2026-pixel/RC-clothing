@@ -64,6 +64,7 @@
                     'فروش' => [
                         ['admin.dashboard', 'داشبورد'],
                         ['admin.orders.index', 'سفارش‌ها'],
+                        ['admin.sell.index', 'فروش سریع (لینک اینستاگرام)'],
                         ['admin.reports.reconciliation', 'تسویه و مغایرت'],
                         ['admin.returns.index', 'مرجوعی‌ها'],
                         ['admin.stock-log.index', 'گردش موجودی StoqS'],

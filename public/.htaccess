@@ -39,6 +39,9 @@
     # list). Harmless no-op on non-LiteSpeed servers. index.php strips the
     # leading public path, so admin requests arrive as `admin/...` here.
     RewriteRule ^admin(/|$) - [E=Cache-Control:no-cache,E=cache-control:no-cache]
+    # Same for Instagram purchase links (/b/{code}): each visit fills that
+    # visitor's own cart, so a cached copy would skip it.
+    RewriteRule ^b/ - [E=Cache-Control:no-cache,E=cache-control:no-cache]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

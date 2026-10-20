@@ -1,0 +1,18 @@
+{
+  "name": "Racket Club · فروش سریع",
+  "short_name": "فروش راکت کلاب",
+  "description": "ساخت سبد مشتری و لینک خرید اینستاگرام",
+  "id": "/admin/sell",
+  "start_url": "/admin/sell",
+  "scope": "/admin/sell",
+  "display": "standalone",
+  "background_color": "#ece7d0",
+  "theme_color": "#18234f",
+  "lang": "fa",
+  "dir": "rtl",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/img/sell-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/sell-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -54,6 +54,8 @@ class CheckoutController extends Controller
 
         $user = $request->user();
         $defaultAddr = $user->addresses()->where('is_default', true)->first() ?? $user->addresses()->first();
+        // Returning customer: pre-pick last order's shipping + payment choice.
+        $lastOrder = $user->orders()->latest('id')->with('payment')->first();
 
         return view('checkout.index', [
             'lines' => $this->cart->lines(),
@@ -73,6 +75,8 @@ class CheckoutController extends Controller
             'defaultAddress' => $defaultAddr?->line ?? '',
             'defaultProvince' => $defaultAddr?->province ?? '',
             'defaultCity' => $defaultAddr?->city ?? '',
+            'lastShippingId' => $lastOrder?->shipping_method_id ? (int) $lastOrder->shipping_method_id : null,
+            'lastPaymentKey' => $lastOrder?->payment?->gateway,
         ]);
     }
 
@@ -269,6 +273,11 @@ class CheckoutController extends Controller
             return $order;
         });
 
+        // Order came from an Instagram purchase link → let the admin's «لینک‌های من» show it.
+        if ($sellLinkId = $request->session()->pull('sell_link_id')) {
+            \App\Models\SellLink::whereKey($sellLinkId)->update(['order_id' => $order->id]);
+        }
+
         $payment = Payment::create([
             'order_id' => $order->id,
             'gateway' => $payable <= 0 ? 'gift' : $method->key,
@@ -433,7 +442,17 @@ class CheckoutController extends Controller
     {
         abort_unless($order->user_id === auth()->id(), 403);
 
-        return view('checkout.success', ['order' => $order->load('items', 'payment')]);
+        // Telegram bot for order tracking + support: connect if not yet linked, else open it.
+        $botUsername = (string) config('telegram.bot_username');
+        $telegramReady = (bool) config('telegram.bot_token') && $botUsername !== '';
+        $telegramLinked = $telegramReady && \Illuminate\Support\Facades\Schema::hasTable('telegram_chats')
+            && \App\Models\TelegramChat::customers()->where('user_id', $order->user_id)->exists();
+
+        return view('checkout.success', [
+            'order' => $order->load('items', 'payment'),
+            'telegramReady' => $telegramReady,
+            'telegramUrl' => $telegramLinked ? 'https://t.me/'.ltrim($botUsername, '@') : route('account.telegram.connect'),
+        ]);
     }
 
     public function failed(Order $order): View

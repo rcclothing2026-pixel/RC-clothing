@@ -135,6 +135,10 @@ Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('ca
 Route::post('/cart/gift', [CartController::class, 'applyGift'])->name('cart.gift.apply');
 Route::delete('/cart/gift', [CartController::class, 'removeGift'])->name('cart.gift.remove');
 
+// Instagram purchase link (built on /admin/sell): fills the cart, then normal checkout.
+Route::get('/b/{code}', [\App\Http\Controllers\SellLinkController::class, 'show'])
+    ->where('code', '[A-Za-z0-9]{4,12}')->name('sell.show');
+
 /* ----------------------- Auth (SMS OTP) ------------------------- */
 Route::middleware('guest')->group(function () {
     Route::get('/login', [OtpLoginController::class, 'show'])->name('login');
@@ -187,6 +191,11 @@ Route::get('/checkout/callback/{method}', [CheckoutController::class, 'callback'
 /* ---------------------------- Admin ----------------------------- */
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', AdminDashboardController::class)->name('dashboard');
+    // «فروش سریع» — phone-first cart builder → Instagram purchase link.
+    Route::get('/sell', [\App\Http\Controllers\Admin\SellController::class, 'index'])->name('sell.index');
+    Route::get('/sell/search', [\App\Http\Controllers\Admin\SellController::class, 'search'])->name('sell.search');
+    Route::get('/sell/links', [\App\Http\Controllers\Admin\SellController::class, 'links'])->name('sell.links');
+    Route::post('/sell/links', [\App\Http\Controllers\Admin\SellController::class, 'store'])->name('sell.store');
     Route::post('/products/bulk', [AdminProductController::class, 'bulk'])->name('products.bulk');
     Route::resource('products', AdminProductController::class)->except('show');
     Route::resource('categories', AdminCategoryController::class)->except('show');
