@@ -10,15 +10,16 @@
 @push('head')
 <script type="application/ld+json">
 {!! json_encode([
-    '@context' => 'https://schema.org',
+    '@@context' => 'https://schema.org',
     '@type' => 'Product',
     'name' => $product->name,
-    'description' => $product->summary ?: $product->description,
-    'image' => $product->primary_image_url ? url($product->primary_image_url) : null,
+    'description' => $product->summary ?: \Illuminate\Support\Str::limit(strip_tags((string) $product->description), 300),
+    'image' => $product->images->isNotEmpty() ? $product->images->map(fn ($i) => url($i->path))->values()->all() : ($product->primary_image_url ? url($product->primary_image_url) : null),
     'sku' => optional($product->variants->first())->sku,
+    'brand' => ['@type' => 'Brand', 'name' => 'Racket Club'],
     'offers' => [
         '@type' => 'Offer',
-        'price' => $product->price,
+        'price' => \App\Support\Money::tomanToRial((int) $product->price),
         'priceCurrency' => 'IRR',
         'availability' => $product->variants->where('is_active', true)->where('stock_qty', '>', 0)->isNotEmpty()
             ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
@@ -29,7 +30,7 @@
 {{-- Breadcrumb structured data (mirrors the visible trail): Home › Shop › [Category] › Product --}}
 <script type="application/ld+json">
 {!! json_encode([
-    '@context' => 'https://schema.org',
+    '@@context' => 'https://schema.org',
     '@type' => 'BreadcrumbList',
     'itemListElement' => array_values(array_filter([
         ['@type' => 'ListItem', 'position' => 1, 'name' => __('Home'), 'item' => route('home')],

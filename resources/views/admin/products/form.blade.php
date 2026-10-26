@@ -33,6 +33,25 @@
                 </div>
             </section>
 
+            {{-- English copy (shown on the ?lang=en storefront; empty = Persian) --}}
+            <section class="rounded-card bg-white p-6 ring-1 ring-brand-100">
+                <h2 class="mb-4 text-base font-bold text-brand-900">نسخه انگلیسی</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="mb-1 block text-sm text-brand-600">نام انگلیسی</label>
+                        <input name="name_en" dir="ltr" value="{{ old('name_en', $product->getRawOriginal('name_en')) }}" class="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm text-brand-600">خلاصه انگلیسی</label>
+                        <input name="summary_en" dir="ltr" value="{{ old('summary_en', $product->getRawOriginal('summary_en')) }}" class="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm text-brand-600">توضیحات انگلیسی</label>
+                        @include('admin.partials.html-editor', ['name' => 'description_en', 'value' => old('description_en', $product->getRawOriginal('description_en')), 'rows' => 14, 'dir' => 'ltr', 'placeholder' => 'Write here…'])
+                    </div>
+                </div>
+            </section>
+
             {{-- Variants / inventory (hidden when the product is a gift bundle) --}}
             <section data-variants-section class="rounded-card bg-white p-6 ring-1 ring-brand-100 {{ old('is_bundle', $product->is_bundle) ? 'hidden' : '' }}">
                 <div class="mb-4 flex items-center justify-between">

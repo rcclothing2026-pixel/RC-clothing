@@ -14,7 +14,7 @@ class Product extends Model
     use Searchable;
 
     protected $fillable = [
-        'category_id', 'collection_id', 'size_guide_id', 'brand', 'name', 'slug', 'summary', 'description', 'badges',
+        'category_id', 'collection_id', 'size_guide_id', 'brand', 'name', 'slug', 'summary', 'description', 'name_en', 'summary_en', 'description_en', 'badges',
         'price', 'compare_at_price', 'is_active', 'is_featured', 'is_bundle',
         'external_enabled', 'external_url',
         'stockkeeping_id', 'stock_synced_at', 'broadcast_at',
@@ -33,6 +33,37 @@ class Product extends Model
             'broadcast_at' => 'datetime',
             'badges' => 'array',
         ];
+    }
+
+    /**
+     * On the English storefront, name/summary/description read from the *_en
+     * column when it is filled. Admin always sees and saves the Persian values.
+     */
+    private function localized(string $field, ?string $value): ?string
+    {
+        if (app()->getLocale() === 'en' && ! request()->is('admin', 'admin/*')) {
+            $en = $this->attributes[$field.'_en'] ?? null;
+            if (filled($en)) {
+                return $en;
+            }
+        }
+
+        return $value;
+    }
+
+    public function getNameAttribute(?string $value): ?string
+    {
+        return $this->localized('name', $value);
+    }
+
+    public function getSummaryAttribute(?string $value): ?string
+    {
+        return $this->localized('summary', $value);
+    }
+
+    public function getDescriptionAttribute(?string $value): ?string
+    {
+        return $this->localized('description', $value);
     }
 
     /**
