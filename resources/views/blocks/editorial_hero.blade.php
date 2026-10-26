@@ -356,12 +356,12 @@
         {{-- Slider chrome: arrows + dots, only when there's more than one slide --}}
         @if (count($slides) > 1)
             <button type="button" @click.stop="prev(); stop()" aria-label="{{ __('Previous') }}"
-                    class="absolute end-4 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 sm:end-8">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                    class="absolute start-4 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 sm:start-8">
+                <svg class="h-5 w-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
             </button>
             <button type="button" @click.stop="next(); stop()" aria-label="{{ __('Next') }}"
-                    class="absolute start-4 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 sm:start-8">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+                    class="absolute end-4 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 sm:end-8">
+                <svg class="h-5 w-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
             </button>
             <div class="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-1.5">
                 @foreach ($slides as $idx => $_)

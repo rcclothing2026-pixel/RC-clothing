@@ -130,14 +130,14 @@
                     {{-- Prev / Next (RTL: prev = right arrow visually) --}}
                     <template x-if="images.length > 1">
                         <button type="button" @click.stop="prev()" aria-label="{{ __('Previous') }}"
-                                class="absolute end-4 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:end-8">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                                class="absolute start-4 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:start-8">
+                            <svg class="h-5 w-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
                         </button>
                     </template>
                     <template x-if="images.length > 1">
                         <button type="button" @click.stop="next()" aria-label="{{ __('Next') }}"
-                                class="absolute start-4 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:start-8">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+                                class="absolute end-4 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:end-8">
+                            <svg class="h-5 w-5 rtl:-scale-x-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
                         </button>
                     </template>
 
