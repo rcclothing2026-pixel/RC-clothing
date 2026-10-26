@@ -372,13 +372,16 @@
     -webkit-backdrop-filter: none !important;
     color: #fff;
 }
-.header-over-hero a,
-.header-over-hero button,
-.header-over-hero svg {
+/* [data-solid] = white/paper surfaces inside the header (mega panel, search
+   results, mobile drawer) — they keep their own dark text, else it turns
+   white-on-white over the hero. */
+.header-over-hero a:not([data-solid] *),
+.header-over-hero button:not([data-solid] *),
+.header-over-hero svg:not([data-solid] *) {
     color: #fff;
 }
-.header-over-hero a:hover,
-.header-over-hero button:hover {
+.header-over-hero a:not([data-solid] *):hover,
+.header-over-hero button:not([data-solid] *):hover {
     background: rgba(255, 255, 255, 0.10);
 }
 .header-over-hero [ring-1],

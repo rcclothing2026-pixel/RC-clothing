@@ -46,7 +46,7 @@
                                 <span aria-hidden="true" class="absolute inset-x-0 top-full h-5"></span>
                             </a>
                             {{-- Mega panel: full-width below the header bar --}}
-                            <div class="invisible absolute inset-x-0 top-full z-40 translate-y-1 border-t border-brand-100 bg-white opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                            <div data-solid class="invisible absolute inset-x-0 top-full z-40 translate-y-1 border-t border-brand-100 bg-white opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                                 <div class="mx-auto max-w-7xl px-6 py-8 sm:px-10">
                                     {{-- Resolve each child's image: its own uploaded image wins,
                                          else the matching shop category's photo (by URL slug), else
@@ -54,9 +54,10 @@
                                          text links, and images only reveal on hover (no empty boxes). --}}
                                     @php($kids = $item->children->map(function ($child) use ($navCategories) {
                                         $url = (string) $child->url;
+                                        // ?category=x, /shop/(category/)x, or the auto category page /page/cat-x (Page::brickSlug)
                                         $slug = preg_match('/category=([^&#]+)/', $url, $mm)
                                             ? urldecode($mm[1])
-                                            : (preg_match('~/shop/(?:category/)?([^/?#]+)~', $url, $mm) ? $mm[1] : null);
+                                            : (preg_match('~/(?:shop/(?:category/)?|page/cat-)([^/?#]+)~', $url, $mm) ? $mm[1] : null);
                                         $img = ($child->image ?: ($slug ? optional($navCategories->firstWhere('slug', $slug))->image_path : null)) ?: '';
                                         return ['url' => $child->url, 'label' => $child->label, 'img' => $img];
                                     }))
@@ -142,7 +143,7 @@
             </div>
 
             {{-- Results dropdown --}}
-            <div x-show="open && results.length" x-cloak x-transition.opacity
+            <div data-solid x-show="open && results.length" x-cloak x-transition.opacity
                  class="absolute end-0 start-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-brand-100 bg-white shadow-xl">
                 <template x-for="r in results" :key="r.url">
                     <a :href="r.url" class="flex items-center gap-3 px-3 py-2 transition hover:bg-brand-50">
@@ -215,6 +216,7 @@
              x-transition:leave="transition transform ease-in duration-200"
              x-transition:leave-start="translate-x-0"
              x-transition:leave-end="translate-x-full rtl:-translate-x-full"
+             data-solid
              class="fixed inset-y-0 start-0 z-[56] flex w-[86%] max-w-sm flex-col bg-paper shadow-2xl"
              role="dialog" aria-modal="true" aria-label="{{ __('Mobile menu') }}">
 

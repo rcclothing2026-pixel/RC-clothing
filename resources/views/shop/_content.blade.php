@@ -113,9 +113,10 @@
             {{-- Mobile filter backdrop --}}
             <div id="filter-backdrop" class="fixed inset-0 z-40 hidden bg-brand-900/40 lg:hidden"></div>
 
-            {{-- Filter: bottom-sheet on mobile, static sidebar on desktop --}}
+            {{-- Filter: bottom-sheet on mobile, static sidebar on desktop. lg:z-auto: a grid
+                 item honours z-index even when static, and z-50 would cover the header mega menu. --}}
             <aside id="filter-drawer"
-                   class="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] translate-y-full overflow-y-auto overscroll-contain rounded-t-2xl bg-white shadow-2xl transition-transform duration-300 ease-out lg:static lg:max-h-none lg:translate-y-0 lg:rounded-none lg:shadow-none">
+                   class="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] translate-y-full overflow-y-auto overscroll-contain rounded-t-2xl bg-white shadow-2xl transition-transform duration-300 ease-out lg:static lg:z-auto lg:max-h-none lg:translate-y-0 lg:rounded-none lg:shadow-none">
 
                 {{-- Bottom-sheet drag handle (mobile only) --}}
                 <div class="sticky top-0 z-10 flex items-center justify-center bg-white pb-2 pt-3 lg:hidden">
