@@ -42,6 +42,9 @@
     # Same for Instagram purchase links (/b/{code}): each visit fills that
     # visitor's own cart, so a cached copy would skip it.
     RewriteRule ^b/ - [E=Cache-Control:no-cache,E=cache-control:no-cache]
+    # And the Instagram responder's live price/stock API (/api/ig/*): keyed by a
+    # request header the cache does not vary on, and must never be stale.
+    RewriteRule ^api/ig/ - [E=Cache-Control:no-cache,E=cache-control:no-cache]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

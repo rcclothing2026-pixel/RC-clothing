@@ -48,6 +48,12 @@ return [
     // NJ Focus central event hub (nj-focus-IR). When NJ_FOCUS_API_KEY is set,
     // unhandled exceptions (server) and window errors (browser) are forwarded
     // to the hub alongside Sentry. Empty key → no-op.
+    // Instagram DM responder's price & stock feed (/api/ig/*). Empty = the API
+    // is off and every /api/ig path answers 404.
+    'ig_catalog' => [
+        'key' => env('IG_CATALOG_KEY', ''),
+    ],
+
     'nj_focus' => [
         'key' => env('NJ_FOCUS_API_KEY', ''),
         'base_url' => env('NJ_FOCUS_URL', 'https://chiacoservice.ir'),
