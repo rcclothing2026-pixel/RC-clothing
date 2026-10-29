@@ -8,7 +8,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Gate for /api/ig/* (the Instagram DM responder's price & stock feed).
+ * Gate for /api/ig/* (the Instagram DM responder's API): the live price &
+ * stock feed, and creating /b/{code} purchase links. A link only prepares a
+ * cart — price, stock and payment stay with the normal checkout — so the key
+ * can read the catalogue and make links, nothing more.
  *
  * The caller sends X-Catalog-Key; it must equal IG_CATALOG_KEY (compared in
  * constant time). Anything else — no header, a wrong key, or the env unset on
