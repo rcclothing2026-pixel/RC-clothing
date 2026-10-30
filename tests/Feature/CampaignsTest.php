@@ -75,4 +75,25 @@ class CampaignsTest extends TestCase
         $this->assertSame(8_700_000, $cart->combinedDiscount());               // 15% of 58M of tees, cap untouched
         $this->assertNotNull(DiscountRule::where('description', 'campaign:team-20')->first());
     }
+
+    public function test_bundles_page_and_cart_suggest_the_kits(): void
+    {
+        $tacky = $this->item('aadd-aorgryp-rakt-klab-super-tacky-1480', 'loazm-ganby', 680_000, 900, 'مشکی');
+        $this->item('aadd-aorgryp-rakt-klab-super-dry-1482', 'loazm-ganby', 680_000, 900, 'آبی');
+        $this->item('klah-rakt-klab-9', 'klah', 2_100_000, 20, 'ذغالی');
+        $this->item('gorab-rakt-klab-122', 'mtfrkh', 680_000, 30, 'مشکی');
+        $this->item('tot-bg-rakt-klab-121', 'mtfrkh', 3_600_000);
+        $this->item('holh-mykro-faybr-rakt-klab-764', 'holh', 5_300_000);
+        $this->item('tyshrt-imperial-1479', 'tyshrt', 5_800_000);
+        $this->artisan('campaigns:sync');
+
+        $this->get('/bundles')->assertOk()->assertSee('بسته‌ها و ست‌ها')->assertSee('کیت شروع پدل')->assertSee('سفارش تیمی');
+
+        $res = $this->postJson('/cart/add', ['variant_id' => $tacky->id, 'quantity' => 1])->assertOk();
+        $names = collect($res->json('cart.offers'))->pluck('name');
+        $this->assertTrue($names->contains(fn ($n) => str_contains($n, 'اورگریپ') || str_contains($n, 'کیت')));
+
+        $this->get('/cart')->assertOk()->assertSee('ارزان‌تر در بسته و ست');
+        $this->get('/product/kit-padel-starter')->assertOk()->assertSee('"availability":"https://schema.org/InStock"', false);
+    }
 }

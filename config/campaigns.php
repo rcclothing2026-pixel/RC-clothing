@@ -102,6 +102,16 @@ return [
             'items' => [['tot-bg-rakt-klab-121', 1], ['holh-mykro-faybr-rakt-klab-764', 1], ['gorab-rakt-klab-122', 1, 'color' => 'مشکی']]],
     ],
 
+    // Mix-and-match sets (discount rules above), shown as cards on /bundles and
+    // under the cart when a matching item is in it.
+    'sets' => [
+        'team' => ['name' => 'سفارش تیمی', 'text' => '۱۰ تی‌شرت ۱۵٪ و ۲۰ تی‌شرت ۲۰٪ تخفیف؛ برای باشگاه و آکادمی', 'categories' => $tees, 'url' => '/shop?shelf=tees'],
+        'partner' => ['name' => 'یار دوبل', 'text' => 'دو تی‌شرت راکت کلاب، ۱۰٪ تخفیف', 'categories' => $tees, 'url' => '/shop?shelf=tees',
+            'from' => '2027-01-30', 'to' => '2027-02-19'],
+        'spring' => ['name' => 'ست بهاره', 'text' => 'پولوشرت ورزشی + کلاه، ۵۰۰ هزار تومان تخفیف', 'products' => ['poloshrt-orzshy-rakt-klab-1476', 'klah-rakt-klab-9'],
+            'url' => '/product/poloshrt-orzshy-rakt-klab-1476', 'from' => '2027-04-03', 'to' => '2027-04-30'],
+    ],
+
     'badges' => [
         ['categories' => $tees, 'text' => 'سفارش تیمی: ۱۰ تی‌شرت ۱۵٪، ۲۰ تی‌شرت ۲۰٪ تخفیف'],
         ['categories' => ['loazm-ganby'], 'text' => 'بسته‌های ۳ و ۶ عددی اورگریپ ارزان‌ترند؛ در «کیت‌ها و بسته‌ها»'],

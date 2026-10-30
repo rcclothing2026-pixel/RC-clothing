@@ -109,6 +109,15 @@ class ShopController extends Controller
         return view('shop.index', $shopData);
     }
 
+    /** «بسته‌ها و ست‌ها»: bundle products, then live and upcoming sets. */
+    public function bundles(): \Illuminate\Contracts\View\View
+    {
+        return view('bundles', [
+            'bundles' => \App\Support\Campaigns::bundles(),
+            'sets' => \App\Support\Campaigns::sets(upcoming: true),
+        ]);
+    }
+
     public function suggest(Request $request): \Illuminate\Http\JsonResponse
     {
         $q = trim($request->input('q', ''));

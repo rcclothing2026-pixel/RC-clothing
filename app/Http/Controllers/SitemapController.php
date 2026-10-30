@@ -29,6 +29,7 @@ class SitemapController extends Controller
             $urls[] = ['loc' => route('shop.index', ['collection' => $collection->slug]), 'priority' => '0.6'];
         }
 
+        $urls[] = ['loc' => route('bundles'), 'priority' => '0.7'];
         foreach (array_keys(\App\Support\Campaigns::shelves()) as $shelf) {
             $urls[] = ['loc' => route('shop.index', ['shelf' => $shelf]), 'priority' => '0.6'];
         }
@@ -109,6 +110,7 @@ class SitemapController extends Controller
         if ($shelves = \App\Support\Campaigns::shelves()) {
             $lines[] = '';
             $lines[] = '## پیشنهادها';
+            $lines[] = '- [بسته‌ها و ست‌ها]('.route('bundles').'): چند محصول با هم، ارزان‌تر از خرید تکی';
             foreach ($shelves as $slug => $s) {
                 $lines[] = '- ['.$s['name'].']('.route('shop.index', ['shelf' => $slug]).'): '.($s['description'] ?? '');
             }

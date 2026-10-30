@@ -77,6 +77,27 @@
                             </form>
                         </div>
                     @endforeach
+
+                    @php($__offers = \App\Support\Campaigns::offersFor($lines->map(fn ($l) => $l['variant']->product_id)->all(), 4))
+                    @if ($__offers)
+                        <div class="rounded-2xl bg-accent-600/5 p-4 ring-1 ring-accent-600/10">
+                            <h2 class="mb-3 text-sm font-bold text-brand-900">ارزان‌تر در بسته و ست</h2>
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                @foreach ($__offers as $o)
+                                    <a href="{{ $o['url'] }}" class="flex items-center gap-3 rounded-xl bg-white p-2 ring-1 ring-brand-100 transition hover:ring-brand-300">
+                                        <div class="h-14 w-12 shrink-0 overflow-hidden rounded-lg bg-brand-100">
+                                            @if ($o['image'])<img src="{{ $o['image'] }}" alt="{{ $o['name'] }}" loading="lazy" class="h-full w-full object-cover">@endif
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="line-clamp-1 text-sm font-semibold text-brand-900">{{ $o['name'] }}</p>
+                                            <p class="line-clamp-2 text-xs leading-5 text-accent-700 fa-num">{{ $o['note'] }}</p>
+                                            @if ($o['price'])<p class="mt-0.5 text-xs font-bold text-brand-900 fa-num">{{ $o['price'] }} @if ($o['was'])<span class="font-normal text-brand-400 line-through">{{ $o['was'] }}</span>@endif</p>@endif
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Summary --}}

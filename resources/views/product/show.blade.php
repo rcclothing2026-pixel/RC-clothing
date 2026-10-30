@@ -21,7 +21,7 @@
         '@type' => 'Offer',
         'price' => \App\Support\Money::tomanToRial((int) $product->price),
         'priceCurrency' => 'IRR',
-        'availability' => $product->variants->where('is_active', true)->where('stock_qty', '>', 0)->isNotEmpty()
+        'availability' => ($product->is_bundle ? $product->bundleAvailableQty() > 0 : $product->variants->where('is_active', true)->where('stock_qty', '>', 0)->isNotEmpty())
             ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
         'url' => route('product.show', $product),
     ],

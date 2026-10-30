@@ -152,6 +152,7 @@ class CartController extends Controller
                 'variant_label' => trim(($justAdded->color ?? '').' '.($justAdded->size ?? '')),
             ],
             'items' => $top,
+            'offers' => \App\Support\Campaigns::offersFor([(int) $justAdded->product_id], 2),
         ];
     }
 

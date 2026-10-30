@@ -59,6 +59,26 @@
             </div>
         </template>
 
+        {{-- Bundles and sets that include the item just added --}}
+        <template x-if="state.offers && state.offers.length">
+            <div class="border-b border-brand-100 px-5 py-3">
+                <p class="mb-2 text-xs font-bold text-brand-700">ارزان‌تر در بسته و ست</p>
+                <div class="space-y-2">
+                    <template x-for="o in state.offers" :key="o.url">
+                        <a :href="o.url" class="flex items-center gap-3 rounded-xl bg-accent-600/5 p-2 transition hover:bg-accent-600/10">
+                            <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-brand-100">
+                                <template x-if="o.image"><img :src="o.image" :alt="o.name" class="h-full w-full object-cover"></template>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="line-clamp-1 text-sm font-semibold text-brand-900" x-text="o.name"></p>
+                                <p class="line-clamp-2 text-xs leading-5 text-accent-700 fa-num" x-text="o.note"></p>
+                            </div>
+                        </a>
+                    </template>
+                </div>
+            </div>
+        </template>
+
         {{-- Top items --}}
         <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
             <template x-if="state.items && state.items.length">

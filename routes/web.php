@@ -114,6 +114,7 @@ Route::get('/page/{slug}', [PageController::class, 'show'])->name('page')
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/subscribe', [SubscriberController::class, 'store'])->name('subscriber.store');
 Route::get('/unsubscribe/{token}', [SubscriberController::class, 'unsubscribe'])->name('subscriber.unsubscribe');
+Route::get('/bundles', [ShopController::class, 'bundles'])->name('bundles');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 Route::get('/llms.txt', [SitemapController::class, 'llms'])->name('llms');

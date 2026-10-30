@@ -155,4 +155,86 @@ class Campaigns
 
         return $out;
     }
+
+    /**
+     * Sets from config «sets» (mix-and-match offers that need sizes, so they
+     * are discount rules, not bundle products). Live ones, plus upcoming ones
+     * flagged with their Jalali start date when $upcoming is true.
+     */
+    public static function sets(bool $upcoming = false): array
+    {
+        $t = self::today();
+        $out = [];
+        foreach (config('campaigns.sets', []) as $key => $s) {
+            if (! empty($s['to']) && $s['to'] < $t) {
+                continue;
+            }
+            $soon = ! empty($s['from']) && $s['from'] > $t;
+            if ($soon && ! $upcoming) {
+                continue;
+            }
+            $out[$key] = $s + ['key' => $key, 'starts' => $soon ? 'از '.Jalali::format(\Illuminate\Support\Carbon::parse($s['from'])) : null];
+        }
+
+        return $out;
+    }
+
+    /** Bundle products that can be assembled now. */
+    public static function bundles()
+    {
+        return Product::active()->where('is_bundle', true)->with(['images', 'variants', 'bundleItems.variant.product'])
+            ->orderBy('price')->get()->filter(fn ($b) => $b->bundleAvailableQty() > 0)->values();
+    }
+
+    /**
+     * Bundles and live sets that include any of these products: shown in the
+     * mini-cart after an add and under the cart lines.
+     *
+     * @return array<int, array{name: string, url: string, image: ?string, note: string, price: ?string, was: ?string}>
+     */
+    public static function offersFor(array $productIds, int $take = 3): array
+    {
+        $productIds = array_values(array_unique(array_map('intval', $productIds)));
+        if ($productIds === []) {
+            return [];
+        }
+        $products = Product::whereIn('id', $productIds)->with(['categories', 'category'])->get();
+        $out = [];
+
+        foreach (self::bundles() as $b) {
+            if (in_array((int) $b->id, $productIds, true)
+                || ! $b->bundleItems->contains(fn ($bi) => in_array((int) $bi->variant?->product_id, $productIds, true))) {
+                continue;
+            }
+            $out[] = [
+                'name' => $b->name,
+                'url' => route('product.show', $b->slug),
+                'image' => $b->primary_image_url,
+                'note' => 'در این بسته '.Money::toman((int) $b->compare_at_price - (int) $b->price).' ارزان‌تر',
+                'price' => Money::toman((int) $b->price),
+                'was' => $b->compare_at_price ? Money::toman((int) $b->compare_at_price) : null,
+            ];
+        }
+
+        foreach (self::sets() as $s) {
+            $hit = $products->contains(fn ($p) => in_array($p->slug, $s['products'] ?? [], true)
+                || array_intersect($s['categories'] ?? [], self::categorySlugs($p)));
+            if ($hit) {
+                $out[] = ['name' => $s['name'], 'url' => $s['url'], 'image' => self::setImage($s), 'note' => $s['text'], 'price' => null, 'was' => null];
+            }
+        }
+
+        return array_slice($out, 0, $take);
+    }
+
+    /** First in-stock product photo of a set, for its card. */
+    public static function setImage(array $s): ?string
+    {
+        $q = Product::active()->where('is_bundle', false);
+        $q = ! empty($s['products'])
+            ? $q->whereIn('slug', $s['products'])
+            : self::applyShelf($q, ['categories' => $s['categories'] ?? []]);
+
+        return self::applyShelf($q, ['in_stock' => true])->with('images')->first()?->primary_image_url;
+    }
 }
