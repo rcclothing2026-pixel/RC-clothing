@@ -39,6 +39,9 @@
                     <span class="absolute start-2 top-2 rounded-sm bg-white px-1.5 py-0.5 text-[10px] font-medium text-brand-900 ring-1 ring-brand-100">{{ __('Sold Out') }}</span>
                 @endunless
                 <x-product-badge-overlay :product="$product" />
+                @if ($__hint = \App\Support\Campaigns::cartHint($product))
+                    <span class="absolute bottom-2 start-2 end-12 line-clamp-1 rounded-sm bg-accent-600 px-1.5 py-0.5 text-[10px] font-medium text-white">{{ $__hint }}</span>
+                @endif
             </div>
             <div class="mt-3 px-1">
                 <p class="line-clamp-1 text-xs font-medium uppercase tracking-wide text-brand-900 sm:text-sm">{{ $product->name }}</p>

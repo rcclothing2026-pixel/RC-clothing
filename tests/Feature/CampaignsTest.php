@@ -96,4 +96,24 @@ class CampaignsTest extends TestCase
         $this->get('/cart')->assertOk()->assertSee('ارزان‌تر در بسته و ست');
         $this->get('/product/kit-padel-starter')->assertOk()->assertSee('"availability":"https://schema.org/InStock"', false);
     }
+
+    public function test_cards_flag_bundles_holding_a_cart_item_and_outlet_works(): void
+    {
+        $tacky = $this->item('aadd-aorgryp-rakt-klab-super-tacky-1480', 'loazm-ganby', 680_000, 900, 'مشکی');
+        $this->item('aadd-aorgryp-rakt-klab-super-dry-1482', 'loazm-ganby', 680_000, 900, 'آبی');
+        $this->item('klah-rakt-klab-9', 'klah', 2_100_000, 20, 'ذغالی');
+        $this->item('gorab-rakt-klab-122', 'mtfrkh', 680_000, 30, 'مشکی');
+        $this->item('tot-bg-rakt-klab-121', 'mtfrkh', 3_600_000);
+        $this->item('holh-mykro-faybr-rakt-klab-764', 'holh', 5_300_000);
+        $tee = $this->item('tyshrt-imperial-1479', 'tyshrt', 5_800_000);
+        $this->artisan('campaigns:sync');
+
+        $this->postJson('/cart/add', ['variant_id' => $tacky->id, 'quantity' => 1])->assertOk();
+        $this->get('/shop?shelf=kits')->assertOk()->assertSee('شامل کالای سبد شما، ارزان‌تر');
+
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin' => true]));
+        $this->post('/admin/outlet', ['product_id' => $tee->product_id, 'percent' => 25])->assertRedirect();
+        $this->assertSame(4_350_000, (int) $tee->product->fresh()->price);
+        $this->get('/shop?shelf=outlet')->assertOk()->assertSee('tyshrt-imperial-1479');
+    }
 }

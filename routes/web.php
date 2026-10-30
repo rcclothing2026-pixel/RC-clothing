@@ -115,6 +115,7 @@ Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/subscribe', [SubscriberController::class, 'store'])->name('subscriber.store');
 Route::get('/unsubscribe/{token}', [SubscriberController::class, 'unsubscribe'])->name('subscriber.unsubscribe');
 Route::get('/bundles', [ShopController::class, 'bundles'])->name('bundles');
+Route::permanentRedirect('/outlet', '/shop?shelf=outlet')->name('outlet');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 Route::get('/llms.txt', [SitemapController::class, 'llms'])->name('llms');
@@ -205,6 +206,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/discounts', [DiscountController::class, 'index'])->name('discounts.index');
     Route::resource('coupons', AdminCouponController::class)->except('show');
     Route::resource('discount-rules', DiscountRuleController::class)->except('show');
+    Route::get('/outlet', [\App\Http\Controllers\Admin\OutletController::class, 'index'])->name('outlet.index');
+    Route::post('/outlet', [\App\Http\Controllers\Admin\OutletController::class, 'store'])->name('outlet.store');
+    Route::put('/outlet/{outlet}', [\App\Http\Controllers\Admin\OutletController::class, 'update'])->name('outlet.update');
+    Route::delete('/outlet/{outlet}', [\App\Http\Controllers\Admin\OutletController::class, 'destroy'])->name('outlet.destroy');
     Route::get('/gift-cards', [AdminGiftCardController::class, 'index'])->name('gift-cards.index');
     Route::post('/gift-cards', [AdminGiftCardController::class, 'store'])->name('gift-cards.store');
     Route::delete('/gift-cards/{giftCard}', [AdminGiftCardController::class, 'destroy'])->name('gift-cards.destroy');

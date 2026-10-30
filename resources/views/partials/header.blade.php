@@ -109,6 +109,7 @@
             @else
                 <a href="{{ route('shop.index') }}" class="rounded-lg px-3 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-100">{{ __('Shop') }}</a>
                 <a href="{{ route('bundles') }}" class="rounded-lg px-3 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-100">{{ __('Bundles & sets') }}</a>
+                <a href="{{ route('outlet') }}" class="rounded-lg px-3 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-100">{{ __('Outlet') }}</a>
                 @foreach ($navCategories->take(5) as $category)
                     <a href="{{ route('shop.index', ['category' => $category->slug]) }}"
                        class="rounded-lg px-3 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-100">{{ $category->name }}</a>
@@ -259,6 +260,7 @@
                 @else
                     <a href="{{ route('shop.index') }}" @click="navOpen = false" class="block rounded-lg px-3 py-3 text-sm font-semibold text-brand-800 transition hover:bg-brand-50">{{ __('Shop') }}</a>
                     <a href="{{ route('bundles') }}" @click="navOpen = false" class="block rounded-lg px-3 py-3 text-sm font-semibold text-brand-800 transition hover:bg-brand-50">{{ __('Bundles & sets') }}</a>
+                    <a href="{{ route('outlet') }}" @click="navOpen = false" class="block rounded-lg px-3 py-3 text-sm font-semibold text-brand-800 transition hover:bg-brand-50">{{ __('Outlet') }}</a>
                     @foreach ($navCategories->take(8) as $category)
                         <a href="{{ route('shop.index', ['category' => $category->slug]) }}" @click="navOpen = false"
                            class="block rounded-lg px-3 py-2.5 text-sm text-brand-600 transition hover:bg-brand-50">{{ $category->name }}</a>

@@ -357,7 +357,7 @@ class Cart
     /** Bundles are already priced down, and winter categories are never discounted. */
     public static function isDiscountable($product): bool
     {
-        if (! $product || $product->is_bundle) {
+        if (! $product || $product->is_bundle || \App\Support\Outlet::has((int) $product->id)) {
             return false;
         }
         $skip = config('shop.no_discount_categories', []);

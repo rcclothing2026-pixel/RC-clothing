@@ -22,6 +22,8 @@ $dry = 'aadd-aorgryp-rakt-klab-super-dry-1482';
 return [
 
     'shelves' => [
+        'outlet' => ['name' => 'اوتلت', 'description' => 'محصولات اوتلت راکت کلاب با تخفیف؛ تا وقتی موجودی هست.',
+            'outlet' => true, 'in_stock' => true],
         'kits' => ['name' => 'کیت‌ها و بسته‌ها', 'description' => 'کیت شروع پدل، کیف بازیکن و بسته‌های اورگریپ راکت کلاب؛ ارزان‌تر از خرید تکی.',
             'bundles' => true, 'in_stock' => true],
         'last-size' => ['name' => 'آخرین سایز', 'description' => 'آخرین تک‌سایزهای طرح‌های قدیمی راکت کلاب.',
@@ -105,7 +107,7 @@ return [
     // Mix-and-match sets (discount rules above), shown as cards on /bundles and
     // under the cart when a matching item is in it.
     'sets' => [
-        'team' => ['name' => 'سفارش تیمی', 'text' => '۱۰ تی‌شرت ۱۵٪ و ۲۰ تی‌شرت ۲۰٪ تخفیف؛ برای باشگاه و آکادمی', 'categories' => $tees, 'url' => '/shop?shelf=tees'],
+        'team' => ['name' => 'سفارش تیمی', 'text' => '۱۰ تی‌شرت ۱۵٪ و ۲۰ تی‌شرت ۲۰٪ تخفیف؛ برای باشگاه و آکادمی', 'categories' => $tees, 'url' => '/shop?shelf=tees', 'hint' => false],
         'partner' => ['name' => 'یار دوبل', 'text' => 'دو تی‌شرت راکت کلاب، ۱۰٪ تخفیف', 'categories' => $tees, 'url' => '/shop?shelf=tees',
             'from' => '2027-01-30', 'to' => '2027-02-19'],
         'spring' => ['name' => 'ست بهاره', 'text' => 'پولوشرت ورزشی + کلاه، ۵۰۰ هزار تومان تخفیف', 'products' => ['poloshrt-orzshy-rakt-klab-1476', 'klah-rakt-klab-9'],

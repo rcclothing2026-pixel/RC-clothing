@@ -66,6 +66,9 @@ class Campaigns
         if (! empty($s['products'])) {
             $q->whereIn('slug', $s['products']);
         }
+        if (! empty($s['outlet'])) {
+            $q->whereIn('id', Outlet::productIds() ?: [0]);
+        }
         if (! empty($s['bundles'])) {
             $q->where('is_bundle', true);
         }
@@ -236,5 +239,57 @@ class Campaigns
             : self::applyShelf($q, ['categories' => $s['categories'] ?? []]);
 
         return self::applyShelf($q, ['in_stock' => true])->with('images')->first()?->primary_image_url;
+    }
+
+    /** True when the product belongs to the set (by slug or category). */
+    private static function inSet(Product $p, array $s): bool
+    {
+        return in_array($p->slug, $s['products'] ?? [], true) || (bool) array_intersect($s['categories'] ?? [], self::categorySlugs($p));
+    }
+
+    /**
+     * Short label for a product card when the product forms a bundle or a live
+     * set with something already in the cart; null otherwise.
+     */
+    public static function cartHint(Product $p): ?string
+    {
+        $ctx = request()->attributes->get('campaigns.cart') ?? tap(self::cartContext(), fn ($c) => request()->attributes->set('campaigns.cart', $c));
+        if (! $ctx['ids'] || in_array((int) $p->id, $ctx['ids'], true)) {
+            return null;
+        }
+        foreach ($ctx['bundles'] as $b) {
+            if (! array_intersect($b['parts'], $ctx['ids'])) {
+                continue;
+            }
+            if ((int) $p->id === $b['id']) {
+                return 'شامل کالای سبد شما، ارزان‌تر';
+            }
+            if (in_array((int) $p->id, $b['parts'], true)) {
+                return 'با سبد شما در بسته ارزان‌تر';
+            }
+        }
+        foreach ($ctx['sets'] as $s) {
+            if (($s['hint'] ?? true) && self::inSet($p, $s) && $ctx['products']->contains(fn ($c) => self::inSet($c, $s))) {
+                return 'ست با سبد شما: '.$s['name'];
+            }
+        }
+
+        return null;
+    }
+
+    private static function cartContext(): array
+    {
+        $products = app(\App\Services\Cart\Cart::class)->lines()->map(fn ($l) => $l['variant']->product)->filter()->unique('id')->values();
+        if ($products->isEmpty()) {
+            return ['ids' => [], 'products' => $products, 'bundles' => [], 'sets' => []];
+        }
+
+        return [
+            'ids' => $products->pluck('id')->map(fn ($i) => (int) $i)->all(),
+            'products' => $products,
+            'bundles' => self::bundles()->map(fn ($b) => ['id' => (int) $b->id,
+                'parts' => $b->bundleItems->map(fn ($bi) => (int) $bi->variant?->product_id)->filter()->values()->all()])->all(),
+            'sets' => self::sets(),
+        ];
     }
 }

@@ -44,6 +44,8 @@ class CatalogImporter
             $product->stockkeeping_id = $skId;
         }
         $product->price = $price;
+        // Outlet markdowns (admin → اوتلت) sit on top of the StoqS price.
+        \App\Support\Outlet::apply($product, $price);
         if (array_key_exists('description', $data) && $data['description']) {
             $product->description = $data['description'];
         }

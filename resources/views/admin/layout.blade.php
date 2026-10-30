@@ -85,6 +85,7 @@
                     'تخفیف‌ها و کارت هدیه' => [
                         ['admin.discounts.index', 'کدها و قوانین تخفیف'],
                         ['admin.discount-rules.index', 'تخفیف‌های خودکار'],
+                        ['admin.outlet.index', 'اوتلت'],
                         ['admin.gift-cards.index', 'کارت‌های هدیه'],
                     ],
                     'ظاهر فروشگاه' => [
