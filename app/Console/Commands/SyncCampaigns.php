@@ -9,6 +9,7 @@ use App\Models\Coupon;
 use App\Models\DiscountRule;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Support\Campaigns;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,7 @@ class SyncCampaigns extends Command
 
     public function handle(): int
     {
+        request()->attributes->remove('campaigns.approvals');
         DB::transaction(function () {
             $this->rules();
             $this->coupons();
@@ -44,6 +46,7 @@ class SyncCampaigns extends Command
         foreach (config('campaigns.rules', []) as $key => $r) {
             $keys[] = $key;
             $rule = DiscountRule::where('description', "campaign:$key")->first() ?? new DiscountRule;
+            $d = Campaigns::resolve($r);   // null while its NJ Focus campaign is not approved
             $rule->fill([
                 'name' => $r['label'],
                 'description' => "campaign:$key",
@@ -52,9 +55,9 @@ class SyncCampaigns extends Command
                 'actions' => array_map(fn ($a) => ['type' => $a[0], 'value' => $a[1] ?? 0], $r['actions']),
                 'apply_mode' => DiscountRule::APPLY_MODE_ALL,
                 'stack_mode' => DiscountRule::STACK_MODE_ALL,
-                'starts_at' => empty($r['from']) ? null : $this->tehran($r['from'])->startOfDay()->setTimezone(config('app.timezone')),
-                'expires_at' => empty($r['to']) ? null : $this->tehran($r['to'])->endOfDay()->setTimezone(config('app.timezone')),
-                'is_active' => true,
+                'starts_at' => empty($d['from']) ? null : $this->tehran($d['from'])->startOfDay()->setTimezone(config('app.timezone')),
+                'expires_at' => empty($d['to']) ? null : $this->tehran($d['to'])->endOfDay()->setTimezone(config('app.timezone')),
+                'is_active' => $d !== null,
             ])->save();
         }
 
@@ -84,12 +87,15 @@ class SyncCampaigns extends Command
     private function coupons(): void
     {
         foreach (config('campaigns.coupons', []) as $code => $c) {
+            $campaign = $c['campaign'] ?? null;
+            unset($c['campaign']);
+            $shift = $campaign ? Campaigns::shiftDays($campaign) : 0;   // null while unapproved
             foreach (['starts_at', 'expires_at'] as $k) {
                 if (isset($c[$k])) {
-                    $c[$k] = $this->tehran($c[$k])->setTimezone(config('app.timezone'));
+                    $c[$k] = $this->tehran($c[$k])->addDays($shift ?? 0)->setTimezone(config('app.timezone'));
                 }
             }
-            Coupon::updateOrCreate(['code' => $code], $c + ['is_active' => true]);
+            Coupon::updateOrCreate(['code' => $code], $c + ['is_active' => $shift !== null]);
         }
     }
 

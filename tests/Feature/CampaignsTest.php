@@ -21,6 +21,16 @@ class CampaignsTest extends TestCase
     {
         parent::setUp();
         config(['scout.driver' => 'collection']);
+        $this->approveAll();
+    }
+
+    /** Approve every planned campaign on its planned dates (what NJ Focus would push). */
+    private function approveAll(): void
+    {
+        foreach (config('campaigns.campaigns', []) as $key => $c) {
+            \App\Models\CampaignApproval::updateOrCreate(['key' => $key], ['starts_on' => $c['from'], 'ends_on' => $c['to'], 'approved' => true]);
+        }
+        request()->attributes->remove('campaigns.approvals');
     }
 
     private function item(string $slug, string $cat, int $price, int $stock = 50, ?string $color = null): ProductVariant

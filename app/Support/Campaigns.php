@@ -4,7 +4,10 @@ namespace App\Support;
 
 use App\Models\Collection as ShopCollection;
 use App\Models\Product;
+use App\Models\CampaignApproval;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Date-windowed campaign content read from config/campaigns.php: shop shelves,
@@ -25,7 +28,59 @@ class Campaigns
     {
         $t = self::today();
 
-        return array_filter($items, fn ($i) => (empty($i['from']) || $i['from'] <= $t) && (empty($i['to']) || $i['to'] >= $t));
+        return array_filter($items, function ($i) use ($t) {
+            $d = self::resolve($i);
+
+            return $d && (empty($d['from']) || $d['from'] <= $t) && (empty($d['to']) || $d['to'] >= $t);
+        });
+    }
+
+    /** Approved campaign windows pushed from NJ Focus: key => [from, to] (Y-m-d). */
+    public static function approvals(): array
+    {
+        return request()->attributes->get('campaigns.approvals') ?? tap(
+            Schema::hasTable('campaign_approvals')
+                ? CampaignApproval::where('approved', true)->get()
+                    ->mapWithKeys(fn ($a) => [$a->key => [$a->starts_on->toDateString(), $a->ends_on->toDateString()]])->all()
+                : [],
+            fn ($m) => request()->attributes->set('campaigns.approvals', $m),
+        );
+    }
+
+    /** Days the approved campaign moved from its planned start; null while unapproved. */
+    public static function shiftDays(string $campaign): ?int
+    {
+        $w = self::approvals()[$campaign] ?? null;
+        $plan = config("campaigns.campaigns.$campaign");
+
+        return $w && $plan ? (int) Carbon::parse($plan['from'])->diffInDays(Carbon::parse($w[0]), false) : null;
+    }
+
+    /**
+     * An item's effective from/to. Untagged items keep their own dates. Tagged
+     * items: null until their campaign is approved; then their dates move with
+     * the approved window (a date equal to the planned start/end becomes the
+     * approved start/end, others shift by the same days) and stay inside it.
+     */
+    public static function resolve(array $i): ?array
+    {
+        $from = $i['from'] ?? null;
+        $to = $i['to'] ?? null;
+        if (empty($i['campaign'])) {
+            return ['from' => $from, 'to' => $to];
+        }
+        $shift = self::shiftDays($i['campaign']);
+        if ($shift === null) {
+            return null;
+        }
+        [$wf, $wt] = self::approvals()[$i['campaign']];
+        $plan = config("campaigns.campaigns.{$i['campaign']}");
+        $move = fn (?string $d, string $planned, string $approved) => $d === null ? $approved
+            : ($d === $planned ? $approved : Carbon::parse($d)->addDays($shift)->toDateString());
+        $from = max($move($from, $plan['from'], $wf), $wf);
+        $to = min($move($to, $plan['to'], $wt), $wt);
+
+        return $from <= $to ? ['from' => $from, 'to' => $to] : null;
     }
 
     /** A live shelf by slug (with its slug added), or null. */
@@ -169,14 +224,14 @@ class Campaigns
         $t = self::today();
         $out = [];
         foreach (config('campaigns.sets', []) as $key => $s) {
-            if (! empty($s['to']) && $s['to'] < $t) {
+            if (! ($d = self::resolve($s)) || (! empty($d['to']) && $d['to'] < $t)) {
                 continue;
             }
-            $soon = ! empty($s['from']) && $s['from'] > $t;
+            $soon = ! empty($d['from']) && $d['from'] > $t;
             if ($soon && ! $upcoming) {
                 continue;
             }
-            $out[$key] = $s + ['key' => $key, 'starts' => $soon ? 'از '.Jalali::format(\Illuminate\Support\Carbon::parse($s['from'])) : null];
+            $out[$key] = $s + ['key' => $key, 'starts' => $soon ? 'از '.Jalali::format(Carbon::parse($d['from'])) : null];
         }
 
         return $out;

@@ -21,6 +21,22 @@ $dry = 'aadd-aorgryp-rakt-klab-super-dry-1482';
 
 return [
 
+    // Campaigns approved in NJ Focus. An item tagged 'campaign' runs only once that
+    // campaign is approved, inside its approved dates; moving the dates in NJ Focus
+    // shifts the item's own dates by the same number of days.
+    'campaigns' => [
+        'always' => ['name' => 'همیشگی: خرید اول، سفارش دوم و سفارش تیمی', 'from' => '2026-11-01', 'to' => '2027-04-30'],
+        'layer' => ['name' => 'زمین زمستانی', 'from' => '2026-11-07', 'to' => '2026-11-20'],
+        'bf' => ['name' => 'بلک فرایدی', 'from' => '2026-11-14', 'to' => '2026-11-30'],
+        'yalda' => ['name' => 'هدیه یلدا', 'from' => '2026-12-05', 'to' => '2026-12-21'],
+        'father' => ['name' => 'روز پدر', 'from' => '2026-12-19', 'to' => '2026-12-23'],
+        'last-size' => ['name' => 'آخرین سایزها', 'from' => '2027-01-02', 'to' => '2027-01-22'],
+        'overgrip' => ['name' => 'ماه اورگریپ', 'from' => '2027-01-09', 'to' => '2027-01-29'],
+        'partner' => ['name' => 'یار دوبل', 'from' => '2027-01-30', 'to' => '2027-02-19'],
+        'nowruz' => ['name' => 'پلکان نوروزی', 'from' => '2027-02-20', 'to' => '2027-03-25'],
+        'spring' => ['name' => 'بازی در فضای باز و ست بهاره', 'from' => '2027-03-17', 'to' => '2027-04-30'],
+    ],
+
     'shelves' => [
         'outlet' => ['name' => 'اوتلت', 'description' => 'محصولات اوتلت راکت کلاب با تخفیف؛ تا وقتی موجودی هست.',
             'outlet' => true, 'in_stock' => true],
@@ -35,7 +51,7 @@ return [
         'gifts-under-3m' => ['name' => 'هدیه زیر ۳ میلیون', 'description' => 'هدیه برای پدل‌بازها و تنیس‌بازها زیر سه میلیون تومان: کلاه، جوراب، اورگریپ.',
             'max_price' => 3_000_000, 'in_stock' => true, 'exclude_categories' => ['gampr']],
         'outdoor' => ['name' => 'بازی در فضای باز', 'description' => 'حوله میکروفایبر، توت‌بگ، کلاه و پولوشرت ورزشی راکت کلاب برای بهار.',
-            'categories' => ['holh', 'mtfrkh', 'klah'], 'in_stock' => true, 'from' => '2027-03-17'],
+            'categories' => ['holh', 'mtfrkh', 'klah'], 'in_stock' => true, 'from' => '2027-03-17', 'campaign' => 'spring'],
     ],
 
     'pairs' => [
@@ -45,44 +61,44 @@ return [
 
     'rules' => [
         'second-order' => ['name' => 'سفارش دوم', 'label' => '۱۰٪ تخفیف سفارش دوم شما',
-            'conditions' => [['user_previous_order_count', 'min' => 1, 'max' => 1]], 'actions' => [['cart_discount_percent', 10]]],
+            'conditions' => [['user_previous_order_count', 'min' => 1, 'max' => 1]], 'actions' => [['cart_discount_percent', 10]], 'campaign' => 'always'],
         'team-10' => ['name' => 'سفارش تیمی · ۱۰ تی‌شرت', 'label' => 'سفارش تیمی: ۱۵٪ تخفیف تی‌شرت‌ها (۱۰ عدد و بیشتر)',
-            'conditions' => [['item_count_from_categories', 'categories' => $tees, 'min' => 10, 'max' => 19]], 'actions' => [['item_discount_percent', 15]]],
+            'conditions' => [['item_count_from_categories', 'categories' => $tees, 'min' => 10, 'max' => 19]], 'actions' => [['item_discount_percent', 15]], 'campaign' => 'always'],
         'team-20' => ['name' => 'سفارش تیمی · ۲۰ تی‌شرت', 'label' => 'سفارش تیمی: ۲۰٪ تخفیف تی‌شرت‌ها (۲۰ عدد و بیشتر)',
-            'conditions' => [['item_count_from_categories', 'categories' => $tees, 'min' => 20]], 'actions' => [['item_discount_percent', 20]]],
+            'conditions' => [['item_count_from_categories', 'categories' => $tees, 'min' => 20]], 'actions' => [['item_discount_percent', 20]], 'campaign' => 'always'],
 
         'bf-ship' => ['name' => 'بلک فرایدی · ارسال رایگان', 'label' => 'ارسال رایگان بلک فرایدی (از ۵ میلیون)', 'from' => '2026-11-24', 'to' => '2026-11-30',
-            'conditions' => [['cart_subtotal', 'min' => 5_000_000]], 'actions' => [['free_shipping', 0]]],
+            'conditions' => [['cart_subtotal', 'min' => 5_000_000]], 'actions' => [['free_shipping', 0]], 'campaign' => 'bf'],
         'bf-9' => ['name' => 'بلک فرایدی · از ۹ میلیون', 'label' => '۸٪ تخفیف بلک فرایدی (از ۹ میلیون)', 'from' => '2026-11-24', 'to' => '2026-11-30',
-            'conditions' => [['cart_subtotal', 'min' => 9_000_000, 'max' => 13_999_999]], 'actions' => [['cart_discount_percent', 8]]],
+            'conditions' => [['cart_subtotal', 'min' => 9_000_000, 'max' => 13_999_999]], 'actions' => [['cart_discount_percent', 8]], 'campaign' => 'bf'],
         'bf-14' => ['name' => 'بلک فرایدی · از ۱۴ میلیون', 'label' => '۱۲٪ تخفیف بلک فرایدی (از ۱۴ میلیون)', 'from' => '2026-11-24', 'to' => '2026-11-30',
-            'conditions' => [['cart_subtotal', 'min' => 14_000_000, 'max' => 19_999_999]], 'actions' => [['cart_discount_percent', 12]]],
+            'conditions' => [['cart_subtotal', 'min' => 14_000_000, 'max' => 19_999_999]], 'actions' => [['cart_discount_percent', 12]], 'campaign' => 'bf'],
         'bf-20' => ['name' => 'بلک فرایدی · از ۲۰ میلیون', 'label' => '۱۵٪ تخفیف بلک فرایدی (از ۲۰ میلیون)', 'from' => '2026-11-24', 'to' => '2026-11-30',
-            'conditions' => [['cart_subtotal', 'min' => 20_000_000]], 'actions' => [['cart_discount_percent', 15]]],
+            'conditions' => [['cart_subtotal', 'min' => 20_000_000]], 'actions' => [['cart_discount_percent', 15]], 'campaign' => 'bf'],
 
         'last-size' => ['name' => 'آخرین سایز', 'label' => '۲۵٪ تخفیف آخرین سایزها', 'from' => '2027-01-02', 'to' => '2027-01-22',
-            'conditions' => [['item_count_from_shelf', 'shelf' => 'last-size', 'min' => 1]], 'actions' => [['item_discount_percent', 25]]],
+            'conditions' => [['item_count_from_shelf', 'shelf' => 'last-size', 'min' => 1]], 'actions' => [['item_discount_percent', 25]], 'campaign' => 'last-size'],
 
         'partner-set' => ['name' => 'یار دوبل', 'label' => 'یار دوبل: ۱۰٪ تخفیف دو تی‌شرت', 'from' => '2027-01-30', 'to' => '2027-02-19',
-            'conditions' => [['item_count_from_categories', 'categories' => $tees, 'min' => 2, 'max' => 9]], 'actions' => [['item_discount_percent', 10]]],
+            'conditions' => [['item_count_from_categories', 'categories' => $tees, 'min' => 2, 'max' => 9]], 'actions' => [['item_discount_percent', 10]], 'campaign' => 'partner'],
 
         'nowruz-3' => ['name' => 'نوروز · ۳ قطعه', 'label' => '۸٪ تخفیف نوروزی (۳ قطعه)', 'from' => '2027-02-27', 'to' => '2027-03-16',
-            'conditions' => [['item_count_from_categories', 'categories' => ['tyshrt', 'klah', 'holh', 'mtfrkh'], 'min' => 3, 'max' => 4]], 'actions' => [['cart_discount_percent', 8]]],
+            'conditions' => [['item_count_from_categories', 'categories' => ['tyshrt', 'klah', 'holh', 'mtfrkh'], 'min' => 3, 'max' => 4]], 'actions' => [['cart_discount_percent', 8]], 'campaign' => 'nowruz'],
         'nowruz-5' => ['name' => 'نوروز · ۵ قطعه', 'label' => '۱۲٪ تخفیف نوروزی (۵ قطعه)', 'from' => '2027-02-27', 'to' => '2027-03-16',
-            'conditions' => [['item_count_from_categories', 'categories' => ['tyshrt', 'klah', 'holh', 'mtfrkh'], 'min' => 5, 'max' => 7]], 'actions' => [['cart_discount_percent', 12]]],
+            'conditions' => [['item_count_from_categories', 'categories' => ['tyshrt', 'klah', 'holh', 'mtfrkh'], 'min' => 5, 'max' => 7]], 'actions' => [['cart_discount_percent', 12]], 'campaign' => 'nowruz'],
         'nowruz-8' => ['name' => 'نوروز · ۸ قطعه و بیشتر', 'label' => '۱۵٪ تخفیف نوروزی (۸ قطعه و بیشتر)', 'from' => '2027-02-27', 'to' => '2027-03-16',
-            'conditions' => [['item_count_from_categories', 'categories' => ['tyshrt', 'klah', 'holh', 'mtfrkh'], 'min' => 8]], 'actions' => [['cart_discount_percent', 15]]],
+            'conditions' => [['item_count_from_categories', 'categories' => ['tyshrt', 'klah', 'holh', 'mtfrkh'], 'min' => 8]], 'actions' => [['cart_discount_percent', 15]], 'campaign' => 'nowruz'],
 
         'spring-set' => ['name' => 'ست بهاره · پولوشرت و کلاه', 'label' => 'ست بهاره: ۵۰۰ هزار تومان تخفیف پولوشرت ورزشی و کلاه', 'from' => '2027-04-03', 'to' => '2027-04-30',
             'conditions' => [['item_products', 'products' => ['poloshrt-orzshy-rakt-klab-1476']], ['item_products', 'products' => ['klah-rakt-klab-9']]],
-            'actions' => [['cart_discount_fixed', 500000]]],
+            'actions' => [['cart_discount_fixed', 500000]], 'campaign' => 'spring'],
     ],
 
     'coupons' => [
         'RCFIRST' => ['type' => 'percent', 'value' => 7, 'min_subtotal' => 3_000_000, 'first_order_only' => true, 'per_user_limit' => 1,
-            'description' => 'خرید اول: ۷٪ از ۳ میلیون تومان'],
+            'description' => 'خرید اول: ۷٪ از ۳ میلیون تومان', 'campaign' => 'always'],
         'EARLYRC' => ['type' => 'percent', 'value' => 12, 'per_user_limit' => 1, 'description' => 'دسترسی زودهنگام بلک فرایدی (تلگرام)',
-            'starts_at' => '2026-11-20 20:30:00', 'expires_at' => '2026-11-23 20:29:59'],
+            'starts_at' => '2026-11-20 20:30:00', 'expires_at' => '2026-11-23 20:29:59', 'campaign' => 'bf'],
     ],
 
     // Free-size bundle products: slug => [name, off % below the parts' total, items: [[product slug, qty, 'color' => …]]].
@@ -107,52 +123,52 @@ return [
     // Mix-and-match sets (discount rules above), shown as cards on /bundles and
     // under the cart when a matching item is in it.
     'sets' => [
-        'team' => ['name' => 'سفارش تیمی', 'text' => '۱۰ تی‌شرت ۱۵٪ و ۲۰ تی‌شرت ۲۰٪ تخفیف؛ برای باشگاه و آکادمی', 'categories' => $tees, 'url' => '/shop?shelf=tees', 'hint' => false],
+        'team' => ['name' => 'سفارش تیمی', 'text' => '۱۰ تی‌شرت ۱۵٪ و ۲۰ تی‌شرت ۲۰٪ تخفیف؛ برای باشگاه و آکادمی', 'categories' => $tees, 'url' => '/shop?shelf=tees', 'hint' => false, 'campaign' => 'always'],
         'partner' => ['name' => 'یار دوبل', 'text' => 'دو تی‌شرت راکت کلاب، ۱۰٪ تخفیف', 'categories' => $tees, 'url' => '/shop?shelf=tees',
-            'from' => '2027-01-30', 'to' => '2027-02-19'],
+            'from' => '2027-01-30', 'to' => '2027-02-19', 'campaign' => 'partner'],
         'spring' => ['name' => 'ست بهاره', 'text' => 'پولوشرت ورزشی + کلاه، ۵۰۰ هزار تومان تخفیف', 'products' => ['poloshrt-orzshy-rakt-klab-1476', 'klah-rakt-klab-9'],
-            'url' => '/product/poloshrt-orzshy-rakt-klab-1476', 'from' => '2027-04-03', 'to' => '2027-04-30'],
+            'url' => '/product/poloshrt-orzshy-rakt-klab-1476', 'from' => '2027-04-03', 'to' => '2027-04-30', 'campaign' => 'spring'],
     ],
 
     'badges' => [
-        ['categories' => $tees, 'text' => 'سفارش تیمی: ۱۰ تی‌شرت ۱۵٪، ۲۰ تی‌شرت ۲۰٪ تخفیف'],
+        ['categories' => $tees, 'text' => 'سفارش تیمی: ۱۰ تی‌شرت ۱۵٪، ۲۰ تی‌شرت ۲۰٪ تخفیف', 'campaign' => 'always'],
         ['categories' => ['loazm-ganby'], 'text' => 'بسته‌های ۳ و ۶ عددی اورگریپ ارزان‌ترند؛ در «کیت‌ها و بسته‌ها»'],
-        ['from' => '2026-11-24', 'to' => '2026-11-30', 'exclude_categories' => ['gampr'], 'text' => 'بلک فرایدی: از ۹ میلیون ۸٪، از ۱۴ میلیون ۱۲٪، از ۲۰ میلیون ۱۵٪ تخفیف'],
-        ['from' => '2026-11-24', 'to' => '2026-11-30', 'categories' => ['gampr'], 'text' => 'بلک فرایدی: پولو جامپر تخفیف ندارد، اما در مبلغ پله‌ها حساب می‌شود'],
-        ['from' => '2027-01-02', 'to' => '2027-01-22', 'shelf' => 'last-size', 'text' => 'آخرین سایز: ۲۵٪ تخفیف در سبد خرید'],
-        ['from' => '2027-01-30', 'to' => '2027-02-19', 'categories' => $tees, 'text' => 'یار دوبل: دو تی‌شرت بخرید، ۱۰٪ تخفیف بگیرید'],
-        ['from' => '2027-02-27', 'to' => '2027-03-16', 'exclude_categories' => ['gampr', 'loazm-ganby'], 'text' => 'نوروز: ۳ قطعه ۸٪، ۵ قطعه ۱۲٪، ۸ قطعه و بیشتر ۱۵٪ تخفیف'],
-        ['from' => '2027-04-03', 'to' => '2027-04-30', 'products' => ['poloshrt-orzshy-rakt-klab-1476', 'klah-rakt-klab-9'], 'text' => 'ست بهاره: پولوشرت ورزشی + کلاه = ۵۰۰ هزار تومان تخفیف'],
+        ['from' => '2026-11-24', 'to' => '2026-11-30', 'exclude_categories' => ['gampr'], 'text' => 'بلک فرایدی: از ۹ میلیون ۸٪، از ۱۴ میلیون ۱۲٪، از ۲۰ میلیون ۱۵٪ تخفیف', 'campaign' => 'bf'],
+        ['from' => '2026-11-24', 'to' => '2026-11-30', 'categories' => ['gampr'], 'text' => 'بلک فرایدی: پولو جامپر تخفیف ندارد، اما در مبلغ پله‌ها حساب می‌شود', 'campaign' => 'bf'],
+        ['from' => '2027-01-02', 'to' => '2027-01-22', 'shelf' => 'last-size', 'text' => 'آخرین سایز: ۲۵٪ تخفیف در سبد خرید', 'campaign' => 'last-size'],
+        ['from' => '2027-01-30', 'to' => '2027-02-19', 'categories' => $tees, 'text' => 'یار دوبل: دو تی‌شرت بخرید، ۱۰٪ تخفیف بگیرید', 'campaign' => 'partner'],
+        ['from' => '2027-02-27', 'to' => '2027-03-16', 'exclude_categories' => ['gampr', 'loazm-ganby'], 'text' => 'نوروز: ۳ قطعه ۸٪، ۵ قطعه ۱۲٪، ۸ قطعه و بیشتر ۱۵٪ تخفیف', 'campaign' => 'nowruz'],
+        ['from' => '2027-04-03', 'to' => '2027-04-30', 'products' => ['poloshrt-orzshy-rakt-klab-1476', 'klah-rakt-klab-9'], 'text' => 'ست بهاره: پولوشرت ورزشی + کلاه = ۵۰۰ هزار تومان تخفیف', 'campaign' => 'spring'],
     ],
 
     'slides' => [
-        ['from' => '2026-11-07', 'to' => '2026-11-20', 'text' => 'زمین زمستانی: پولو جامپر راکت کلاب رسید', 'url' => '/shop?shelf=court-winter'],
-        ['from' => '2026-11-14', 'to' => '2026-11-20', 'text' => 'بلک فرایدی ۳ آذر شروع می‌شود؛ دسترسی زودهنگام در تلگرام', 'url' => '/shop'],
-        ['from' => '2026-11-24', 'to' => '2026-11-30', 'text' => 'بلک فرایدی: از ۹ میلیون ۸٪ · از ۱۴ میلیون ۱۲٪ · از ۲۰ میلیون ۱۵٪ · ارسال رایگان از ۵ میلیون', 'url' => '/shop'],
-        ['from' => '2026-12-05', 'to' => '2026-12-17', 'text' => 'هدیه یلدا برای پدل‌بازها: کیت شروع پدل و کیف بازیکن', 'url' => '/shop?shelf=kits'],
-        ['from' => '2026-12-14', 'to' => '2026-12-17', 'text' => 'برای رسیدن قبل از یلدا تا پنجشنبه ۲۶ آذر سفارش دهید', 'url' => '/shop?shelf=kits'],
-        ['from' => '2026-12-19', 'to' => '2026-12-23', 'text' => 'هدیه روز پدر: کیف بازیکن راکت کلاب', 'url' => '/product/kit-player-bag'],
-        ['from' => '2027-01-02', 'to' => '2027-01-22', 'text' => 'آخرین سایزها با ۲۵٪ تخفیف', 'url' => '/shop?shelf=last-size'],
-        ['from' => '2027-01-09', 'to' => '2027-01-29', 'text' => 'ماه اورگریپ: بسته‌های ۳ و ۶ عددی ارزان‌تر از خرید تکی', 'url' => '/shop?shelf=kits'],
-        ['from' => '2027-01-30', 'to' => '2027-02-19', 'text' => 'یار دوبل: دو تی‌شرت، ۱۰٪ تخفیف', 'url' => '/shop?shelf=tees'],
-        ['from' => '2027-02-27', 'to' => '2027-03-16', 'text' => 'نوروز: ۳ قطعه ۸٪ · ۵ قطعه ۱۲٪ · ۸ قطعه ۱۵٪', 'url' => '/shop'],
-        ['from' => '2027-03-08', 'to' => '2027-03-12', 'text' => 'آخرین روز ارسال پستی قبل از عید: ۲۱ اسفند', 'url' => '/shop'],
-        ['from' => '2027-03-17', 'to' => '2027-03-25', 'text' => 'سفارش‌های این روزها از ۵ فروردین ارسال می‌شوند', 'url' => '/shop?shelf=outdoor'],
-        ['from' => '2027-03-27', 'to' => '2027-04-02', 'text' => 'سیزده‌بدر: حوله، توت‌بگ و کلاه برای بازی در فضای باز', 'url' => '/shop?shelf=outdoor'],
-        ['from' => '2027-04-03', 'to' => '2027-04-30', 'text' => 'ست بهاره: پولوشرت ورزشی + کلاه، ۵۰۰ هزار تومان تخفیف', 'url' => '/product/poloshrt-orzshy-rakt-klab-1476'],
-        ['text' => 'سفارش تیمی برای باشگاه و آکادمی: ۱۰ تی‌شرت ۱۵٪، ۲۰ تی‌شرت ۲۰٪', 'url' => '/shop?shelf=tees'],
+        ['from' => '2026-11-07', 'to' => '2026-11-20', 'text' => 'زمین زمستانی: پولو جامپر راکت کلاب رسید', 'url' => '/shop?shelf=court-winter', 'campaign' => 'layer'],
+        ['from' => '2026-11-14', 'to' => '2026-11-20', 'text' => 'بلک فرایدی ۳ آذر شروع می‌شود؛ دسترسی زودهنگام در تلگرام', 'url' => '/shop', 'campaign' => 'bf'],
+        ['from' => '2026-11-24', 'to' => '2026-11-30', 'text' => 'بلک فرایدی: از ۹ میلیون ۸٪ · از ۱۴ میلیون ۱۲٪ · از ۲۰ میلیون ۱۵٪ · ارسال رایگان از ۵ میلیون', 'url' => '/shop', 'campaign' => 'bf'],
+        ['from' => '2026-12-05', 'to' => '2026-12-17', 'text' => 'هدیه یلدا برای پدل‌بازها: کیت شروع پدل و کیف بازیکن', 'url' => '/shop?shelf=kits', 'campaign' => 'yalda'],
+        ['from' => '2026-12-14', 'to' => '2026-12-17', 'text' => 'برای رسیدن قبل از یلدا تا پنجشنبه ۲۶ آذر سفارش دهید', 'url' => '/shop?shelf=kits', 'campaign' => 'yalda'],
+        ['from' => '2026-12-19', 'to' => '2026-12-23', 'text' => 'هدیه روز پدر: کیف بازیکن راکت کلاب', 'url' => '/product/kit-player-bag', 'campaign' => 'father'],
+        ['from' => '2027-01-02', 'to' => '2027-01-22', 'text' => 'آخرین سایزها با ۲۵٪ تخفیف', 'url' => '/shop?shelf=last-size', 'campaign' => 'last-size'],
+        ['from' => '2027-01-09', 'to' => '2027-01-29', 'text' => 'ماه اورگریپ: بسته‌های ۳ و ۶ عددی ارزان‌تر از خرید تکی', 'url' => '/shop?shelf=kits', 'campaign' => 'overgrip'],
+        ['from' => '2027-01-30', 'to' => '2027-02-19', 'text' => 'یار دوبل: دو تی‌شرت، ۱۰٪ تخفیف', 'url' => '/shop?shelf=tees', 'campaign' => 'partner'],
+        ['from' => '2027-02-27', 'to' => '2027-03-16', 'text' => 'نوروز: ۳ قطعه ۸٪ · ۵ قطعه ۱۲٪ · ۸ قطعه ۱۵٪', 'url' => '/shop', 'campaign' => 'nowruz'],
+        ['from' => '2027-03-08', 'to' => '2027-03-12', 'text' => 'آخرین روز ارسال پستی قبل از عید: ۲۱ اسفند', 'url' => '/shop', 'campaign' => 'nowruz'],
+        ['from' => '2027-03-17', 'to' => '2027-03-25', 'text' => 'سفارش‌های این روزها از ۵ فروردین ارسال می‌شوند', 'url' => '/shop?shelf=outdoor', 'campaign' => 'nowruz'],
+        ['from' => '2027-03-27', 'to' => '2027-04-02', 'text' => 'سیزده‌بدر: حوله، توت‌بگ و کلاه برای بازی در فضای باز', 'url' => '/shop?shelf=outdoor', 'campaign' => 'spring'],
+        ['from' => '2027-04-03', 'to' => '2027-04-30', 'text' => 'ست بهاره: پولوشرت ورزشی + کلاه، ۵۰۰ هزار تومان تخفیف', 'url' => '/product/poloshrt-orzshy-rakt-klab-1476', 'campaign' => 'spring'],
+        ['text' => 'سفارش تیمی برای باشگاه و آکادمی: ۱۰ تی‌شرت ۱۵٪، ۲۰ تی‌شرت ۲۰٪', 'url' => '/shop?shelf=tees', 'campaign' => 'always'],
     ],
 
     'popups' => [
         'welcome' => ['html' => $card('به راکت کلاب خوش آمدید', '۷٪ تخفیف برای اولین سفارش از ۳ میلیون تومان. کد را در سبد خرید وارد کنید.', 'دیدن کیت‌ها', '/shop?shelf=kits', 'RCFIRST'),
-            'trigger' => 'delay', 'delay' => 12, 'frequency' => 'once', 'pages' => 'all'],
+            'trigger' => 'delay', 'delay' => 12, 'frequency' => 'once', 'pages' => 'all', 'campaign' => 'always'],
         'bf' => ['html' => $card('بلک فرایدی راکت کلاب', 'از ۹ میلیون ۸٪، از ۱۴ میلیون ۱۲٪ و از ۲۰ میلیون ۱۵٪ تخفیف، با ارسال رایگان از ۵ میلیون. تا ۹ آذر.', 'ساختن کیت کامل', '/shop'),
-            'from' => '2026-11-24', 'to' => '2026-11-30', 'delay' => 5, 'pages' => 'home'],
+            'from' => '2026-11-24', 'to' => '2026-11-30', 'delay' => 5, 'pages' => 'home', 'campaign' => 'bf'],
         'yalda' => ['html' => $card('هدیه یلدا برای پدل‌بازها', 'کیت شروع پدل و کیف بازیکن، ارزان‌تر از خرید تکی. برای رسیدن قبل از یلدا تا ۲۶ آذر سفارش دهید.', 'دیدن کیت‌ها', '/shop?shelf=kits'),
-            'from' => '2026-12-05', 'to' => '2026-12-17', 'delay' => 6, 'pages' => 'home'],
+            'from' => '2026-12-05', 'to' => '2026-12-17', 'delay' => 6, 'pages' => 'home', 'campaign' => 'yalda'],
         'partner' => ['html' => $card('یار دوبل', 'پدل دونفره است. دو تی‌شرت راکت کلاب برای شما و یار دوبلتان، با ۱۰٪ تخفیف.', 'دیدن تی‌شرت‌ها', '/shop?shelf=tees'),
-            'from' => '2027-01-30', 'to' => '2027-02-17', 'delay' => 6, 'pages' => 'home'],
+            'from' => '2027-01-30', 'to' => '2027-02-17', 'delay' => 6, 'pages' => 'home', 'campaign' => 'partner'],
         'nowruz' => ['html' => $card('پلکان نوروزی', '۳ قطعه ۸٪، ۵ قطعه ۱۲٪ و ۸ قطعه و بیشتر ۱۵٪ تخفیف. آخرین روز ارسال پستی: ۲۱ اسفند.', 'خرید عید', '/shop'),
-            'from' => '2027-02-27', 'to' => '2027-03-16', 'delay' => 5, 'pages' => 'home'],
+            'from' => '2027-02-27', 'to' => '2027-03-16', 'delay' => 5, 'pages' => 'home', 'campaign' => 'nowruz'],
     ],
 ];

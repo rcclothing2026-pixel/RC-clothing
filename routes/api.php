@@ -23,3 +23,9 @@ Route::prefix('ig')->middleware([VerifyIgCatalogKey::class, 'throttle:120,1'])->
 Route::prefix('ig')->middleware([VerifyIgCatalogKey::class, 'throttle:30,1,ig-sell-links'])->group(function () {
     Route::post('/sell-links', [IgSellLinkController::class, 'store']);
 });
+
+// NJ Focus campaign approvals (same key as the Instagram catalogue).
+Route::prefix('campaigns')->middleware([VerifyIgCatalogKey::class, 'throttle:30,1,campaigns'])->group(function () {
+    Route::get('/plan', [\App\Http\Controllers\Api\CampaignApiController::class, 'plan']);
+    Route::post('/approvals', [\App\Http\Controllers\Api\CampaignApiController::class, 'approvals']);
+});
