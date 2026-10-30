@@ -122,6 +122,7 @@ class AppServiceProvider extends ServiceProvider
                 '@context' => 'https://schema.org',
                 '@type' => 'Organization',
                 'name' => $brand,
+                'alternateName' => ['Racket Club', 'راکت کلاب', 'RacketClub'],
                 'url' => url('/'),
                 'logo' => asset('brand/mark-navy.svg'),
                 'sameAs' => $social ?: null,

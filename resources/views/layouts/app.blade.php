@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', ($site['site.seo_title'] ?? null) ?: 'Racket Club | The Art of Leisure')</title>
-    <meta name="description" content="@yield('meta_description', ($site['site.seo_description'] ?? null) ?: 'Racket Club — quiet-luxury leisurewear for the life off the court. Legends & Legacy.')">
+    <meta name="description" content="@yield('meta_description', ($site['site.seo_description'] ?? null) ?: ($__locale === 'fa' ? 'راکت کلاب؛ پوشاک و لوازم پدل و تنیس: تی‌شرت نخ پنبه، پولو جامپر، اورگریپ، کلاه، جوراب و حوله. تولید ایران، ارسال به سراسر کشور.' : 'Racket Club: padel and tennis apparel and accessories made in Iran: cotton tees, polo jumpers, overgrips, caps, socks and towels.'))">
     @if ($kw = ($site['site.seo_keywords'] ?? null))<meta name="keywords" content="{{ $kw }}">@endif
     {{-- hreflang + canonical + JSON-LD. All values are built in PHP by the
          layouts.app view composer (App\Providers\AppServiceProvider) and only

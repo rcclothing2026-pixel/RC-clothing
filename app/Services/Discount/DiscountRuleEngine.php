@@ -21,6 +21,7 @@ class DiscountRuleEngine
         $rules = DiscountRule::active()->orderBy('priority', 'desc')->get();
         $lines = $cart->lines();
         $subtotal = $cart->subtotal();
+        $base = $cart->discountableSubtotal();
         $results = ['discounts' => [], 'blocks' => [], 'shipping_free' => false, 'surcharges' => []];
 
         foreach ($rules as $rule) {
@@ -29,7 +30,7 @@ class DiscountRuleEngine
             }
 
             if (empty($rule->conditions)) {
-                $this->applyActions($rule, $results, $lines, $subtotal);
+                $this->applyActions($rule, $results, $lines, $subtotal, $base);
                 continue;
             }
 
@@ -44,7 +45,7 @@ class DiscountRuleEngine
 
             if (!$pass) continue;
 
-            $this->applyActions($rule, $results, $lines, $subtotal);
+            $this->applyActions($rule, $results, $lines, $subtotal, $base);
         }
 
         return $results;
@@ -89,7 +90,7 @@ class DiscountRuleEngine
         };
     }
 
-    private function applyActions(DiscountRule $rule, array &$results, Collection $lines, int $subtotal): void
+    private function applyActions(DiscountRule $rule, array &$results, Collection $lines, int $subtotal, int $base): void
     {
         $discount = 0;
 
@@ -98,13 +99,13 @@ class DiscountRuleEngine
 
             switch ($action['type']) {
                 case 'cart_discount_percent':
-                    $discount += (int) round($subtotal * ($action['value'] ?? 0) / 100);
+                    $discount += (int) round($base * ($action['value'] ?? 0) / 100);
                     break;
                 case 'cart_discount_fixed':
                     $discount += (int) ($action['value'] ?? 0);
                     break;
                 case 'item_discount_percent':
-                    $discount += (int) round($subtotal * ($action['value'] ?? 0) / 100);
+                    $discount += (int) round($base * ($action['value'] ?? 0) / 100);
                     break;
                 case 'item_discount_fixed':
                     $discount += (int) ($action['value'] ?? 0);

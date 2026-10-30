@@ -249,14 +249,16 @@ class Cart
     {
         $coupon = $this->coupon();
 
-        return $coupon ? $coupon->discountFor($this->subtotal()) : 0;
+        return $coupon ? $coupon->discountFor($this->discountableSubtotal()) : 0;
     }
 
     /** Total discount from all sources (coupon + discount rules), capped to subtotal.
      *  Promotion engine was merged into the discount-rule engine in R-10. */
     public function combinedDiscount(): int
     {
-        return (int) min($this->discount() + $this->ruleDiscount(), $this->subtotal());
+        $cap = (int) floor($this->discountableSubtotal() * config('shop.max_discount_percent', 100) / 100);
+
+        return (int) min($this->discount() + $this->ruleDiscount(), $cap);
     }
 
     /** Total surcharge from discount rules. */
@@ -342,5 +344,21 @@ class Cart
     public function subtotal(): int
     {
         return (int) $this->lines()->sum('line_total');
+    }
+
+    /** Subtotal of the lines coupons and discount rules may touch: everything
+     *  except products in config('shop.no_discount_categories') (winter items). */
+    public function discountableSubtotal(): int
+    {
+        $skip = config('shop.no_discount_categories', []);
+        if ($skip === []) {
+            return $this->subtotal();
+        }
+
+        return (int) $this->lines()->reject(function ($l) use ($skip) {
+            $p = $l['variant']->product;
+
+            return $p->categories->pluck('slug')->push($p->category?->slug)->intersect($skip)->isNotEmpty();
+        })->sum('line_total');
     }
 }
