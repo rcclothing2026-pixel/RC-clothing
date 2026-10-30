@@ -107,6 +107,13 @@
                         </div>
                     @endif
 
+                    @if ($nextOffer = app(\App\Services\Cart\Cart::class)->nextOffer())
+                        <div class="flex items-start gap-2 border-b border-brand-100 py-3 text-xs leading-6 text-brand-700">
+                            <svg aria-hidden="true" class="mt-1 h-4 w-4 shrink-0 text-accent-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                            <a href="{{ route('shop.index') }}" class="font-semibold hover:underline">{{ $nextOffer['text'] }}</a>
+                        </div>
+                    @endif
+
                     @if ($coupon)
                         <div class="flex items-center justify-between border-b border-brand-100 py-2 text-sm">
                             <span class="text-green-600">{{ __('Code') }} "{{ $coupon->code }}" {{ $coupon->isFreeShipping() ? '— '.__('free shipping') : '' }}</span>

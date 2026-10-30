@@ -44,6 +44,9 @@ class ProductController extends Controller
         $inWishlist = auth()->check()
             && auth()->user()->wishlist()->where('product_id', $product->id)->exists();
 
-        return view('product.show', compact('product', 'colors', 'sizes', 'related', 'inWishlist'));
+        $pairs = \App\Support\Campaigns::pairsFor($product);
+        $badges = \App\Support\Campaigns::badgesFor($product);
+
+        return view('product.show', compact('product', 'colors', 'sizes', 'related', 'inWishlist', 'pairs', 'badges'));
     }
 }

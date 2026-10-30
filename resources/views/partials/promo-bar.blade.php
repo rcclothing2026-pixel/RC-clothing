@@ -8,6 +8,7 @@
     $raw = $site['site.promo_slides'] ?? '';
     $slides = $raw ? (json_decode($raw, true) ?: []) : [];
     $slides = array_values(array_filter($slides, fn ($s) => is_array($s) && trim((string) ($s['text'] ?? '')) !== ''));
+    $slides = array_merge(\App\Support\Campaigns::promoSlides(), $slides);
 @endphp
 @if ($slides)
     <div x-data="{

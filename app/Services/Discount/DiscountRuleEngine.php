@@ -75,6 +75,7 @@ class DiscountRuleEngine
             'item_total_from_brands' => $this->rangeCheck($this->totalForBrands($lines, $cond['brands'] ?? []), $cond),
             'item_count_from_categories' => $this->rangeCheck($this->countForCategories($lines, $cond['category_ids'] ?? []), $cond),
             'item_total_from_categories' => $this->rangeCheck($this->totalForCategories($lines, $cond['category_ids'] ?? []), $cond),
+            'item_count_from_shelf' => $this->rangeCheck((int) $lines->filter(fn ($l) => \App\Support\Campaigns::inShelf($l['variant']->product, (string) ($cond['shelf'] ?? '')))->sum('quantity'), $cond),
             'item_count_from_collections' => $this->rangeCheck($this->countForCollections($lines, $cond['collection_ids'] ?? []), $cond),
             'item_total_from_collections' => $this->rangeCheck($this->totalForCollections($lines, $cond['collection_ids'] ?? []), $cond),
             'user_status' => $this->checkUserStatus($user, $cond['status'] ?? 'registered'),
@@ -105,7 +106,7 @@ class DiscountRuleEngine
                     $discount += (int) ($action['value'] ?? 0);
                     break;
                 case 'item_discount_percent':
-                    $discount += (int) round($base * ($action['value'] ?? 0) / 100);
+                    $discount += (int) round($this->itemBase($rule, $lines, $base) * ($action['value'] ?? 0) / 100);
                     break;
                 case 'item_discount_fixed':
                     $discount += (int) ($action['value'] ?? 0);
@@ -146,6 +147,35 @@ class DiscountRuleEngine
     }
 
     /* ---- helpers ---- */
+
+    /**
+     * Base for item-level percentages: the discountable lines the rule's item
+     * conditions point at (products / categories / collections / shelf). A
+     * rule without item conditions falls back to the whole discountable base.
+     */
+    private function itemBase(DiscountRule $rule, Collection $lines, int $base): int
+    {
+        $p = $c = $k = $s = [];
+        foreach ($rule->conditions ?? [] as $cond) {
+            $t = (string) ($cond['type'] ?? '');
+            if (str_ends_with($t, '_products')) $p = array_merge($p, array_map('intval', $cond['product_ids'] ?? []));
+            elseif (str_ends_with($t, '_categories')) $c = array_merge($c, array_map('intval', $cond['category_ids'] ?? []));
+            elseif (str_ends_with($t, '_collections')) $k = array_merge($k, array_map('intval', $cond['collection_ids'] ?? []));
+            elseif ($t === 'item_count_from_shelf') $s[] = (string) ($cond['shelf'] ?? '');
+        }
+        if (! $p && ! $c && ! $k && ! $s) {
+            return $base;
+        }
+
+        return (int) $lines->filter(function ($l) use ($p, $c, $k, $s) {
+            $prod = $l['variant']->product;
+
+            return Cart::isDiscountable($prod) && (in_array((int) $prod->id, $p, true)
+                || ($c && $this->productInCategories($prod, $c))
+                || in_array((int) $prod->collection_id, $k, true)
+                || collect($s)->contains(fn ($slug) => \App\Support\Campaigns::inShelf($prod, $slug)));
+        })->sum('line_total');
+    }
 
     private function rangeCheck(int $value, array $cond): bool
     {

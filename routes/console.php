@@ -110,3 +110,6 @@ Schedule::call(function () use ($due) {
         \Illuminate\Support\Facades\Log::warning('[scheduler] scout reindex failed', ['error' => $e->getMessage()]);
     }
 })->everyMinute()->name('scout-reindex')->withoutOverlapping();
+
+Schedule::call(fn () => Artisan::call('campaigns:sync'))
+    ->dailyAt('03:30')->name('campaigns-sync')->withoutOverlapping();

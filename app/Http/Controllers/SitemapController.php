@@ -29,6 +29,10 @@ class SitemapController extends Controller
             $urls[] = ['loc' => route('shop.index', ['collection' => $collection->slug]), 'priority' => '0.6'];
         }
 
+        foreach (array_keys(\App\Support\Campaigns::shelves()) as $shelf) {
+            $urls[] = ['loc' => route('shop.index', ['shelf' => $shelf]), 'priority' => '0.6'];
+        }
+
         Product::active()->select('slug', 'updated_at')->get()->each(function ($p) use (&$urls) {
             $urls[] = [
                 'loc' => route('product.show', $p->slug),
@@ -99,6 +103,24 @@ class SitemapController extends Controller
             $lines[] = '## دسته‌بندی‌ها';
             foreach ($categories as $category) {
                 $lines[] = '- ['.$category->name.']('.route('shop.index', ['category' => $category->slug]).')';
+            }
+        }
+
+        if ($shelves = \App\Support\Campaigns::shelves()) {
+            $lines[] = '';
+            $lines[] = '## پیشنهادها';
+            foreach ($shelves as $slug => $s) {
+                $lines[] = '- ['.$s['name'].']('.route('shop.index', ['shelf' => $slug]).'): '.($s['description'] ?? '');
+            }
+        }
+
+        $products = \App\Models\Product::active()->with('category')->orderBy('name')->get();
+        if ($products->isNotEmpty()) {
+            $lines[] = '';
+            $lines[] = '## محصولات (قیمت به تومان)';
+            foreach ($products as $p) {
+                $lines[] = '- ['.$p->name.']('.route('product.show', $p->slug).'): '.number_format((int) $p->price).' تومان'
+                    .($p->category ? ' · '.$p->category->name : '').($p->totalStock() > 0 ? '' : ' · ناموجود');
             }
         }
 

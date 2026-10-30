@@ -50,7 +50,7 @@ class Popup extends Model
             return [];
         }
 
-        return static::query()->where('is_active', true)->latest()->get()
+        return array_merge(\App\Support\Campaigns::popups(), static::query()->where('is_active', true)->latest()->get()
             ->map(fn (self $p) => [
                 'id' => $p->id,
                 'html' => (string) $p->html,
@@ -58,6 +58,6 @@ class Popup extends Model
                 'delay' => $p->delay,
                 'frequency' => $p->frequency,
                 'pages' => $p->pages,
-            ])->all();
+            ])->all());
     }
 }

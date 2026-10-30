@@ -31,6 +31,12 @@ class ShopController extends Controller
             $query->whereHas('collection', fn ($q) => $q->where('slug', $cslug));
         }
 
+        // Filter: campaign shelf (config/campaigns.php), shown like a collection.
+        if (($shelfSlug = $request->string('shelf')->toString()) && ($shelf = \App\Support\Campaigns::shelf($shelfSlug))) {
+            \App\Support\Campaigns::applyShelf($query, $shelf);
+            $activeCollection = \App\Support\Campaigns::shelfCollection($shelf);
+        }
+
         // Search via Scout (Meilisearch) when reachable; falls back to a plain DB
         // search so the shop never 500s if the search engine is down/not installed.
         $term = $request->string('q')->toString();

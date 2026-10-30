@@ -215,6 +215,17 @@
                     @endif
                 </div>
 
+                @if (! empty($badges))
+                    <ul class="mt-4 space-y-2">
+                        @foreach ($badges as $badge)
+                            <li class="flex items-start gap-2 rounded-xl bg-accent-600/10 px-3 py-2 text-xs leading-6 text-brand-800 sm:text-sm">
+                                <svg aria-hidden="true" class="mt-1 h-4 w-4 shrink-0 text-accent-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+                                <span>{{ $badge }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
                 {{-- Gift-bundle contents: auto-rendered «شامل» list. Each row is a
                      child variant (qty, thumbnail, name, size/colour). Replaces the
                      colour/size pickers (which the controller blanks for bundles). --}}
@@ -393,6 +404,18 @@
             </div>
         </div>
         </div>
+
+        {{-- Complete the look: categories paired in config/campaigns.php --}}
+        @if ($pairs->isNotEmpty())
+            <div class="mt-16">
+                <h2 class="mb-6 text-xl font-bold text-brand-900">{{ __('Complete the look') }}</h2>
+                <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    @foreach ($pairs as $item)
+                        <x-product-card :product="$item" />
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
         {{-- Related --}}
         @if ($related->isNotEmpty())

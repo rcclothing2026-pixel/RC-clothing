@@ -65,6 +65,7 @@ class DiscountRule extends Model
             'item_count_from_categories' => ['label' => 'تعداد اقلام از بخش‌های مشخص', 'params' => ['category_ids' => 'array', 'min' => 'integer', 'max' => 'integer']],
             'item_total_from_categories' => ['label' => 'قیمت اقلام از بخش‌های مشخص', 'params' => ['category_ids' => 'array', 'min' => 'integer', 'max' => 'integer']],
             'item_count_from_collections' => ['label' => 'تعداد اقلام از مجموعه‌های مشخص', 'params' => ['collection_ids' => 'array', 'min' => 'integer', 'max' => 'integer']],
+            'item_count_from_shelf' => ['label' => 'تعداد اقلام از قفسه کمپین (config/campaigns.php)', 'params' => ['shelf' => 'string', 'min' => 'integer', 'max' => 'integer']],
             'item_total_from_collections' => ['label' => 'قیمت اقلام از مجموعه‌های مشخص', 'params' => ['collection_ids' => 'array', 'min' => 'integer', 'max' => 'integer']],
             'user_status' => ['label' => 'وضعیت کاربر', 'params' => ['status' => ['type' => 'select', 'options' => ['guest' => 'مهمان', 'registered' => 'ثبت‌نام کرده', 'verified' => 'تأیید شده']]]],
             'user_group' => ['label' => 'گروه کاربری', 'params' => ['group_ids' => 'array']],

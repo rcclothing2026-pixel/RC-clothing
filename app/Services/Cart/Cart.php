@@ -32,6 +32,7 @@ class Cart
 
     private function persist(array $items): void
     {
+        $this->ruleResultsCache = null;
         $this->session->put(self::KEY, $items);
         $this->syncSaved($items);
     }
@@ -350,15 +351,67 @@ class Cart
      *  except products in config('shop.no_discount_categories') (winter items). */
     public function discountableSubtotal(): int
     {
-        $skip = config('shop.no_discount_categories', []);
-        if ($skip === []) {
-            return $this->subtotal();
+        return (int) $this->lines()->filter(fn ($l) => self::isDiscountable($l['variant']->product))->sum('line_total');
+    }
+
+    /** Bundles are already priced down, and winter categories are never discounted. */
+    public static function isDiscountable($product): bool
+    {
+        if (! $product || $product->is_bundle) {
+            return false;
         }
+        $skip = config('shop.no_discount_categories', []);
 
-        return (int) $this->lines()->reject(function ($l) use ($skip) {
-            $p = $l['variant']->product;
+        return $skip === [] || $product->categories->pluck('slug')->push($product->category?->slug)->intersect($skip)->isEmpty();
+    }
 
-            return $p->categories->pluck('slug')->push($p->category?->slug)->intersect($skip)->isNotEmpty();
-        })->sum('line_total');
+    /**
+     * The nearest single-step rule this cart has not reached yet, for the
+     * «n more» nudge: at most 3 items or half the threshold away.
+     *
+     * @return array{items: bool, gap: int, label: string, text: string}|null
+     */
+    public function nextOffer(): ?array
+    {
+        if ($this->isEmpty() || ! Schema::hasTable('discount_rules')) {
+            return null;
+        }
+        $applied = collect($this->ruleDiscountBreakdown())->pluck('rule_id')->all();
+        $lines = $this->lines();
+        $best = null;
+
+        foreach (\App\Models\DiscountRule::active()->get() as $rule) {
+            $conds = $rule->conditions ?? [];
+            if (count($conds) !== 1 || in_array($rule->id, $applied) || blank($rule->name)) {
+                continue;
+            }
+            $c = $conds[0];
+            $min = (int) ($c['min'] ?? 0);
+            $have = match ($c['type'] ?? '') {
+                'cart_item_count' => (int) $lines->sum('quantity'),
+                'cart_subtotal' => (int) $lines->sum('line_total'),
+                'item_count_from_categories' => (int) $lines->filter(fn ($l) => $l['variant']->product->categories->pluck('id')
+                    ->push($l['variant']->product->category_id)->map(fn ($i) => (int) $i)->intersect(array_map('intval', $c['category_ids'] ?? []))->isNotEmpty())->sum('quantity'),
+                default => null,
+            };
+            if ($have === null || $have >= $min) {
+                continue;
+            }
+            $items = $c['type'] !== 'cart_subtotal';
+            $gap = $min - $have;
+            if (($items && $gap > 3) || (! $items && $gap > $min / 2)) {
+                continue;
+            }
+            if (! $best || ($items && ! $best['items']) || ($items === $best['items'] && $gap < $best['gap'])) {
+                $best = ['items' => $items, 'gap' => $gap, 'label' => $rule->name];
+            }
+        }
+        if (! $best) {
+            return null;
+        }
+        $best['text'] = ($best['items'] ? \App\Support\Money::toPersianDigits((string) $best['gap']).' قطعهٔ دیگر' : \App\Support\Money::toman($best['gap']).' دیگر')
+            .' اضافه کنید: '.$best['label'];
+
+        return $best;
     }
 }
