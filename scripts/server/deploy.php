@@ -116,6 +116,9 @@ $log[] = 'public_html wired (storage link → '.(is_link($linkPath) ? @readlink(
 // ---- 5) Laravel: caches + optional migrate ----------------------------------
 chdir($appDir);
 try {
+    // Drop the previous release's cached config first: the kernel below would
+    // otherwise boot with it, and migrations would read the old config files.
+    @unlink($appDir.'/bootstrap/cache/config.php');
     require $appDir.'/vendor/autoload.php';
     /** @var \Illuminate\Foundation\Application $app */
     $app = require $appDir.'/bootstrap/app.php';
