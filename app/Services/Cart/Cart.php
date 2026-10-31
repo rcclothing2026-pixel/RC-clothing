@@ -123,6 +123,9 @@ class Cart
         if ($reason = $coupon->reasonInvalidFor($this->subtotal(), Auth::user())) {
             return ['ok' => false, 'message' => $reason];
         }
+        if (! $coupon->isFreeShipping() && $this->discountableSubtotal() === 0) {
+            return ['ok' => false, 'message' => 'این کد روی بسته‌ها، اقلام زمستانه و اوتلت اعمال نمی‌شود.'];
+        }
         $this->session->put(self::COUPON, $coupon->code);
 
         return ['ok' => true, 'message' => 'کد تخفیف اعمال شد.'];

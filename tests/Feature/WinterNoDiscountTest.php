@@ -41,4 +41,15 @@ class WinterNoDiscountTest extends TestCase
         $cart->applyCoupon('BIG');
         $this->assertSame(1075000, $cart->combinedDiscount());     // capped at 25% of the tee
     }
+
+    public function test_a_coupon_is_refused_when_nothing_in_the_cart_can_take_it(): void
+    {
+        config(['scout.driver' => 'collection', 'shop.no_discount_categories' => ['nym-zyp']]);
+        $cart = app(Cart::class);
+        $cart->add($this->variant('nym-zyp', 8900000)->id);
+        Coupon::create(['code' => 'TEN', 'type' => 'percent', 'value' => 10, 'is_active' => true]);
+
+        $this->assertFalse($cart->applyCoupon('TEN')['ok']);
+        $this->assertNull($cart->coupon());
+    }
 }
