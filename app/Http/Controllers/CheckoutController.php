@@ -70,7 +70,7 @@ class CheckoutController extends Controller
             'giftCard' => $this->cart->giftCard(),
             'addresses' => $user->addresses()->get(),
             'shippingMethods' => ShippingMethod::where('is_active', true)->orderBy('position')->get(),
-            'paymentMethods' => PaymentMethod::active()->get(),
+            'paymentMethods' => PaymentMethod::active()->get()->filter(fn ($m) => $this->gateways->usable($m))->values(),
             'user' => $user,
             'defaultAddress' => $defaultAddr?->line ?? '',
             'defaultProvince' => $defaultAddr?->province ?? '',
@@ -161,6 +161,9 @@ class CheckoutController extends Controller
 
         $shipping = ShippingMethod::where('is_active', true)->findOrFail($data['shipping_method_id']);
         $method = PaymentMethod::active()->where('key', $data['payment_method'])->firstOrFail();
+        if (! $this->gateways->usable($method)) {
+            return back()->with('error', 'این روش پرداخت فعلاً در دسترس نیست؛ روش دیگری را انتخاب کنید.');
+        }
 
         // lines() clamps each line to current stock and drops sold-out variants.
         // If that emptied the cart, stock changed since they added items.
@@ -329,6 +332,11 @@ class CheckoutController extends Controller
 
     public function callback(Request $request, PaymentMethod $method, StockKeepingReporter $reporter): RedirectResponse
     {
+        if (! $this->gateways->usable($method)) {
+            \Illuminate\Support\Facades\Log::warning('[payment] callback for an unusable method', ['method' => $method->key, 'params' => $request->all()]);
+
+            return redirect()->route('home')->with('error', 'تراکنش یافت نشد.');
+        }
         $gateway = $this->gateways->makeReal($method);
 
         $identifier = $gateway->callbackIdentifier($request);

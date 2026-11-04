@@ -7,25 +7,46 @@ use InvalidArgumentException;
 
 /**
  * Builds a concrete PaymentGateway from an admin-configured PaymentMethod
- * record. Falls back to the DevGateway when credentials are missing so the
- * checkout flow keeps working before real onboarding.
+ * record. A method without credentials is NOT usable: the DevGateway
+ * simulator (it approves without a bank) is used only when
+ * shop.dev_gateway is on, i.e. in tests and local demos, never in
+ * production. It once stood in for a half-configured method on the live
+ * shop and marked unpaid orders as paid.
  */
 class PaymentGatewayFactory
 {
     public function make(PaymentMethod $method): PaymentGateway
     {
         $gateway = $this->build($method);
+        if ($gateway->isConfigured()) {
+            return $gateway;
+        }
+        if (self::devAllowed()) {
+            return new DevGateway($method->key);
+        }
 
-        return $gateway->isConfigured() ? $gateway : new DevGateway($method->key);
+        throw new \RuntimeException('درگاه «'.$method->key.'» تنظیم نشده است.');
     }
 
-    /** Force the real driver (used by the callback to verify). */
+    /** The driver for the callback's verify step; same rules as make(). */
     public function makeReal(PaymentMethod $method): PaymentGateway
     {
-        $gateway = $this->build($method);
+        return $this->make($method);
+    }
 
-        // If it was never configured, the request also used DevGateway.
-        return $gateway->isConfigured() ? $gateway : new DevGateway($method->key);
+    /** True when the method can take a payment here: it is configured, or the simulator is allowed. */
+    public function usable(PaymentMethod $method): bool
+    {
+        try {
+            return $this->build($method)->isConfigured() || self::devAllowed();
+        } catch (\InvalidArgumentException) {
+            return false;
+        }
+    }
+
+    public static function devAllowed(): bool
+    {
+        return (bool) config('shop.dev_gateway', false);
     }
 
     private function build(PaymentMethod $method): PaymentGateway

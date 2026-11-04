@@ -8,6 +8,10 @@ return [
     // subtotal. 25 keeps every product above the 10% margin floor at current costs.
     'max_discount_percent' => (int) env('SHOP_MAX_DISCOUNT_PERCENT', 25),
 
+    // The DevGateway payment simulator approves without a bank. Tests and local
+    // demos only; never set this on a live shop.
+    'dev_gateway' => (bool) env('PAYMENTS_DEV_GATEWAY', false),
+
     // Highest outlet markdown the admin may set (admin → اوتلت).
     'outlet_max_percent' => (int) env('SHOP_OUTLET_MAX_PERCENT', 30),
 ];

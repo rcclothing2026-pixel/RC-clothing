@@ -166,6 +166,19 @@
                         @foreach ($errors->all() as $error)<div>{{ $error }}</div>@endforeach
                     </div>
                 @endif
+                @php($__payAlerts = \App\Support\PaymentAlerts::summary())
+                @if ($__payAlerts)
+                    <div class="mb-5 rounded-card bg-red-50 p-4 text-sm leading-7 text-red-700 ring-1 ring-red-200">
+                        @if (! empty($__payAlerts['fake']))
+                            <p class="font-bold">این سفارش‌ها «پرداخت‌شده» ثبت شده‌اند اما پولی دریافت نشده (درگاه آزمایشی، کد DEV-):</p>
+                            <p class="fa-num" dir="ltr">{{ implode('، ', $__payAlerts['fake']) }}</p>
+                            <p>پیش از ارسال، با مشتری تماس بگیرید و پرداخت را بگیرید یا سفارش را لغو کنید.</p>
+                        @endif
+                        @if (! empty($__payAlerts['unusable']))
+                            <p class="font-bold">این روش‌های پرداخت فعال‌اند اما اطلاعات درگاهشان کامل نیست، پس در صفحهٔ پرداخت نمایش داده نمی‌شوند: {{ implode('، ', $__payAlerts['unusable']) }}</p>
+                        @endif
+                    </div>
+                @endif
                 @yield('content')
             </div>
         </main>
