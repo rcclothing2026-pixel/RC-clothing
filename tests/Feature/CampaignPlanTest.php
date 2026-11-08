@@ -96,29 +96,71 @@ class CampaignPlanTest extends TestCase
         $this->assertFalse($this->editor()['edited']);
     }
 
-    public function test_discounts_outside_the_plan_can_be_switched_and_edited(): void
+    public function test_discounts_outside_the_plan_are_fully_editable(): void
     {
+        $cat = \App\Models\Category::create(['name' => 'تی‌شرت', 'slug' => 'ty-shrt', 'is_active' => true]);
         $rule = DiscountRule::create(['name' => 'پله ۱', 'description' => 'admin', 'conditions' => [['type' => 'cart_subtotal', 'min' => 5000000]],
             'actions' => [['type' => 'cart_discount_percent', 'value' => 5]], 'apply_mode' => 'all', 'stack_mode' => 'all', 'is_active' => true]);
         $coupon = Coupon::create(['code' => 'OLD10', 'type' => 'percent', 'value' => 10, 'is_active' => true]);
 
-        $e = $this->editor();
-        $this->assertSame('پله ۱', collect($e['extra']['rules'])->firstWhere('id', $rule->id)['name']);
-        $this->assertNotNull(collect($e['extra']['coupons'])->firstWhere('code', 'OLD10'));
+        $row = collect($this->editor()['extra']['rules'])->firstWhere('id', $rule->id);
+        $this->assertSame([['type' => 'cart_subtotal', 'min' => 5000000]], $row['conditions']);
+        $this->assertNotNull(collect($this->editor()['extra']['coupons'])->firstWhere('code', 'OLD10'));
 
-        $this->api('PUT', "/discounts/rules/{$rule->id}", ['is_active' => false, 'actions' => [['value' => 7]], 'expires_at' => '2026-12-30'])->assertOk();
+        // Replace conditions and actions, switch to «any», add limits and dates.
+        $row['conditions'] = [['type' => 'item_count_from_categories', 'categories' => ['ty-shrt'], 'min' => 2], ['type' => 'user_device', 'device' => 'mobile']];
+        $row['actions'] = [['type' => 'cart_discount_percent', 'value' => 7], ['type' => 'discount_cap', 'value' => 500000]];
+        $row = array_merge($row, ['apply_mode' => 'any', 'stack_mode' => 'best', 'max_uses' => 50, 'priority' => 30, 'to' => '2026-12-30']);
+        $row['is_active'] = false;
+        $this->api('PUT', "/discounts/rules/{$rule->id}", $row)->assertOk();
         $rule->refresh();
-        $this->assertFalse($rule->is_active);
-        $this->assertSame(7, $rule->actions[0]['value']);
+        $this->assertSame([['type' => 'item_count_from_categories', 'min' => 2, 'category_ids' => [$cat->id]], ['type' => 'user_device', 'device' => 'mobile']], $rule->conditions);
+        $this->assertSame([['type' => 'cart_discount_percent', 'value' => 7], ['type' => 'discount_cap', 'value' => 500000]], $rule->actions);
+        $this->assertSame(['any', 'best', 50, 30, false], [$rule->apply_mode, $rule->stack_mode, $rule->max_uses, $rule->priority, $rule->is_active]);
         $this->assertSame('2026-12-30', $rule->expires_at->setTimezone('Asia/Tehran')->toDateString());
 
+        // Refusals: over the cap, an empty list condition, a block without a message.
+        $bad = ['label' => 'x', 'conditions' => [['type' => 'item_brands', 'brands' => []]], 'actions' => [['type' => 'cart_discount_percent', 'value' => 40], ['type' => 'block_purchase', 'value' => 0]]];
+        $this->assertCount(3, $this->api('PUT', "/discounts/rules/{$rule->id}", $bad)->assertStatus(422)->json('errors'));
+
+        // Create and delete a new rule.
+        $new = ['label' => 'پرداخت کارت', 'conditions' => [['type' => 'order_payment_method', 'method_keys' => ['zarinpal']]], 'actions' => [['type' => 'cart_surcharge_fixed', 'value' => 20000]]];
+        $this->api('POST', '/discounts/rules', $new)->assertOk();
+        $made = DiscountRule::where('name', 'پرداخت کارت')->firstOrFail();
+        $this->assertSame('nj-focus', $made->description);
+        $this->api('DELETE', "/discounts/rules/{$made->id}")->assertOk();
+        $this->assertNull(DiscountRule::find($made->id));
+
+        // Coupons: edit, create, delete; plan rules and codes are refused here.
         $this->api('PUT', "/discounts/coupons/{$coupon->id}", ['value' => 30])->assertStatus(422);
         $this->api('PUT', "/discounts/coupons/{$coupon->id}", ['value' => 12, 'is_active' => false, 'per_user_limit' => 1])->assertOk();
         $this->assertSame([12, false, 1], [(int) $coupon->fresh()->value, $coupon->fresh()->is_active, $coupon->fresh()->per_user_limit]);
+        $this->api('POST', '/discounts/coupons', ['code' => 'new5', 'type' => 'fixed', 'value' => 500000, 'min_subtotal' => 3000000])->assertOk();
+        $this->assertSame(500000, (int) Coupon::where('code', 'NEW5')->value('value'));
+        $this->api('POST', '/discounts/coupons', ['code' => 'NEW5', 'value' => 5])->assertStatus(422);
+        $this->api('DELETE', '/discounts/coupons/'.Coupon::where('code', 'NEW5')->value('id'))->assertOk();
+        $this->assertFalse(Coupon::where('code', 'NEW5')->exists());
 
-        $plan = DiscountRule::where('description', 'like', 'campaign:%')->first() ?? tap(null, fn () => $this->artisan('campaigns:sync'));
+        $this->artisan('campaigns:sync');
         $plan = DiscountRule::where('description', 'like', 'campaign:%')->firstOrFail();
-        $this->api('PUT', "/discounts/rules/{$plan->id}", ['is_active' => true])->assertStatus(422);
+        $this->api('PUT', "/discounts/rules/{$plan->id}", ['label' => 'x', 'actions' => [['type' => 'free_shipping']]])->assertStatus(422);
+        $this->api('DELETE', "/discounts/rules/{$plan->id}")->assertStatus(422);
+    }
+
+    public function test_plan_rules_take_any_engine_condition_and_rule_settings(): void
+    {
+        $e = $this->editor();
+        $e['plan']['rules'][] = ['key' => 'vip', 'label' => 'ویژهٔ اعضا', 'campaign' => 'always', 'apply_mode' => 'any', 'stack_mode' => 'best', 'max_uses_per_user' => 1, 'priority' => 40,
+            'conditions' => [['type' => 'user_group', 'group_ids' => ['vip']], ['type' => 'coupon_code', 'code' => 'VIP']],
+            'actions' => [['type' => 'block_purchase', 'value' => 0, 'message' => 'فعلاً نه'], ['type' => 'item_surcharge_percent', 'value' => 5]]];
+        $this->api('PUT', '/editor', ['plan' => $e['plan']])->assertOk();
+        $r = DiscountRule::where('description', 'campaign:vip')->firstOrFail();
+        $this->assertSame(['any', 'best', 1, 40], [$r->apply_mode, $r->stack_mode, $r->max_uses_per_user, $r->priority]);
+        $this->assertSame([['type' => 'block_purchase', 'value' => 0, 'message' => 'فعلاً نه'], ['type' => 'item_surcharge_percent', 'value' => 5]], $r->actions);
+        $this->assertSame([['type' => 'user_group', 'group_ids' => ['vip']], ['type' => 'coupon_code', 'code' => 'VIP']], $r->conditions);
+        $back = collect($this->editor()['plan']['rules'])->firstWhere('key', 'vip');
+        $this->assertSame('فعلاً نه', $back['actions'][0]['message']);
+        $this->assertNotEmpty($this->editor()['options']['conditions']['user_city']);
     }
 
     public function test_editor_needs_the_key(): void

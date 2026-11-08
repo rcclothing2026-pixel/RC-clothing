@@ -106,17 +106,39 @@ class CampaignApiController extends Controller
         return response()->json(['ok' => true] + CampaignPlan::editorPayload());
     }
 
+    public function createRule(Request $request): JsonResponse
+    {
+        return $this->result(CampaignPlan::saveRule(null, $request->all()));
+    }
+
     public function updateRule(Request $request, DiscountRule $rule): JsonResponse
     {
-        $errors = CampaignPlan::updateRule($rule, $request->all());
+        return $this->result(CampaignPlan::saveRule($rule, $request->all()));
+    }
 
-        return response()->json($errors ? ['ok' => false, 'errors' => $errors] : ['ok' => true], $errors ? 422 : 200);
+    public function deleteRule(DiscountRule $rule): JsonResponse
+    {
+        return $this->result(CampaignPlan::deleteRule($rule));
+    }
+
+    public function createCoupon(Request $request): JsonResponse
+    {
+        return $this->result(CampaignPlan::createCoupon($request->all()));
     }
 
     public function updateCoupon(Request $request, Coupon $coupon): JsonResponse
     {
-        $errors = CampaignPlan::updateCoupon($coupon, $request->all());
+        return $this->result(CampaignPlan::updateCoupon($coupon, $request->all()));
+    }
 
-        return response()->json($errors ? ['ok' => false, 'errors' => $errors] : ['ok' => true], $errors ? 422 : 200);
+    public function deleteCoupon(Coupon $coupon): JsonResponse
+    {
+        return $this->result(CampaignPlan::deleteCoupon($coupon));
+    }
+
+    /** 422 with the problems, or the fresh editor payload. */
+    private function result(array $errors): JsonResponse
+    {
+        return $errors ? response()->json(['ok' => false, 'errors' => $errors], 422) : response()->json(['ok' => true] + CampaignPlan::editorPayload());
     }
 }

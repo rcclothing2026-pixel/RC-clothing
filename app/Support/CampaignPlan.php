@@ -29,16 +29,24 @@ class CampaignPlan
 
     public const LISTS = ['slides', 'badges'];
 
-    public const CONDITIONS = [
-        'cart_subtotal', 'cart_subtotal_excluding_sale', 'cart_item_count', 'user_previous_order_count', 'user_previous_order_total',
-        'user_status', 'item_products', 'item_categories', 'item_collections', 'has_full_price_item',
-        'item_count_from_products', 'item_total_from_products', 'item_count_from_categories', 'item_total_from_categories',
-        'item_count_from_collections', 'item_total_from_collections', 'item_count_from_shelf',
-    ];
-
-    public const ACTIONS = ['cart_discount_percent', 'cart_discount_fixed', 'item_discount_percent', 'item_discount_fixed', 'discount_cap', 'free_shipping'];
-
+    /** Percent discounts are capped at shop.max_discount_percent; surcharges at 100. */
     private const PERCENT = ['cart_discount_percent', 'item_discount_percent'];
+
+    private const SURCHARGE_PERCENT = ['item_surcharge_percent', 'cart_surcharge_percent'];
+
+    /** Condition params that are lists and must not be empty. */
+    private const LIST_PARAMS = ['products', 'categories', 'collections', 'brands', 'group_ids', 'phones', 'cities', 'method_keys', 'method_ids'];
+
+    /** Every condition and action the discount engine knows. */
+    public static function conditions(): array
+    {
+        return array_keys(DiscountRule::conditionOptions());
+    }
+
+    public static function actions(): array
+    {
+        return array_keys(DiscountRule::actionOptions());
+    }
 
     /** Swap the edited plan into config. Called first thing in AppServiceProvider::boot. */
     public static function apply(): void
@@ -136,10 +144,10 @@ class CampaignPlan
         return $out;
     }
 
-    private static function ruleToEditor(array $r): array
+    public static function ruleToEditor(array $r): array
     {
         $r['conditions'] = array_map(fn ($c) => ['type' => $c[0] ?? ''] + Arr::except($c, [0]), $r['conditions'] ?? []);
-        $r['actions'] = array_map(fn ($a) => ['type' => $a[0] ?? '', 'value' => $a[1] ?? 0], $r['actions'] ?? []);
+        $r['actions'] = array_map(fn ($a) => ['type' => $a[0] ?? '', 'value' => $a[1] ?? 0] + Arr::except($a, [0, 1]), $r['actions'] ?? []);
 
         return $r;
     }
@@ -157,8 +165,7 @@ class CampaignPlan
                 unset($item['key']);
                 $item = self::clean($item);
                 if ($s === 'rules') {
-                    $item['conditions'] = array_values(array_map(fn ($c) => [(string) ($c['type'] ?? '')] + self::clean(Arr::except((array) $c, ['type'])), (array) ($item['conditions'] ?? [])));
-                    $item['actions'] = array_values(array_map(fn ($a) => [(string) ($a['type'] ?? ''), (int) ($a['value'] ?? 0)], (array) ($item['actions'] ?? [])));
+                    $item = self::ruleFromEditor($item);
                 }
                 if ($s === 'bundles') {
                     $item['items'] = array_values(array_map(fn ($i) => array_filter([(string) ($i['product'] ?? ''), max(1, (int) ($i['qty'] ?? 1)), 'color' => (string) ($i['color'] ?? '')], fn ($v) => $v !== ''), (array) ($item['items'] ?? [])));
@@ -179,6 +186,26 @@ class CampaignPlan
         return $plan;
     }
 
+    /** A rule from the editor ({type, …} rows) to config shape ([type, …] rows). */
+    public static function ruleFromEditor(array $item): array
+    {
+        $item = self::clean($item);
+        $item['conditions'] = array_values(array_map(function ($c) {
+            $c = (array) $c;
+            $out = [(string) ($c['type'] ?? '')] + self::clean(Arr::except($c, ['type']));
+            foreach (['method_ids'] as $k) {
+                if (isset($out[$k])) {
+                    $out[$k] = array_map('intval', (array) $out[$k]);
+                }
+            }
+
+            return $out;
+        }, (array) ($item['conditions'] ?? [])));
+        $item['actions'] = array_values(array_map(fn ($a) => [(string) ($a['type'] ?? ''), (int) ($a['value'] ?? 0)] + self::clean(Arr::except((array) $a, ['type', 'value'])), (array) ($item['actions'] ?? [])));
+
+        return $item;
+    }
+
     /** Drop empty strings, nulls and empty lists; numeric strings become numbers. */
     private static function clean(array $item): array
     {
@@ -187,7 +214,7 @@ class CampaignPlan
             if ($v === null || $v === '' || $v === []) {
                 continue;
             }
-            if (is_string($v) && in_array($k, ['min', 'max', 'value', 'off', 'delay', 'max_stock', 'max_price', 'min_subtotal', 'max_subtotal', 'max_discount', 'usage_limit', 'per_user_limit', 'priority'], true) && is_numeric($v)) {
+            if (is_string($v) && in_array($k, ['min', 'max', 'value', 'off', 'delay', 'max_stock', 'max_price', 'min_subtotal', 'max_subtotal', 'max_discount', 'usage_limit', 'per_user_limit', 'priority', 'max_uses', 'max_uses_per_user'], true) && is_numeric($v)) {
                 $v = (int) $v;
             }
             if (is_array($v) && array_is_list($v)) {
@@ -247,30 +274,7 @@ class CampaignPlan
         }
 
         foreach ($plan['rules'] ?? [] as $k => $r) {
-            $name = 'تخفیف «'.($r['label'] ?? $k).'»';
-            if (empty($r['label'])) {
-                $err[] = "تخفیف «{$k}»: متنی که مشتری می‌بیند خالی است.";
-            }
-            foreach ($r['conditions'] ?? [] as $c) {
-                if (! in_array($c[0] ?? '', self::CONDITIONS, true)) {
-                    $err[] = "$name: شرط «".($c[0] ?? '').'» شناخته نیست.';
-                }
-                if (isset($c['min'], $c['max']) && $c['max'] < $c['min']) {
-                    $err[] = "$name: حداکثر شرط از حداقلش کمتر است.";
-                }
-            }
-            if (empty($r['actions'])) {
-                $err[] = "$name: هیچ تخفیفی تعریف نشده.";
-            }
-            foreach ($r['actions'] ?? [] as $a) {
-                if (! in_array($a[0] ?? '', self::ACTIONS, true)) {
-                    $err[] = "$name: نوع تخفیف «".($a[0] ?? '').'» شناخته نیست.';
-                } elseif (in_array($a[0], self::PERCENT, true) && ($a[1] < 1 || $a[1] > $max)) {
-                    $err[] = "$name: درصد تخفیف باید بین ۱ و {$max} باشد.";
-                } elseif ($a[0] !== 'free_shipping' && $a[1] < 1) {
-                    $err[] = "$name: مبلغ تخفیف باید بیشتر از صفر باشد.";
-                }
-            }
+            $err = array_merge($err, self::checkRule($r, (string) $k, array_keys($plan['shelves'] ?? [])));
         }
 
         foreach ($plan['coupons'] ?? [] as $code => $c) {
@@ -319,6 +323,127 @@ class CampaignPlan
         return array_values(array_unique($err));
     }
 
+    /** Problems with one rule (config shape), in Persian. */
+    public static function checkRule(array $r, string $key, array $shelves): array
+    {
+        $max = (int) config('shop.max_discount_percent', 25);
+        $err = [];
+        $name = 'تخفیف «'.($r['label'] ?? $r['name'] ?? $key).'»';
+        $condLabels = DiscountRule::conditionOptions();
+        if (empty($r['label']) && empty($r['name'])) {
+            $err[] = "تخفیف «{$key}»: متنی که مشتری می‌بیند خالی است.";
+        }
+        foreach ($r['conditions'] ?? [] as $c) {
+            $t = $c[0] ?? '';
+            if (! isset($condLabels[$t])) {
+                $err[] = "$name: شرط «{$t}» شناخته نیست.";
+
+                continue;
+            }
+            $label = $condLabels[$t]['label'];
+            if (isset($c['min'], $c['max']) && $c['max'] < $c['min']) {
+                $err[] = "$name: در شرط «{$label}» حداکثر از حداقل کمتر است.";
+            }
+            $params = array_keys($condLabels[$t]['params']);
+            if (in_array('min', $params, true) && ! isset($c['min']) && ! isset($c['max'])) {
+                $err[] = "$name: شرط «{$label}» حداقل یا حداکثر لازم دارد.";
+            }
+            foreach (['product_ids' => 'products', 'category_ids' => 'categories', 'collection_ids' => 'collections'] as $db => $slug) {
+                $i = array_search($db, $params, true);
+                if ($i !== false) {
+                    $params[$i] = $slug;
+                }
+            }
+            foreach (array_intersect($params, self::LIST_PARAMS) as $p) {
+                if (empty($c[$p])) {
+                    $err[] = "$name: شرط «{$label}» هنوز چیزی انتخاب نکرده است.";
+                }
+            }
+            if ($t === 'coupon_code' && empty($c['code'])) {
+                $err[] = "$name: کد شرط «{$label}» خالی است.";
+            }
+            if ($t === 'item_count_from_shelf' && ! in_array($c['shelf'] ?? '', $shelves, true)) {
+                $err[] = "$name: صفحهٔ «".($c['shelf'] ?? '')."» وجود ندارد.";
+            }
+        }
+        if (empty($r['actions'])) {
+            $err[] = "$name: هیچ تخفیفی تعریف نشده.";
+        }
+        foreach ($r['actions'] ?? [] as $a) {
+            $t = $a[0] ?? '';
+            $v = (int) ($a[1] ?? 0);
+            if (! in_array($t, self::actions(), true)) {
+                $err[] = "$name: نوع تخفیف «{$t}» شناخته نیست.";
+            } elseif (in_array($t, self::PERCENT, true) && ($v < 1 || $v > $max)) {
+                $err[] = "$name: درصد تخفیف باید بین ۱ و {$max} باشد.";
+            } elseif (in_array($t, self::SURCHARGE_PERCENT, true) && ($v < 1 || $v > 100)) {
+                $err[] = "$name: درصد افزایش باید بین ۱ و ۱۰۰ باشد.";
+            } elseif (in_array($t, ['cart_discount_fixed', 'item_discount_fixed', 'discount_cap', 'item_surcharge_fixed', 'cart_surcharge_fixed'], true) && $v < 1) {
+                $err[] = "$name: مبلغ باید بیشتر از صفر باشد.";
+            } elseif ($t === 'block_purchase' && empty($a['message'])) {
+                $err[] = "$name: پیام ممانعت از خرید خالی است.";
+            }
+        }
+        if (isset($r['apply_mode']) && ! in_array($r['apply_mode'], [DiscountRule::APPLY_MODE_ALL, DiscountRule::APPLY_MODE_ANY], true)) {
+            $err[] = "$name: حالت شرط‌ها نادرست است.";
+        }
+        if (isset($r['stack_mode']) && ! in_array($r['stack_mode'], [DiscountRule::STACK_MODE_ALL, DiscountRule::STACK_MODE_BEST], true)) {
+            $err[] = "$name: حالت تخفیف‌ها نادرست است.";
+        }
+        foreach (['max_uses', 'max_uses_per_user'] as $k) {
+            if (isset($r[$k]) && (int) $r[$k] < 1) {
+                $err[] = "$name: سقف استفاده باید دست‌کم ۱ باشد (یا خالی).";
+            }
+        }
+
+        return $err;
+    }
+
+    /** A config-shape condition with slugs → the DB shape the engine reads (ids). */
+    public static function resolveCondition(array $c): array
+    {
+        $out = ['type' => $c[0]] + array_diff_key($c, [0 => 1, 'categories' => 1, 'products' => 1, 'collections' => 1]);
+        if (isset($c['categories'])) {
+            $out['category_ids'] = Category::whereIn('slug', (array) $c['categories'])->pluck('id')->all();
+        }
+        if (isset($c['products'])) {
+            $out['product_ids'] = Product::whereIn('slug', (array) $c['products'])->pluck('id')->all();
+        }
+        if (isset($c['collections'])) {
+            $out['collection_ids'] = ShopCollection::whereIn('slug', (array) $c['collections'])->pluck('id')->all();
+        }
+
+        return $out;
+    }
+
+    /** A DB rule as an editor rule (ids → slugs), for discounts outside the plan. */
+    private static function dbRuleToEditor(DiscountRule $r): array
+    {
+        $conds = array_map(function ($c) {
+            $out = Arr::except((array) $c, ['category_ids', 'product_ids', 'collection_ids']);
+            if (isset($c['category_ids'])) {
+                $out['categories'] = Category::whereIn('id', (array) $c['category_ids'])->pluck('slug')->all();
+            }
+            if (isset($c['product_ids'])) {
+                $out['products'] = Product::whereIn('id', (array) $c['product_ids'])->pluck('slug')->all();
+            }
+            if (isset($c['collection_ids'])) {
+                $out['collections'] = ShopCollection::whereIn('id', (array) $c['collection_ids'])->pluck('slug')->all();
+            }
+
+            return $out;
+        }, (array) $r->conditions);
+
+        return [
+            'id' => $r->id, 'label' => $r->name, 'is_active' => (bool) $r->is_active, 'used_count' => (int) $r->used_count,
+            'conditions' => array_values($conds),
+            'actions' => array_values(array_map(fn ($a) => ['type' => $a['type'] ?? '', 'value' => (int) ($a['value'] ?? 0)] + Arr::except((array) $a, ['type', 'value']), (array) $r->actions)),
+            'priority' => (int) $r->priority, 'apply_mode' => $r->apply_mode ?: DiscountRule::APPLY_MODE_ALL, 'stack_mode' => $r->stack_mode ?: DiscountRule::STACK_MODE_ALL,
+            'max_uses' => $r->max_uses, 'max_uses_per_user' => $r->max_uses_per_user,
+            'from' => self::tehranDate($r->starts_at), 'to' => self::tehranDate($r->expires_at),
+        ];
+    }
+
     // ── editor payload ──────────────────────────────────────────────────────
 
     public static function editorPayload(): array
@@ -338,17 +463,19 @@ class CampaignPlan
                 'collections' => ShopCollection::orderBy('name')->get(['slug', 'name'])->map(fn ($c) => ['slug' => $c->slug, 'name' => $c->name])->all(),
                 'products' => Product::where('is_active', true)->where('is_bundle', false)->orderBy('name')->get(['slug', 'name', 'price'])
                     ->map(fn ($p) => ['slug' => $p->slug, 'name' => $p->name, 'price' => (int) $p->price])->all(),
+                'brands' => self::named(Product::whereNotNull('brand')->where('brand', '!=', '')->distinct()->orderBy('brand')->pluck('brand')->all()),
+                'groups' => self::named(\App\Models\User::whereNotNull('group')->where('group', '!=', '')->distinct()->orderBy('group')->pluck('group')->all()),
+                'payment_methods' => \App\Models\PaymentMethod::orderBy('id')->get()->map(fn ($m) => ['slug' => $m->key, 'name' => $m->name ?: $m->key])->all(),
+                'shipping_methods' => \App\Models\ShippingMethod::orderBy('position')->get()->map(fn ($m) => ['slug' => (int) $m->id, 'name' => $m->name])->all(),
+            ],
+            'options' => [
+                'conditions' => collect(DiscountRule::conditionOptions())->map(fn ($o) => $o['label'])->all(),
+                'actions' => collect(DiscountRule::actionOptions())->map(fn ($o) => $o['label'])->all(),
             ],
             // Discounts outside the plan (made in the shop admin): editable one by one.
             'extra' => [
                 'rules' => DiscountRule::where(fn ($q) => $q->whereNull('description')->orWhere('description', 'not like', 'campaign:%'))
-                    ->orderByDesc('is_active')->orderBy('priority')->get()->map(fn ($r) => [
-                        'id' => $r->id, 'name' => $r->name, 'is_active' => (bool) $r->is_active,
-                        'starts_at' => self::tehranDate($r->starts_at), 'expires_at' => self::tehranDate($r->expires_at),
-                        'conditions' => self::describeConditions((array) $r->conditions),
-                        'actions' => array_map(fn ($a) => ['type' => $a['type'] ?? '', 'value' => (int) ($a['value'] ?? 0)], (array) $r->actions),
-                        'used_count' => (int) $r->used_count,
-                    ])->all(),
+                    ->orderByDesc('is_active')->orderByDesc('priority')->orderBy('id')->get()->map(fn ($r) => self::dbRuleToEditor($r))->all(),
                 'coupons' => Coupon::whereNotIn('code', $codes ?: ['__none__'])->orderByDesc('is_active')->orderBy('code')->get()->map(fn ($c) => [
                     'id' => $c->id, 'code' => $c->code, 'description' => $c->description, 'type' => $c->type, 'value' => (int) $c->value,
                     'min_subtotal' => (int) $c->min_subtotal, 'usage_limit' => $c->usage_limit, 'per_user_limit' => $c->per_user_limit,
@@ -359,54 +486,92 @@ class CampaignPlan
         ];
     }
 
+    private static function named(array $values): array
+    {
+        return array_values(array_map(fn ($v) => ['slug' => $v, 'name' => $v], $values));
+    }
+
     private static function tehranDate($at): ?string
     {
         return $at ? Carbon::parse($at)->setTimezone('Asia/Tehran')->toDateString() : null;
     }
 
-    /** Short Persian lines for a DB rule's conditions (ids shown as names). */
-    private static function describeConditions(array $conds): array
-    {
-        $labels = DiscountRule::conditionOptions();
-
-        return array_map(function ($c) use ($labels) {
-            $t = $labels[$c['type'] ?? '']['label'] ?? ($c['type'] ?? '?');
-            $range = trim((isset($c['min']) ? 'از '.number_format((int) $c['min']) : '').(isset($c['max']) ? ' تا '.number_format((int) $c['max']) : ''));
-            $names = array_merge(
-                isset($c['category_ids']) ? Category::whereIn('id', (array) $c['category_ids'])->pluck('name')->all() : [],
-                isset($c['product_ids']) ? Product::whereIn('id', (array) $c['product_ids'])->pluck('name')->all() : [],
-            );
-
-            return trim($t.' '.$range.($names ? ': '.implode('، ', $names) : ''));
-        }, $conds);
-    }
-
     // ── single DB discounts outside the plan ────────────────────────────────
 
-    public static function updateRule(DiscountRule $rule, array $d): array
+    /** Create ($rule null) or replace a shop-admin rule from an editor rule. */
+    public static function saveRule(?DiscountRule $rule, array $d): array
     {
-        if (str_starts_with((string) $rule->description, 'campaign:')) {
+        if ($rule && str_starts_with((string) $rule->description, 'campaign:')) {
             return ['این تخفیف بخشی از برنامهٔ کمپین‌هاست؛ آن را در خود کمپین ویرایش کنید.'];
         }
-        $max = (int) config('shop.max_discount_percent', 25);
-        $actions = (array) $rule->actions;
-        foreach ((array) ($d['actions'] ?? []) as $i => $a) {
-            if (! isset($actions[$i])) {
-                continue;
+        $r = self::ruleFromEditor(Arr::except($d, ['id', 'used_count', 'campaign']));
+        $date = fn ($v) => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v);
+        $errors = self::checkRule($r, (string) ($rule?->id ?? 'new'), array_keys(config('campaigns.shelves', [])));
+        foreach (['from', 'to'] as $k) {
+            if (isset($r[$k]) && ! $date($r[$k])) {
+                $errors[] = 'تاریخ «'.$r[$k].'» درست نیست.';
             }
-            $v = (int) ($a['value'] ?? 0);
-            if (in_array($actions[$i]['type'] ?? '', self::PERCENT, true) && ($v < 1 || $v > $max)) {
-                return ["درصد تخفیف باید بین ۱ و {$max} باشد."];
-            }
-            $actions[$i]['value'] = $v;
         }
+        if ($errors) {
+            return $errors;
+        }
+        $rule ??= new DiscountRule(['description' => 'nj-focus', 'used_count' => 0]);
         $rule->fill([
-            'name' => isset($d['name']) && trim($d['name']) !== '' ? mb_substr(trim($d['name']), 0, 190) : $rule->name,
-            'is_active' => (bool) ($d['is_active'] ?? $rule->is_active),
-            'actions' => $actions,
-            'starts_at' => array_key_exists('starts_at', $d) ? self::fromTehran($d['starts_at'], false) : $rule->starts_at,
-            'expires_at' => array_key_exists('expires_at', $d) ? self::fromTehran($d['expires_at'], true) : $rule->expires_at,
+            'name' => mb_substr((string) $r['label'], 0, 190),
+            'priority' => (int) ($r['priority'] ?? 10),
+            'conditions' => array_map(fn ($c) => self::resolveCondition($c), $r['conditions']),
+            'actions' => array_map(fn ($a) => ['type' => $a[0], 'value' => $a[1] ?? 0] + Arr::except($a, [0, 1]), $r['actions']),
+            'apply_mode' => $r['apply_mode'] ?? DiscountRule::APPLY_MODE_ALL,
+            'stack_mode' => $r['stack_mode'] ?? DiscountRule::STACK_MODE_ALL,
+            'max_uses' => $r['max_uses'] ?? null,
+            'max_uses_per_user' => $r['max_uses_per_user'] ?? null,
+            'starts_at' => self::fromTehran($r['from'] ?? null, false),
+            'expires_at' => self::fromTehran($r['to'] ?? null, true),
+            'is_active' => (bool) ($r['is_active'] ?? true),
         ])->save();
+
+        return [];
+    }
+
+    public static function deleteRule(DiscountRule $rule): array
+    {
+        if (str_starts_with((string) $rule->description, 'campaign:')) {
+            return ['این تخفیف بخشی از برنامهٔ کمپین‌هاست؛ آن را در خود کمپین حذف کنید.'];
+        }
+        $rule->delete();
+
+        return [];
+    }
+
+    public static function createCoupon(array $d): array
+    {
+        $code = strtoupper(trim((string) ($d['code'] ?? '')));
+        if (! preg_match('/^[A-Z0-9_-]{3,30}$/', $code)) {
+            return ['کد: فقط حروف بزرگ انگلیسی و عدد، ۳ تا ۳۰ حرف.'];
+        }
+        if (Coupon::where('code', $code)->exists()) {
+            return ["کد «{$code}» از قبل وجود دارد."];
+        }
+        $coupon = new Coupon(['code' => $code, 'type' => 'percent', 'value' => 0, 'is_active' => true]);
+        $errors = self::updateCoupon($coupon, $d + ['type' => 'percent']);
+        if ($errors && $coupon->exists) {
+            $coupon->delete();
+        }
+
+        return $errors;
+    }
+
+    public static function deleteCoupon(Coupon $coupon): array
+    {
+        if (array_key_exists($coupon->code, config('campaigns.coupons', []))) {
+            return ['این کد بخشی از برنامهٔ کمپین‌هاست؛ آن را در خود کمپین حذف کنید.'];
+        }
+        if ($coupon->used_count > 0) {
+            $coupon->update(['is_active' => false]);   // used codes stay for the order history
+
+            return [];
+        }
+        $coupon->delete();
 
         return [];
     }

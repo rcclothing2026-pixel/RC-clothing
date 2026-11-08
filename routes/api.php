@@ -31,6 +31,10 @@ Route::prefix('campaigns')->middleware([VerifyIgCatalogKey::class, 'throttle:30,
     Route::get('/editor', [\App\Http\Controllers\Api\CampaignApiController::class, 'editor']);
     Route::put('/editor', [\App\Http\Controllers\Api\CampaignApiController::class, 'save']);
     Route::post('/editor/reset', [\App\Http\Controllers\Api\CampaignApiController::class, 'reset']);
+    Route::post('/discounts/rules', [\App\Http\Controllers\Api\CampaignApiController::class, 'createRule']);
     Route::put('/discounts/rules/{rule}', [\App\Http\Controllers\Api\CampaignApiController::class, 'updateRule']);
+    Route::delete('/discounts/rules/{rule}', [\App\Http\Controllers\Api\CampaignApiController::class, 'deleteRule']);
+    Route::post('/discounts/coupons', [\App\Http\Controllers\Api\CampaignApiController::class, 'createCoupon']);
     Route::put('/discounts/coupons/{coupon}', [\App\Http\Controllers\Api\CampaignApiController::class, 'updateCoupon']);
+    Route::delete('/discounts/coupons/{coupon}', [\App\Http\Controllers\Api\CampaignApiController::class, 'deleteCoupon']);
 });

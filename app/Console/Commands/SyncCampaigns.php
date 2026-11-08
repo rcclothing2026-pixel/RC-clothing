@@ -51,10 +51,12 @@ class SyncCampaigns extends Command
                 'name' => $r['label'],
                 'description' => "campaign:$key",
                 'priority' => $r['priority'] ?? 10,
-                'conditions' => array_map(fn ($c) => $this->resolve($c), $r['conditions'] ?? []),
-                'actions' => array_map(fn ($a) => ['type' => $a[0], 'value' => $a[1] ?? 0], $r['actions']),
-                'apply_mode' => DiscountRule::APPLY_MODE_ALL,
-                'stack_mode' => DiscountRule::STACK_MODE_ALL,
+                'conditions' => array_map(fn ($c) => \App\Support\CampaignPlan::resolveCondition($c), $r['conditions'] ?? []),
+                'actions' => array_map(fn ($a) => ['type' => $a[0], 'value' => $a[1] ?? 0] + \Illuminate\Support\Arr::except($a, [0, 1]), $r['actions']),
+                'apply_mode' => $r['apply_mode'] ?? DiscountRule::APPLY_MODE_ALL,
+                'stack_mode' => $r['stack_mode'] ?? DiscountRule::STACK_MODE_ALL,
+                'max_uses' => $r['max_uses'] ?? null,
+                'max_uses_per_user' => $r['max_uses_per_user'] ?? null,
                 'starts_at' => empty($d['from']) ? null : $this->tehran($d['from'])->startOfDay()->setTimezone(config('app.timezone')),
                 'expires_at' => empty($d['to']) ? null : $this->tehran($d['to'])->endOfDay()->setTimezone(config('app.timezone')),
                 'is_active' => $d !== null,
@@ -65,23 +67,6 @@ class SyncCampaigns extends Command
             ->reject(fn ($r) => in_array(substr($r->description, 9), $keys, true))
             ->each->update(['is_active' => false]);
         $this->info(count($keys).' rules synced');
-    }
-
-    /** Condition with slugs (categories/products/collections) turned into ids. */
-    private function resolve(array $c): array
-    {
-        $out = ['type' => $c[0]] + array_diff_key($c, [0 => 1, 'categories' => 1, 'products' => 1, 'collections' => 1]);
-        if (isset($c['categories'])) {
-            $out['category_ids'] = Category::whereIn('slug', $c['categories'])->pluck('id')->all();
-        }
-        if (isset($c['products'])) {
-            $out['product_ids'] = Product::whereIn('slug', $c['products'])->pluck('id')->all();
-        }
-        if (isset($c['collections'])) {
-            $out['collection_ids'] = ShopCollection::whereIn('slug', $c['collections'])->pluck('id')->all();
-        }
-
-        return $out;
     }
 
     private function coupons(): void
