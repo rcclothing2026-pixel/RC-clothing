@@ -28,4 +28,9 @@ Route::prefix('ig')->middleware([VerifyIgCatalogKey::class, 'throttle:30,1,ig-se
 Route::prefix('campaigns')->middleware([VerifyIgCatalogKey::class, 'throttle:30,1,campaigns'])->group(function () {
     Route::get('/plan', [\App\Http\Controllers\Api\CampaignApiController::class, 'plan']);
     Route::post('/approvals', [\App\Http\Controllers\Api\CampaignApiController::class, 'approvals']);
+    Route::get('/editor', [\App\Http\Controllers\Api\CampaignApiController::class, 'editor']);
+    Route::put('/editor', [\App\Http\Controllers\Api\CampaignApiController::class, 'save']);
+    Route::post('/editor/reset', [\App\Http\Controllers\Api\CampaignApiController::class, 'reset']);
+    Route::put('/discounts/rules/{rule}', [\App\Http\Controllers\Api\CampaignApiController::class, 'updateRule']);
+    Route::put('/discounts/coupons/{coupon}', [\App\Http\Controllers\Api\CampaignApiController::class, 'updateCoupon']);
 });

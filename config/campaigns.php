@@ -8,13 +8,6 @@
  | Polo jumpers (gampr) are never discounted (config/shop.php).
  */
 
-$card = fn (string $title, string $body, string $cta, string $url, string $code = '') => '<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;padding:28px 24px 24px;text-align:center;color:#14213d">'
-    .'<p style="margin:0 0 6px;font-size:12px;letter-spacing:.14em;color:#1d5c47">RACKET CLUB</p>'
-    .'<h2 style="margin:0 0 10px;font-size:22px;line-height:1.4">'.$title.'</h2>'
-    .'<p style="margin:0 0 16px;font-size:14px;line-height:1.9;color:#4a5568">'.$body.'</p>'
-    .($code ? '<p style="margin:0 0 16px"><span style="display:inline-block;padding:8px 16px;border:1.5px dashed #1d5c47;border-radius:10px;font:700 18px monospace;letter-spacing:.08em">'.$code.'</span></p>' : '')
-    .'<a href="'.$url.'" target="_top" style="display:inline-block;padding:12px 22px;border-radius:999px;background:#14213d;color:#fff;text-decoration:none;font-size:14px">'.$cta.'</a></div>';
-
 $tees = ['tyshrt'];
 $tacky = 'aadd-aorgryp-rakt-klab-super-tacky-1480';
 $dry = 'aadd-aorgryp-rakt-klab-super-dry-1482';
@@ -159,16 +152,19 @@ return [
         ['text' => 'سفارش تیمی برای باشگاه و آکادمی: ۱۰ تی‌شرت ۱۵٪، ۲۰ تی‌شرت ۲۰٪', 'url' => '/shop?shelf=tees', 'campaign' => 'always'],
     ],
 
+    // Pop-up card look; each pop-up gives title, body, cta, url and an optional code.
+    'card' => ['brand' => 'RACKET CLUB', 'accent' => '#1d5c47', 'ink' => '#14213d', 'muted' => '#4a5568', 'tracking' => '.14em'],
+
     'popups' => [
-        'welcome' => ['html' => $card('به راکت کلاب خوش آمدید', '۷٪ تخفیف برای اولین سفارش از ۳ میلیون تومان. کد را در سبد خرید وارد کنید.', 'دیدن کیت‌ها', '/shop?shelf=kits', 'RCFIRST'),
+        'welcome' => ['title' => 'به راکت کلاب خوش آمدید', 'body' => '۷٪ تخفیف برای اولین سفارش از ۳ میلیون تومان. کد را در سبد خرید وارد کنید.', 'cta' => 'دیدن کیت‌ها', 'url' => '/shop?shelf=kits', 'code' => 'RCFIRST',
             'trigger' => 'delay', 'delay' => 12, 'frequency' => 'once', 'pages' => 'all', 'campaign' => 'always'],
-        'bf' => ['html' => $card('بلک فرایدی راکت کلاب', 'از ۹ میلیون ۸٪، از ۱۴ میلیون ۱۲٪ و از ۲۰ میلیون ۱۵٪ تخفیف، با ارسال رایگان از ۵ میلیون. تا ۹ آذر.', 'ساختن کیت کامل', '/shop'),
+        'bf' => ['title' => 'بلک فرایدی راکت کلاب', 'body' => 'از ۹ میلیون ۸٪، از ۱۴ میلیون ۱۲٪ و از ۲۰ میلیون ۱۵٪ تخفیف، با ارسال رایگان از ۵ میلیون. تا ۹ آذر.', 'cta' => 'ساختن کیت کامل', 'url' => '/shop',
             'from' => '2026-11-24', 'to' => '2026-11-30', 'delay' => 5, 'pages' => 'home', 'campaign' => 'bf'],
-        'yalda' => ['html' => $card('هدیه یلدا برای پدل‌بازها', 'کیت شروع پدل و کیف بازیکن، ارزان‌تر از خرید تکی. برای رسیدن قبل از یلدا تا ۲۶ آذر سفارش دهید.', 'دیدن کیت‌ها', '/shop?shelf=kits'),
+        'yalda' => ['title' => 'هدیه یلدا برای پدل‌بازها', 'body' => 'کیت شروع پدل و کیف بازیکن، ارزان‌تر از خرید تکی. برای رسیدن قبل از یلدا تا ۲۶ آذر سفارش دهید.', 'cta' => 'دیدن کیت‌ها', 'url' => '/shop?shelf=kits',
             'from' => '2026-12-05', 'to' => '2026-12-17', 'delay' => 6, 'pages' => 'home', 'campaign' => 'yalda'],
-        'partner' => ['html' => $card('یار دوبل', 'پدل دونفره است. دو تی‌شرت راکت کلاب برای شما و یار دوبلتان، با ۱۰٪ تخفیف.', 'دیدن تی‌شرت‌ها', '/shop?shelf=tees'),
+        'partner' => ['title' => 'یار دوبل', 'body' => 'پدل دونفره است. دو تی‌شرت راکت کلاب برای شما و یار دوبلتان، با ۱۰٪ تخفیف.', 'cta' => 'دیدن تی‌شرت‌ها', 'url' => '/shop?shelf=tees',
             'from' => '2027-01-30', 'to' => '2027-02-17', 'delay' => 6, 'pages' => 'home', 'campaign' => 'partner'],
-        'nowruz' => ['html' => $card('پلکان نوروزی', '۳ قطعه ۸٪، ۵ قطعه ۱۲٪ و ۸ قطعه و بیشتر ۱۵٪ تخفیف. آخرین روز ارسال پستی: ۲۱ اسفند.', 'خرید عید', '/shop'),
+        'nowruz' => ['title' => 'پلکان نوروزی', 'body' => '۳ قطعه ۸٪، ۵ قطعه ۱۲٪ و ۸ قطعه و بیشتر ۱۵٪ تخفیف. آخرین روز ارسال پستی: ۲۱ اسفند.', 'cta' => 'خرید عید', 'url' => '/shop',
             'from' => '2027-02-27', 'to' => '2027-03-16', 'delay' => 5, 'pages' => 'home', 'campaign' => 'nowruz'],
     ],
 ];

@@ -95,7 +95,9 @@ class SyncCampaigns extends Command
                     $c[$k] = $this->tehran($c[$k])->addDays($shift ?? 0)->setTimezone(config('app.timezone'));
                 }
             }
-            Coupon::updateOrCreate(['code' => $code], $c + ['is_active' => $shift !== null]);
+            $blank = ['description' => null, 'type' => 'percent', 'value' => 0, 'min_subtotal' => 0, 'max_subtotal' => null, 'max_discount' => null,
+                'usage_limit' => null, 'per_user_limit' => null, 'first_order_only' => false, 'starts_at' => null, 'expires_at' => null];
+            Coupon::updateOrCreate(['code' => $code], array_intersect_key($c, $blank) + $blank + ['is_active' => $shift !== null]);
         }
     }
 

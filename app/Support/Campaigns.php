@@ -196,6 +196,22 @@ class Campaigns
         return array_values(array_map(fn ($s) => ['text' => $s['text'], 'url' => $s['url'] ?? ''], self::live(config('campaigns.slides', []))));
     }
 
+    /** A pop-up's HTML card from its fields, in the brand look (config campaigns.card). */
+    public static function card(array $p): string
+    {
+        $c = config('campaigns.card', []) + ['brand' => '', 'accent' => '#333', 'ink' => '#111', 'muted' => '#555', 'tracking' => '.12em'];
+        $e = fn ($v) => e((string) $v);
+        $url = (string) ($p['url'] ?? '/shop');
+        $url = str_starts_with($url, '/') || str_starts_with($url, 'https://') ? $url : '/shop';
+
+        return '<div dir="rtl" style="font-family:Vazirmatn,Tahoma,sans-serif;padding:28px 24px 24px;text-align:center;color:'.$e($c['ink']).'">'
+            .'<p style="margin:0 0 6px;font-size:12px;letter-spacing:'.$e($c['tracking']).';color:'.$e($c['accent']).'">'.$e($c['brand']).'</p>'
+            .'<h2 style="margin:0 0 10px;font-size:22px;line-height:1.4">'.$e($p['title'] ?? '').'</h2>'
+            .(! empty($p['body']) ? '<p style="margin:0 0 16px;font-size:14px;line-height:1.9;color:'.$e($c['muted']).'">'.$e($p['body']).'</p>' : '')
+            .(! empty($p['code']) ? '<p style="margin:0 0 16px"><span style="display:inline-block;padding:8px 16px;border:1.5px dashed '.$e($c['accent']).';border-radius:10px;font:700 18px monospace;letter-spacing:.08em">'.$e($p['code']).'</span></p>' : '')
+            .'<a href="'.$e($url).'" target="_top" style="display:inline-block;padding:12px 22px;border-radius:999px;background:'.$e($c['ink']).';color:#fff;text-decoration:none;font-size:14px">'.$e($p['cta'] ?? 'دیدن فروشگاه').'</a></div>';
+    }
+
     /** Live campaign pop-ups in Popup::activePayload() shape. */
     public static function popups(): array
     {
@@ -203,7 +219,7 @@ class Campaigns
         foreach (self::live(config('campaigns.popups', [])) as $key => $p) {
             $out[] = [
                 'id' => 'c-'.$key,
-                'html' => $p['html'],
+                'html' => $p['html'] ?? self::card($p),
                 'trigger' => $p['trigger'] ?? 'delay',
                 'delay' => $p['delay'] ?? 6,
                 'frequency' => $p['frequency'] ?? 'daily',

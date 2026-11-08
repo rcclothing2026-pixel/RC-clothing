@@ -54,6 +54,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The campaign plan as edited in NJ Focus replaces config/campaigns.php.
+        \App\Support\CampaignPlan::apply();
+
         // Forward Log::error()/critical() to the NJ Focus hub (not just uncaught
         // exceptions). Attaches to the default channel's Monolog logger; guarded
         // so a non-Monolog logger or empty key is a silent no-op.

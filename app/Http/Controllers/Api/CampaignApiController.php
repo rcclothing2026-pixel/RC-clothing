@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CampaignApproval;
+use App\Models\Coupon;
+use App\Models\DiscountRule;
+use App\Support\CampaignPlan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -76,5 +79,44 @@ class CampaignApiController extends Controller
         Artisan::call('campaigns:sync');
 
         return response()->json(['ok' => true, 'approved' => array_values(array_map(fn ($c) => $c['key'], array_filter($rows, fn ($c) => $c['approved'])))]);
+    }
+
+    /** GET /api/campaigns/editor — the whole plan in editor shape, the catalogue and the discounts outside it. */
+    public function editor(): JsonResponse
+    {
+        return response()->json(CampaignPlan::editorPayload());
+    }
+
+    /** PUT /api/campaigns/editor — store the edited plan; 422 with the problems in Persian. */
+    public function save(Request $request): JsonResponse
+    {
+        $errors = CampaignPlan::save((array) $request->input('plan', []), $request->input('by'));
+        if ($errors) {
+            return response()->json(['ok' => false, 'errors' => $errors], 422);
+        }
+
+        return response()->json(['ok' => true] + CampaignPlan::editorPayload());
+    }
+
+    /** POST /api/campaigns/editor/reset — back to config/campaigns.php. */
+    public function reset(): JsonResponse
+    {
+        CampaignPlan::reset();
+
+        return response()->json(['ok' => true] + CampaignPlan::editorPayload());
+    }
+
+    public function updateRule(Request $request, DiscountRule $rule): JsonResponse
+    {
+        $errors = CampaignPlan::updateRule($rule, $request->all());
+
+        return response()->json($errors ? ['ok' => false, 'errors' => $errors] : ['ok' => true], $errors ? 422 : 200);
+    }
+
+    public function updateCoupon(Request $request, Coupon $coupon): JsonResponse
+    {
+        $errors = CampaignPlan::updateCoupon($coupon, $request->all());
+
+        return response()->json($errors ? ['ok' => false, 'errors' => $errors] : ['ok' => true], $errors ? 422 : 200);
     }
 }
