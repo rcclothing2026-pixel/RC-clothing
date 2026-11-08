@@ -36,6 +36,9 @@ class CheckoutFlowTest extends TestCase
 
     public function test_purchase_reports_sale_income_and_customer(): void
     {
+        // As on the live shop: stock-keeping on (signup pushes the customer), StoqS faked.
+        config(['stockkeeping.enabled' => true, 'stockkeeping.base_url' => 'https://stoqs.test', 'stockkeeping.api_key' => 'k']);
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response(['id' => 'x', 'data' => ['id' => 'x']])]);
         $user = User::factory()->create(['phone' => '09120001122']);
         $address = Address::create([
             'user_id' => $user->id, 'recipient_name' => 'تست', 'phone' => '09120001122',

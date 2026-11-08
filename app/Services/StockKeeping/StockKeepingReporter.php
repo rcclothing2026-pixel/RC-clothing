@@ -66,7 +66,7 @@ class StockKeepingReporter
             'order_number' => $order->number,
             'amount' => $order->total,
             'currency' => 'IRT',
-            'gateway' => 'zarinpal',
+            'gateway' => optional($order->payment)->gateway ?: 'zarinpal',
             'ref_id' => optional($order->payment)->ref_id,
             'paid_at' => optional($order->paid_at)->toIso8601String(),
         ];

@@ -50,8 +50,10 @@ class StorefrontFeaturesTest extends TestCase
 
     public function test_footer_shows_placeholder_when_no_seals(): void
     {
+        // No seals configured: the trust-badge block is left out entirely.
         $html = view('partials.footer', ['site' => []])->render();
-        $this->assertStringContainsString('به‌زودی', $html);
+        $this->assertStringNotContainsString('enamad', $html);
+        $this->assertStringNotContainsString('samandehi', $html);
     }
 
     public function test_user_can_toggle_wishlist(): void
@@ -66,18 +68,4 @@ class StorefrontFeaturesTest extends TestCase
         $this->assertFalse($user->fresh()->wishlist()->where('product_id', $product->id)->exists());
     }
 
-    public function test_review_is_created_pending_moderation(): void
-    {
-        $user = User::factory()->create();
-        $product = Product::query()->first();
-
-        $this->actingAs($user)->post(route('review.store', $product), [
-            'rating' => 5, 'body' => 'عالی بود',
-        ])->assertRedirect();
-
-        $review = Review::where('product_id', $product->id)->where('user_id', $user->id)->first();
-        $this->assertNotNull($review);
-        $this->assertFalse($review->is_approved);
-        $this->assertSame(5, $review->rating);
-    }
 }

@@ -60,7 +60,7 @@ class MenuManagerTest extends TestCase
     public function test_current_menus_are_seeded(): void
     {
         // MenuSeeder pre-fills header (shop + categories) and the footer columns.
-        $this->assertDatabaseHas('menu_items', ['location' => 'header', 'label' => 'فروشگاه']);
+        $this->assertDatabaseHas('menu_items', ['location' => 'header', 'label' => 'Shop', 'url' => '/shop']);
         $this->assertTrue(MenuItem::where('location', 'footer_1')->exists());
         $this->assertTrue(MenuItem::where('location', 'footer_2')->exists());
     }

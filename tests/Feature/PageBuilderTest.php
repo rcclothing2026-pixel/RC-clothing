@@ -109,7 +109,7 @@ class PageBuilderTest extends TestCase
     public function test_home_page_renders_through_blocks(): void
     {
         // PageSeeder created an is_home page mirroring the homepage.
-        $this->get('/')->assertOk()->assertSee('منتخب چیاکو');
+        $this->get('/')->assertOk()->assertSee('The Essentials');
     }
 
     public function test_home_is_provisioned_when_missing(): void
