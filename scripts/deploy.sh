@@ -149,9 +149,11 @@ if [ "$DO_BUILD" -eq 1 ]; then
   done < <(find app config routes bootstrap -name '*.php' 2>/dev/null)
   ok "preflight: no merge markers, no PHP syntax errors"
 
-  if [ ! -d node_modules ]; then
-    ok "installing npm deps (first build; may be slow)…"
-    npm install || die "npm install failed — run 'npm install' manually to see the error"
+  # Reinstall when node_modules is missing or older than package-lock.json
+  # (a stale install broke an RC deploy on 2026-11-08).
+  if [ ! -d node_modules ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
+    ok "npm ci (node_modules missing or stale)…"
+    npm ci --no-audit --no-fund >/dev/null 2>&1 || die "npm ci failed — run 'npm ci' manually to see the error"
   fi
   ok "vite build (production assets)…"
   npm run build || die "npm run build failed (output above) — try 'npm install' then re-run"
