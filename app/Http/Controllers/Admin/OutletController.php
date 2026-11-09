@@ -33,6 +33,9 @@ class OutletController extends Controller
         if (! Outlet::allowed($product)) {
             return back()->withErrors(['product_id' => 'اقلام زمستانه و بسته‌ها به اوتلت نمی‌روند.']);
         }
+        if ($why = Outlet::problem($product, (int) $data['percent'])) {
+            return back()->withErrors(['percent' => $why]);
+        }
 
         OutletItem::create($data + ['is_active' => true]);
         Outlet::apply($product);
@@ -48,6 +51,9 @@ class OutletController extends Controller
             'is_active' => ['nullable', 'boolean'],
         ]);
         $product = $outlet->product;
+        if ($why = Outlet::problem($product->loadMissing(['category', 'categories']), (int) $data['percent'])) {
+            return back()->withErrors(['percent' => $why]);
+        }
         Outlet::restore($product);
         $outlet->update(['percent' => $data['percent'], 'is_active' => $request->boolean('is_active')]);
         Outlet::apply($product);

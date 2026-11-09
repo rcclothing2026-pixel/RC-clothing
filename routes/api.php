@@ -30,6 +30,8 @@ Route::prefix('campaigns')->middleware([VerifyIgCatalogKey::class, 'throttle:30,
     Route::post('/approvals', [\App\Http\Controllers\Api\CampaignApiController::class, 'approvals']);
     Route::get('/editor', [\App\Http\Controllers\Api\CampaignApiController::class, 'editor']);
     Route::put('/editor', [\App\Http\Controllers\Api\CampaignApiController::class, 'save']);
+    Route::get('/costs', [\App\Http\Controllers\Api\CampaignApiController::class, 'costs']);
+    Route::put('/costs', [\App\Http\Controllers\Api\CampaignApiController::class, 'saveCosts']);
     Route::post('/editor/reset', [\App\Http\Controllers\Api\CampaignApiController::class, 'reset']);
     Route::post('/discounts/rules', [\App\Http\Controllers\Api\CampaignApiController::class, 'createRule']);
     Route::put('/discounts/rules/{rule}', [\App\Http\Controllers\Api\CampaignApiController::class, 'updateRule']);

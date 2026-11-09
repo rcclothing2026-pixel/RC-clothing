@@ -43,7 +43,7 @@ class SyncCampaigns extends Command
     private function rules(): void
     {
         $keys = [];
-        foreach (config('campaigns.rules', []) as $key => $r) {
+        foreach (config('campaigns.rules', []) + \App\Support\ProductSales::rules(config('campaigns', [])) as $key => $r) {
             $keys[] = $key;
             $rule = DiscountRule::where('description', "campaign:$key")->first() ?? new DiscountRule;
             $d = Campaigns::resolve($r);   // null while its NJ Focus campaign is not approved

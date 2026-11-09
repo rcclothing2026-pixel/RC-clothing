@@ -7,6 +7,8 @@ use App\Models\CampaignApproval;
 use App\Models\Coupon;
 use App\Models\DiscountRule;
 use App\Support\CampaignPlan;
+use App\Support\Margin;
+use App\Support\Outlet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -37,6 +39,11 @@ class CampaignApiController extends Controller
             foreach ($cfg['popups'] ?? [] as $pk => $p) {
                 if (($p['campaign'] ?? null) === $key) {
                     $lines[] = 'پاپ‌آپ: '.$pk;
+                }
+            }
+            foreach ($cfg['sales'] ?? [] as $s) {
+                if (($s['campaign'] ?? null) === $key) {
+                    $lines[] = 'تخفیف محصولی: '.($s['label'] ?? '').' — '.count($s['products'] ?? []).' محصول';
                 }
             }
             foreach ($cfg['coupons'] ?? [] as $code => $cp) {
@@ -90,12 +97,36 @@ class CampaignApiController extends Controller
     /** PUT /api/campaigns/editor — store the edited plan; 422 with the problems in Persian. */
     public function save(Request $request): JsonResponse
     {
-        $errors = CampaignPlan::save((array) $request->input('plan', []), $request->input('by'));
+        // Costs first: the plan's margin checks read them. Then the plan, then the outlet.
+        $errors = $request->has('costs') ? Margin::saveCosts((array) $request->input('costs', [])) : [];
+        if (! $errors) {
+            $errors = CampaignPlan::save((array) $request->input('plan', []), $request->input('by'));
+        }
+        if (! $errors && $request->has('outlet')) {
+            $errors = Outlet::sync((array) $request->input('outlet', []));
+        }
         if ($errors) {
             return response()->json(['ok' => false, 'errors' => $errors], 422);
         }
 
         return response()->json(['ok' => true] + CampaignPlan::editorPayload());
+    }
+
+    /** GET /api/campaigns/costs — finished cost per product slug (StoqS and NJ Focus). */
+    public function costs(): JsonResponse
+    {
+        $slugs = \App\Models\Product::pluck('slug', 'id');
+
+        return response()->json(['min_margin' => Margin::min(), 'costs' => collect(Margin::costs())
+            ->mapWithKeys(fn ($cost, $id) => isset($slugs[$id]) ? [$slugs[$id] => $cost] : [])->all()]);
+    }
+
+    /** PUT /api/campaigns/costs {costs: {slug: cost|null}, source?} */
+    public function saveCosts(Request $request): JsonResponse
+    {
+        $errors = Margin::saveCosts((array) $request->input('costs', []), (string) $request->input('source', 'api'));
+
+        return $errors ? response()->json(['ok' => false, 'errors' => $errors], 422) : $this->costs();
     }
 
     /** POST /api/campaigns/editor/reset — back to config/campaigns.php. */

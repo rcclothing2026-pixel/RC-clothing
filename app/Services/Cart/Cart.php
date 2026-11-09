@@ -227,11 +227,13 @@ class Cart
         $cx = $coupon && $coupon->exclusive && $c > 0;
         $rules = collect($this->ruleResults()['discounts'])->filter(fn ($d) => (int) ($d['amount'] ?? 0) > 0);
         $shared = $rules->reject(fn ($d) => ! empty($d['exclusive']));
-        $cap = (int) floor($this->discountableSubtotal() * config('shop.max_discount_percent', 100) / 100);
+        $cap = $this->discountCap();
 
         $options = [['coupon' => ! $cx, 'rules' => $shared->pluck('rule_id')->all(), 'amount' => ($cx ? 0 : $c) + (int) $shared->sum('amount'), 'alone' => null]];
-        foreach ($rules->filter(fn ($d) => ! empty($d['exclusive'])) as $d) {
-            $options[] = ['coupon' => false, 'rules' => [$d['rule_id']], 'amount' => (int) $d['amount'], 'alone' => '«'.($d['rule_name'] ?? '').'»'];
+        // A «use alone» product sale is several rules that count together.
+        foreach ($rules->filter(fn ($d) => ! empty($d['exclusive']))->groupBy(fn ($d) => $d['group'] ?? 'rule:'.$d['rule_id']) as $group) {
+            $options[] = ['coupon' => false, 'rules' => $group->pluck('rule_id')->all(), 'amount' => (int) $group->sum('amount'),
+                'alone' => '«'.preg_replace('/ · .*$/u', '', (string) ($group->first()['rule_name'] ?? '')).'»'];
         }
         if ($cx) {
             $options[] = ['coupon' => true, 'rules' => [], 'amount' => $c, 'alone' => 'کد «'.$coupon->code.'»'];
@@ -320,9 +322,37 @@ class Cart
      *  Promotion engine was merged into the discount-rule engine in R-10. */
     public function combinedDiscount(): int
     {
-        $cap = (int) floor($this->discountableSubtotal() * config('shop.max_discount_percent', 100) / 100);
+        return (int) min($this->discount() + $this->ruleDiscount(), $this->discountCap());
+    }
 
-        return (int) min($this->discount() + $this->ruleDiscount(), $cap);
+    /**
+     * The most this cart may be discounted: line by line, the smaller of
+     * shop.max_discount_percent of the line and what keeps that line at the
+     * minimum margin over its finished cost (a line without a cost has only the
+     * percent cap). So no product is sold below its floor, and a priced line
+     * never borrows room from another.
+     */
+    public function discountCap(): int
+    {
+        $percent = (int) floor($this->discountableSubtotal() * config('shop.max_discount_percent', 100) / 100);
+        $costs = \App\Support\Margin::costs();
+        if ($costs === []) {
+            return $percent;
+        }
+        $max = (int) config('shop.max_discount_percent', 100);
+        $room = 0;
+        foreach ($this->lines() as $l) {
+            $product = $l['variant']->product;
+            if (! self::isDiscountable($product)) {
+                continue;
+            }
+            $line = (int) $l['line_total'];
+            $cost = $costs[(int) $product->id] ?? null;
+            $room += min((int) floor($line * $max / 100),
+                $cost === null ? $line : max(0, $line - \App\Support\Margin::floor($cost) * (int) $l['quantity']));
+        }
+
+        return min($percent, $room);
     }
 
     /** Total surcharge from discount rules. */

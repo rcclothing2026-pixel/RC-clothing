@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\DB;
 class CampaignPlan
 {
     /** Keyed sections (key => item) and list sections, in editor order. */
-    public const KEYED = ['campaigns', 'rules', 'coupons', 'bundles', 'sets', 'popups', 'shelves'];
+    public const KEYED = ['campaigns', 'rules', 'sales', 'coupons', 'bundles', 'sets', 'popups', 'shelves'];
 
     public const LISTS = ['slides', 'badges'];
 
@@ -130,6 +130,7 @@ class CampaignPlan
             foreach ($plan[$s] ?? [] as $key => $item) {
                 $item = match ($s) {
                     'rules' => self::ruleToEditor($item),
+                    'sales' => ProductSales::toEditor($item),
                     'bundles' => array_merge($item, ['items' => array_map(fn ($i) => ['product' => $i[0], 'qty' => $i[1] ?? 1, 'color' => $i['color'] ?? ''], $item['items'] ?? [])]),
                     default => $item,
                 };
@@ -166,6 +167,9 @@ class CampaignPlan
                 $item = self::clean($item);
                 if ($s === 'rules') {
                     $item = self::ruleFromEditor($item);
+                }
+                if ($s === 'sales') {
+                    $item = ProductSales::fromEditor($item);
                 }
                 if ($s === 'bundles') {
                     $item['items'] = array_values(array_map(fn ($i) => array_filter([(string) ($i['product'] ?? ''), max(1, (int) ($i['qty'] ?? 1)), 'color' => (string) ($i['color'] ?? '')], fn ($v) => $v !== ''), (array) ($item['items'] ?? [])));
@@ -252,7 +256,7 @@ class CampaignPlan
             }
         }
 
-        $label = ['rules' => 'تخفیف', 'coupons' => 'کد', 'bundles' => 'بسته', 'sets' => 'ست', 'popups' => 'پاپ‌آپ', 'shelves' => 'صفحه', 'slides' => 'نوار بالا', 'badges' => 'برچسب'];
+        $label = ['rules' => 'تخفیف', 'sales' => 'تخفیف محصولی', 'coupons' => 'کد', 'bundles' => 'بسته', 'sets' => 'ست', 'popups' => 'پاپ‌آپ', 'shelves' => 'صفحه', 'slides' => 'نوار بالا', 'badges' => 'برچسب'];
         foreach ($label as $s => $what) {
             foreach ($plan[$s] ?? [] as $k => $i) {
                 $name = $what.' «'.($i['label'] ?? $i['name'] ?? $i['title'] ?? $i['text'] ?? $k).'»';
@@ -267,7 +271,7 @@ class CampaignPlan
                 if (isset($i['from'], $i['to']) && $i['to'] < $i['from']) {
                     $err[] = "$name: پایان قبل از شروع است.";
                 }
-                if (in_array($s, ['rules', 'bundles', 'sets', 'popups', 'shelves'], true) && ! $slug($k)) {
+                if (in_array($s, ['rules', 'sales', 'bundles', 'sets', 'popups', 'shelves'], true) && ! $slug($k)) {
                     $err[] = "$name: شناسه فقط حروف کوچک انگلیسی، عدد و خط تیره باشد.";
                 }
             }
@@ -275,6 +279,12 @@ class CampaignPlan
 
         foreach ($plan['rules'] ?? [] as $k => $r) {
             $err = array_merge($err, self::checkRule($r, (string) $k, array_keys($plan['shelves'] ?? [])));
+        }
+        foreach ($plan['sales'] ?? [] as $k => $s) {
+            $err = array_merge($err, ProductSales::check($s, (string) $k));
+            if (isset($plan['rules'][$k.'--p1']) || preg_grep('/^'.preg_quote((string) $k, '/').'--[pn]\\d+$/', array_map('strval', array_keys($plan['rules'] ?? [])))) {
+                $err[] = "تخفیف محصولی «{$k}»: شناسه با یک تخفیف دیگر یکی است.";
+            }
         }
 
         foreach ($plan['coupons'] ?? [] as $code => $c) {
@@ -456,13 +466,14 @@ class CampaignPlan
             'plan' => self::toEditor($plan),
             'limits' => [
                 'max_percent' => (int) config('shop.max_discount_percent', 25),
+                'min_margin' => Margin::min(),
+                'outlet_max' => (int) config('shop.outlet_max_percent', 30),
                 'no_discount_categories' => array_values(array_filter(array_map('trim', (array) (is_array($n = config('shop.no_discount_categories', [])) ? $n : explode(',', (string) $n))))),
             ],
             'catalog' => [
                 'categories' => Category::orderBy('name')->get(['slug', 'name'])->map(fn ($c) => ['slug' => $c->slug, 'name' => $c->name])->all(),
                 'collections' => ShopCollection::orderBy('name')->get(['slug', 'name'])->map(fn ($c) => ['slug' => $c->slug, 'name' => $c->name])->all(),
-                'products' => Product::where('is_active', true)->where('is_bundle', false)->orderBy('name')->get(['slug', 'name', 'price'])
-                    ->map(fn ($p) => ['slug' => $p->slug, 'name' => $p->name, 'price' => (int) $p->price])->all(),
+                'products' => self::productRows(),
                 'brands' => self::named(Product::whereNotNull('brand')->where('brand', '!=', '')->distinct()->orderBy('brand')->pluck('brand')->all()),
                 'groups' => self::named(\App\Models\User::whereNotNull('group')->where('group', '!=', '')->distinct()->orderBy('group')->pluck('group')->all()),
                 'payment_methods' => \App\Models\PaymentMethod::orderBy('id')->get()->map(fn ($m) => ['slug' => $m->key, 'name' => $m->name ?: $m->key])->all(),
@@ -484,6 +495,26 @@ class CampaignPlan
                 ])->all(),
             ],
         ];
+    }
+
+    /**
+     * Every product with what the margin sheets need: price now, the price the
+     * outlet works from, finished cost, outlet percent, and whether it is
+     * winter (never discounted).
+     */
+    private static function productRows(): array
+    {
+        $skip = (array) config('shop.no_discount_categories', []);
+        $outlet = Outlet::percents();
+        $costs = Margin::costs();
+
+        return Product::where('is_active', true)->where('is_bundle', false)->with(['category', 'categories', 'variants'])->orderBy('name')->get()
+            ->map(fn ($p) => [
+                'slug' => $p->slug, 'name' => $p->name, 'price' => (int) $p->price,
+                'base' => Outlet::base($p), 'cost' => $costs[$p->id] ?? null, 'outlet' => $outlet[$p->id] ?? null,
+                'winter' => $skip !== [] && $p->categories->pluck('slug')->push($p->category?->slug)->intersect($skip)->isNotEmpty(),
+                'category' => $p->category?->name, 'stock' => (int) $p->variants->where('is_active', true)->sum('stock_qty'),
+            ])->all();
     }
 
     private static function named(array $values): array

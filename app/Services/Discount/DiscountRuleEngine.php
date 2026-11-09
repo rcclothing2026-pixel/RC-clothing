@@ -143,6 +143,7 @@ class DiscountRuleEngine
                 'rule_name' => $rule->name,
                 'amount' => $discount,
                 'exclusive' => (bool) $rule->exclusive,
+                'group' => \App\Support\ProductSales::groupOf($rule->description),
             ];
         }
     }

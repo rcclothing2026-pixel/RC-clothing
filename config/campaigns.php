@@ -52,6 +52,10 @@ return [
         'loazm-ganby' => ['klah', 'holh', 'mtfrkh'], 'holh' => ['mtfrkh', 'loazm-ganby'], 'mtfrkh' => ['holh', 'klah'],
     ],
 
+    // Item-only sales: chosen products, each at its own percent, plus optional piece
+    // tiers. campaigns:sync expands each into discount rules (App\Support\ProductSales).
+    'sales' => [],
+
     'rules' => [
         'second-order' => ['name' => 'سفارش دوم', 'label' => '۱۰٪ تخفیف سفارش دوم شما',
             'conditions' => [['user_previous_order_count', 'min' => 1, 'max' => 1]], 'actions' => [['cart_discount_percent', 10]], 'campaign' => 'always'],

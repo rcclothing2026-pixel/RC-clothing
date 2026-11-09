@@ -14,4 +14,7 @@ return [
 
     // Highest outlet markdown the admin may set (admin → اوتلت).
     'outlet_max_percent' => (int) env('SHOP_OUTLET_MAX_PERCENT', 30),
+
+    // Minimum margin (profit ÷ sale price) every discount must leave over a product's finished cost.
+    'min_margin_percent' => (int) env('SHOP_MIN_MARGIN_PERCENT', 10),
 ];
