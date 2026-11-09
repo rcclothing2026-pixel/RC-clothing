@@ -205,6 +205,9 @@
                     @if ($coupon)
                         <div class="flex justify-between"><span class="text-green-600">{{ __('Code') }} "{{ $coupon->code }}"</span><span class="text-green-600">{{ $discount > 0 ? '−'.\App\Support\Money::toman($discount) : __('Free shipping') }}</span></div>
                     @endif
+                    @if (! empty($discountNotice))
+                        <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-800">{{ $discountNotice }}</p>
+                    @endif
                     @foreach ($ruleDiscounts as $rd)
                         @php $rda = (int) ($rd['amount'] ?? 0); @endphp
                         @if ($rda > 0)

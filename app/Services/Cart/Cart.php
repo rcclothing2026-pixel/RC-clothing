@@ -173,17 +173,10 @@ class Cart
         return $this->ruleResultsCache;
     }
 
-    /** Total discount from rules (excluding surcharges, which appear as negative amounts). */
+    /** Total discount from the rules that count (surcharges excluded). */
     public function ruleDiscount(): int
     {
-        $total = 0;
-        foreach ($this->ruleResults()['discounts'] as $d) {
-            $amount = (int) ($d['amount'] ?? 0);
-            if ($amount > 0) {
-                $total += $amount;
-            }
-        }
-        return $total;
+        return (int) collect($this->ruleDiscountBreakdown())->sum(fn ($d) => max(0, (int) ($d['amount'] ?? 0)));
     }
 
     /** Total surcharge from rules. */
@@ -210,10 +203,77 @@ class Cart
         return $this->ruleResults()['blocks'];
     }
 
-    /** Breakdown of rule-based discounts for display. */
+    /** Rule discounts that count (and every surcharge), for display and order records. */
     public function ruleDiscountBreakdown(): array
     {
-        return $this->ruleResults()['discounts'];
+        $keep = $this->discountChoice()['rules'];
+
+        return array_values(array_filter($this->ruleResults()['discounts'],
+            fn ($d) => (int) ($d['amount'] ?? 0) < 0 || in_array($d['rule_id'] ?? null, $keep, true)));
+    }
+
+    /**
+     * «Use alone» resolution. Discounts add up as before, except an exclusive
+     * coupon or rule never adds to anything else: when one meets others the
+     * cart keeps whichever gives the customer more (after the overall cap).
+     * Free-shipping coupons always stay; surcharges are never affected.
+     *
+     * @return array{coupon: bool, rules: array<int>, dropped: array<string>, alone: ?string}
+     */
+    public function discountChoice(): array
+    {
+        $coupon = $this->coupon();
+        $c = $coupon ? $coupon->discountFor($this->discountableSubtotal()) : 0;
+        $cx = $coupon && $coupon->exclusive && $c > 0;
+        $rules = collect($this->ruleResults()['discounts'])->filter(fn ($d) => (int) ($d['amount'] ?? 0) > 0);
+        $shared = $rules->reject(fn ($d) => ! empty($d['exclusive']));
+        $cap = (int) floor($this->discountableSubtotal() * config('shop.max_discount_percent', 100) / 100);
+
+        $options = [['coupon' => ! $cx, 'rules' => $shared->pluck('rule_id')->all(), 'amount' => ($cx ? 0 : $c) + (int) $shared->sum('amount'), 'alone' => null]];
+        foreach ($rules->filter(fn ($d) => ! empty($d['exclusive'])) as $d) {
+            $options[] = ['coupon' => false, 'rules' => [$d['rule_id']], 'amount' => (int) $d['amount'], 'alone' => '«'.($d['rule_name'] ?? '').'»'];
+        }
+        if ($cx) {
+            $options[] = ['coupon' => true, 'rules' => [], 'amount' => $c, 'alone' => 'کد «'.$coupon->code.'»'];
+        }
+        $best = $options[0];
+        foreach ($options as $o) {
+            if (min($o['amount'], $cap) > min($best['amount'], $cap)) {
+                $best = $o;
+            }
+        }
+
+        $dropped = $rules->reject(fn ($d) => in_array($d['rule_id'], $best['rules'], true))->pluck('rule_name')->map(fn ($n) => '«'.$n.'»')->all();
+        if ($c > 0 && ! $best['coupon']) {
+            array_unshift($dropped, 'کد «'.$coupon->code.'»');
+        }
+
+        return ['coupon' => $best['coupon'], 'rules' => $best['rules'], 'dropped' => $dropped, 'alone' => $best['alone']];
+    }
+
+    /** The coupon that actually counts on this order (null when «use alone» set it aside). */
+    public function appliedCoupon(): ?Coupon
+    {
+        $coupon = $this->coupon();
+        if (! $coupon || $coupon->isFreeShipping()) {
+            return $coupon;
+        }
+
+        return $this->discountChoice()['coupon'] ? $coupon : null;
+    }
+
+    /** One sentence for the customer when «use alone» left a discount out; null otherwise. */
+    public function discountNotice(): ?string
+    {
+        $choice = $this->discountChoice();
+        if (! $choice['dropped']) {
+            return null;
+        }
+        $names = implode('، ', array_slice($choice['dropped'], 0, 3));
+
+        return $choice['alone']
+            ? $choice['alone'].' با تخفیف‌های دیگر جمع نمی‌شود؛ چون بیشتر است، فقط همین حساب شد و '.$names.' حساب نشد.'
+            : $names.' با تخفیف‌های دیگر جمع نمی‌شود؛ تخفیف‌های دیگر سبد بیشتر بود و همان‌ها حساب شد.';
     }
 
     /* ---------------------------- Gift cards --------------------------- */
@@ -251,7 +311,7 @@ class Cart
     /** Coupon-only discount (backward compatible; use combinedDiscount() for total). */
     public function discount(): int
     {
-        $coupon = $this->coupon();
+        $coupon = $this->appliedCoupon();
 
         return $coupon ? $coupon->discountFor($this->discountableSubtotal()) : 0;
     }

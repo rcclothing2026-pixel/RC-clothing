@@ -61,6 +61,7 @@ class CouponController extends Controller
             'usage_limit' => ['nullable', 'integer', 'min:1'],
             'per_user_limit' => ['nullable', 'integer', 'min:1'],
             'first_order_only' => ['nullable', 'boolean'],
+            'exclusive' => ['nullable', 'boolean'],
             'starts_at' => ['nullable', 'string'],
             'expires_at' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
@@ -77,6 +78,7 @@ class CouponController extends Controller
             'usage_limit' => $v['usage_limit'] ?? null,
             'per_user_limit' => $v['per_user_limit'] ?? null,
             'first_order_only' => $request->boolean('first_order_only'),
+            'exclusive' => $request->boolean('exclusive'),
             // Jalali strings from the picker → Gregorian for storage.
             'starts_at' => Jalali::parse($v['starts_at'] ?? null),
             'expires_at' => Jalali::parse($v['expires_at'] ?? null),

@@ -15,7 +15,7 @@ class DiscountRule extends Model
     protected $fillable = [
         'name', 'description', 'priority', 'conditions', 'actions',
         'apply_mode', 'stack_mode', 'starts_at', 'expires_at',
-        'max_uses', 'max_uses_per_user', 'used_count', 'is_active',
+        'max_uses', 'max_uses_per_user', 'used_count', 'is_active', 'exclusive',
     ];
 
     protected function casts(): array
@@ -28,7 +28,7 @@ class DiscountRule extends Model
             'max_uses' => 'integer',
             'max_uses_per_user' => 'integer',
             'used_count' => 'integer',
-            'is_active' => 'boolean',
+            'is_active' => 'boolean', 'exclusive' => 'boolean',
             'priority' => 'integer',
         ];
     }

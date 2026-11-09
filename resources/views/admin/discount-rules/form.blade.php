@@ -272,6 +272,13 @@
                 </select>
             </div>
             <div>
+                <label class="mb-1 block text-xs font-medium text-brand-500">با کدها و تخفیف‌های دیگر</label>
+                <select name="exclusive" class="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm">
+                    <option value="0" @selected(! old('exclusive', $rule->exclusive))>جمع می‌شود</option>
+                    <option value="1" @selected(old('exclusive', $rule->exclusive))>تنها؛ هر کدام بیشتر بود حساب شود</option>
+                </select>
+            </div>
+            <div>
                 <label class="mb-1 block text-xs font-medium text-brand-500">حداکثر استفاده (کل)</label>
                 <input type="number" name="max_uses" value="{{ old('max_uses', $rule->max_uses) }}"
                        class="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm" min="1" placeholder="بدون محدودیت">

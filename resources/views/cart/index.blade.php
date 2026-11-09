@@ -135,6 +135,9 @@
                         </div>
                     @endif
 
+                    @if (! empty($discountNotice))
+                        <p class="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-800">{{ $discountNotice }}</p>
+                    @endif
                     @if ($coupon)
                         <div class="flex items-center justify-between border-b border-brand-100 py-2 text-sm">
                             <span class="text-green-600">{{ __('Code') }} "{{ $coupon->code }}" {{ $coupon->isFreeShipping() ? '— '.__('free shipping') : '' }}</span>

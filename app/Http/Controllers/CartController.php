@@ -22,6 +22,7 @@ class CartController extends Controller
             'lines' => $this->cart->lines(),
             'subtotal' => $this->cart->subtotal(),
             'coupon' => $this->cart->coupon(),
+            'discountNotice' => $this->cart->discountNotice(),
             'discount' => $this->cart->discount(),
             'ruleDiscounts' => $this->cart->ruleDiscountBreakdown(),
             'surcharge' => $this->cart->surcharge(),

@@ -61,6 +61,7 @@ class CheckoutController extends Controller
             'lines' => $this->cart->lines(),
             'subtotal' => $this->cart->subtotal(),
             'coupon' => $this->cart->coupon(),
+            'discountNotice' => $this->cart->discountNotice(),
             'discount' => $this->cart->discount(),
             'combinedDiscount' => $this->cart->combinedDiscount(),
             'ruleDiscounts' => $this->cart->ruleDiscountBreakdown(),
@@ -182,7 +183,7 @@ class CheckoutController extends Controller
         ]);
 
         // Combined discount: coupon + promotion + discount rules.
-        $coupon = $this->cart->coupon();
+        $coupon = $this->cart->appliedCoupon();
         $discount = $this->cart->combinedDiscount();
         // Surcharges from discount rules (e.g. item surcharge).
         $surcharge = $this->cart->surcharge();

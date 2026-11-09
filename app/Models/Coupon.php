@@ -17,7 +17,7 @@ class Coupon extends Model
         'code', 'description', 'type', 'value',
         'min_subtotal', 'max_subtotal', 'max_discount',
         'usage_limit', 'per_user_limit', 'used_count',
-        'first_order_only', 'starts_at', 'expires_at', 'is_active',
+        'first_order_only', 'starts_at', 'expires_at', 'is_active', 'exclusive',
     ];
 
     protected function casts(): array
@@ -30,7 +30,7 @@ class Coupon extends Model
             'usage_limit' => 'integer',
             'per_user_limit' => 'integer',
             'used_count' => 'integer',
-            'first_order_only' => 'boolean',
+            'first_order_only' => 'boolean', 'exclusive' => 'boolean',
             'starts_at' => 'datetime',
             'expires_at' => 'datetime',
             'is_active' => 'boolean',

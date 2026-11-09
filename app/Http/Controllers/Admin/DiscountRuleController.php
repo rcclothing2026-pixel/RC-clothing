@@ -45,6 +45,7 @@ class DiscountRuleController extends Controller
         $data['actions'] = $this->parseActions($request);
         $data['apply_mode'] = $request->input('apply_mode', 'all');
         $data['stack_mode'] = $request->input('stack_mode', 'best');
+        $data['exclusive'] = $request->boolean('exclusive');
         $data['priority'] = (int) ($data['priority'] ?? 0); // column is NOT NULL; blank → 0
         $data['is_active'] = $request->boolean('is_active');
         $data['starts_at'] = Jalali::parse($data['starts_at'] ?? null);
@@ -76,6 +77,7 @@ class DiscountRuleController extends Controller
         $data['actions'] = $this->parseActions($request);
         $data['apply_mode'] = $request->input('apply_mode', 'all');
         $data['stack_mode'] = $request->input('stack_mode', 'best');
+        $data['exclusive'] = $request->boolean('exclusive');
         $data['priority'] = (int) ($data['priority'] ?? 0); // column is NOT NULL; blank → 0
         $data['is_active'] = $request->boolean('is_active');
         $data['starts_at'] = Jalali::parse($data['starts_at'] ?? null);

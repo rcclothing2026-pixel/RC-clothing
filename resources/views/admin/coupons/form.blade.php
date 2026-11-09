@@ -61,6 +61,9 @@
             <label class="mt-7 inline-flex items-center gap-2 text-sm text-brand-700">
                 <input type="checkbox" name="first_order_only" value="1" @checked(old('first_order_only', $coupon->first_order_only)) class="rounded"> فقط برای اولین خرید
             </label>
+            <label class="mt-7 inline-flex items-center gap-2 text-sm text-brand-700" title="با تخفیف‌های خودکار سبد جمع نمی‌شود؛ هر کدام بیشتر باشد حساب می‌شود">
+                <input type="checkbox" name="exclusive" value="1" @checked(old('exclusive', $coupon->exclusive)) class="rounded"> تنها (با تخفیف‌های دیگر جمع نمی‌شود)
+            </label>
         </div>
 
         <h2 class="border-t border-brand-100 pt-4 text-sm font-bold text-brand-800">بازه زمانی (تقویم شمسی)</h2>

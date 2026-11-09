@@ -57,6 +57,7 @@ class SyncCampaigns extends Command
                 'stack_mode' => $r['stack_mode'] ?? DiscountRule::STACK_MODE_ALL,
                 'max_uses' => $r['max_uses'] ?? null,
                 'max_uses_per_user' => $r['max_uses_per_user'] ?? null,
+                'exclusive' => (bool) ($r['exclusive'] ?? false),
                 'starts_at' => empty($d['from']) ? null : $this->tehran($d['from'])->startOfDay()->setTimezone(config('app.timezone')),
                 'expires_at' => empty($d['to']) ? null : $this->tehran($d['to'])->endOfDay()->setTimezone(config('app.timezone')),
                 'is_active' => $d !== null,
@@ -81,7 +82,7 @@ class SyncCampaigns extends Command
                 }
             }
             $blank = ['description' => null, 'type' => 'percent', 'value' => 0, 'min_subtotal' => 0, 'max_subtotal' => null, 'max_discount' => null,
-                'usage_limit' => null, 'per_user_limit' => null, 'first_order_only' => false, 'starts_at' => null, 'expires_at' => null];
+                'usage_limit' => null, 'per_user_limit' => null, 'first_order_only' => false, 'exclusive' => false, 'starts_at' => null, 'expires_at' => null];
             Coupon::updateOrCreate(['code' => $code], array_intersect_key($c, $blank) + $blank + ['is_active' => $shift !== null]);
         }
     }

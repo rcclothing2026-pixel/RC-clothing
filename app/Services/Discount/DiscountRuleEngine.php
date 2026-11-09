@@ -142,6 +142,7 @@ class DiscountRuleEngine
                 'rule_id' => $rule->id,
                 'rule_name' => $rule->name,
                 'amount' => $discount,
+                'exclusive' => (bool) $rule->exclusive,
             ];
         }
     }

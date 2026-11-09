@@ -439,7 +439,7 @@ class CampaignPlan
             'conditions' => array_values($conds),
             'actions' => array_values(array_map(fn ($a) => ['type' => $a['type'] ?? '', 'value' => (int) ($a['value'] ?? 0)] + Arr::except((array) $a, ['type', 'value']), (array) $r->actions)),
             'priority' => (int) $r->priority, 'apply_mode' => $r->apply_mode ?: DiscountRule::APPLY_MODE_ALL, 'stack_mode' => $r->stack_mode ?: DiscountRule::STACK_MODE_ALL,
-            'max_uses' => $r->max_uses, 'max_uses_per_user' => $r->max_uses_per_user,
+            'max_uses' => $r->max_uses, 'max_uses_per_user' => $r->max_uses_per_user, 'exclusive' => (bool) $r->exclusive,
             'from' => self::tehranDate($r->starts_at), 'to' => self::tehranDate($r->expires_at),
         ];
     }
@@ -479,7 +479,7 @@ class CampaignPlan
                 'coupons' => Coupon::whereNotIn('code', $codes ?: ['__none__'])->orderByDesc('is_active')->orderBy('code')->get()->map(fn ($c) => [
                     'id' => $c->id, 'code' => $c->code, 'description' => $c->description, 'type' => $c->type, 'value' => (int) $c->value,
                     'min_subtotal' => (int) $c->min_subtotal, 'usage_limit' => $c->usage_limit, 'per_user_limit' => $c->per_user_limit,
-                    'first_order_only' => (bool) $c->first_order_only, 'used_count' => (int) $c->used_count, 'is_active' => (bool) $c->is_active,
+                    'first_order_only' => (bool) $c->first_order_only, 'exclusive' => (bool) $c->exclusive, 'used_count' => (int) $c->used_count, 'is_active' => (bool) $c->is_active,
                     'starts_at' => self::tehranDate($c->starts_at), 'expires_at' => self::tehranDate($c->expires_at),
                 ])->all(),
             ],
@@ -525,6 +525,7 @@ class CampaignPlan
             'stack_mode' => $r['stack_mode'] ?? DiscountRule::STACK_MODE_ALL,
             'max_uses' => $r['max_uses'] ?? null,
             'max_uses_per_user' => $r['max_uses_per_user'] ?? null,
+            'exclusive' => (bool) ($r['exclusive'] ?? false),
             'starts_at' => self::fromTehran($r['from'] ?? null, false),
             'expires_at' => self::fromTehran($r['to'] ?? null, true),
             'is_active' => (bool) ($r['is_active'] ?? true),
@@ -596,6 +597,7 @@ class CampaignPlan
             'usage_limit' => $int('usage_limit'),
             'per_user_limit' => $int('per_user_limit'),
             'first_order_only' => (bool) ($d['first_order_only'] ?? $coupon->first_order_only),
+            'exclusive' => (bool) ($d['exclusive'] ?? $coupon->exclusive),
             'is_active' => (bool) ($d['is_active'] ?? $coupon->is_active),
             'starts_at' => array_key_exists('starts_at', $d) ? self::fromTehran($d['starts_at'], false) : $coupon->starts_at,
             'expires_at' => array_key_exists('expires_at', $d) ? self::fromTehran($d['expires_at'], true) : $coupon->expires_at,
