@@ -188,7 +188,7 @@
                                     @else {{ $ev->payload['name'] ?? '—' }} @endif
                                 </td>
                                 <td class="px-4 py-2">
-                                    <span class="rounded-full px-2 py-0.5 text-[11px] font-bold {{ $ev->status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700' }}">{{ ['failed' => 'ناموفق', 'blocked' => 'منتظر دسترسی'][$ev->status] ?? 'در صف' }}</span>
+                                    <span class="rounded-full px-2 py-0.5 text-[11px] font-bold {{ $ev->status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700' }}">{{ ['failed' => 'ناموفق', 'blocked' => 'منتظر دسترسی', 'dead' => 'متوقف (دیگر تلاش نمی‌شود)'][$ev->status] ?? 'در صف' }}</span>
                                 </td>
                                 <td class="px-4 py-2 fa-num text-brand-500">{{ \App\Support\Money::toPersianDigits((string) $ev->attempts) }}</td>
                                 <td class="px-4 py-2 text-red-500" dir="ltr">{{ \Illuminate\Support\Str::limit((string) $ev->last_error, 90) }}</td>
@@ -196,7 +196,7 @@
                                     <form method="POST" action="{{ route('admin.settings.integration.dismiss', $ev) }}"
                                           onsubmit="return confirm('این مورد از صف حذف شود؟ دیگر برای ارسال به StoqS تلاش نمی‌شود.')">
                                         @csrf
-                                        <button class="rounded-full px-3 py-1 text-[11px] font-bold text-red-600 ring-1 ring-red-200 transition hover:bg-red-50">رد کردن</button>
+                                        <button class="rounded-full px-3 py-1 text-[11px] font-bold text-red-600 ring-1 ring-red-200 transition hover:bg-red-50">{{ in_array($ev->status, ['dead', 'blocked'], true) ? 'حذف' : 'رد کردن' }}</button>
                                     </form>
                                 </td>
                             </tr>

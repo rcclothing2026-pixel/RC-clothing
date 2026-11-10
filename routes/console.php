@@ -69,6 +69,29 @@ Schedule::call(function () use ($due) {
 // after every full catalog import.
 Artisan::command('stoqs:sites', fn () => $this->info(\App\Services\StockKeeping\StoqsSites::sync()))
     ->purpose('Introduce this shop to StoqS and send its product links');
+
+// Read-only: size prices on this shop that differ from StoqS (list prices; a size
+// with no own price follows its product). Changes nothing.
+Artisan::command('stoqs:size-price-diff', function (\App\Services\StockKeeping\StockKeepingClient $client) {
+    $rows = [];
+    foreach ($client->catalog(null) as $sp) {
+        $sBase = (int) round((float) ($sp['base_price'] ?? $sp['price'] ?? 0));
+        foreach ((array) ($sp['variants'] ?? []) as $sv) {
+            $v = \App\Models\ProductVariant::with('product')->where('sku', (string) ($sv['barcode'] ?? $sv['sku'] ?? ''))->first();
+            if (! $v || ! $v->product) {
+                continue;
+            }
+            $local = $v->price === null ? \App\Services\StockKeeping\StoqsContent::basePrice($v->product) : (int) $v->price;
+            $stoqs = (int) round((float) ($sv['price'] ?? $sBase));
+            if ($local !== $stoqs) {
+                $rows[] = [$v->sku, $v->product->name, (string) $v->size, $v->price === null ? "$local (product)" : (string) $local,
+                    ! empty($sv['price_override']) ? (string) $stoqs : "$stoqs (product)", (string) ($sv['sale_price'] ?? ''), $v->product->stoqs_sync_mode ?? 'auto'];
+            }
+        }
+    }
+    $rows ? $this->table(['sku', 'product', 'size', 'shop', 'StoqS', 'StoqS sale', 'mode'], $rows) : $this->info('No differences.');
+    $this->info(count($rows).' size price(s) differ.');
+})->purpose('List local size prices that differ from StoqS (read-only)');
 Schedule::call(function () use ($due) {
     if ($due('sites', 1440)) {
         Artisan::call('stoqs:sites');

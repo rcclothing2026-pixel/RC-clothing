@@ -34,7 +34,7 @@ class IntegrationController extends Controller
             'cfg' => $this->config(),
             'locations' => Cache::get('stockkeeping:locations', []),
             'recentLogs' => $recentLogs,
-            'outbox' => IntegrationEvent::whereIn('status', ['pending', 'failed', 'blocked'])
+            'outbox' => IntegrationEvent::whereIn('status', ['pending', 'failed', 'blocked', 'dead'])
                 ->orderBy('id')->limit(50)->get(),
             'lastSyncs' => [
                 'catalog' => StockkeeepingLog::where('event_type', StockkeeepingLog::TYPE_CATALOG_IMPORT)->where('status', 'ok')->latest()->first(),
@@ -158,7 +158,7 @@ class IntegrationController extends Controller
      */
     public function retryOutbox(StockKeepingReporter $reporter): RedirectResponse
     {
-        $events = IntegrationEvent::whereIn('status', ['pending', 'failed', 'blocked'])->get();
+        $events = IntegrationEvent::whereIn('status', ['pending', 'failed', 'blocked', 'dead'])->get();
         $before = $events->count();
         if ($before === 0) {
             return back()->with('success', 'صف ارسال خالی است — چیزی برای تلاش مجدد نیست.');

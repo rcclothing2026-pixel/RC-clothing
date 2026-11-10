@@ -396,14 +396,34 @@ class Cart
                 $left -= $sources[$i][1];
             }
         }
+        // A line never takes more than its total (StoqS refuses discount_exceeds_line):
+        // a capped share moves to the source's other lines, and what none can take is dropped.
+        $room = $lines->mapWithKeys(fn ($l) => [$l['variant']->id => (int) $l['line_total']])->all();
         foreach ($sources as [$tag, $amount, $on]) {
+            $on = $on->values();
             $sum = (int) $on->sum('line_total');
             $left = $amount;
-            foreach ($on->values() as $i => $l) {
+            $got = [];
+            foreach ($on as $i => $l) {
+                $id = $l['variant']->id;
                 $share = $i === $on->count() - 1 ? $left : min($left, (int) floor($amount * $l['line_total'] / max(1, $sum)));
+                $share = max(0, min($share, $room[$id] ?? 0));
+                $got[$id] = ($got[$id] ?? 0) + $share;
+                $room[$id] = ($room[$id] ?? 0) - $share;
                 $left -= $share;
+            }
+            foreach ($on as $l) {
+                $id = $l['variant']->id;
+                $more = min($left, $room[$id] ?? 0);
+                if ($more > 0) {
+                    $got[$id] += $more;
+                    $room[$id] -= $more;
+                    $left -= $more;
+                }
+            }
+            foreach ($got as $id => $share) {
                 if ($share > 0) {
-                    $out[$l['variant']->id][] = $tag + ['amount' => $share];
+                    $out[$id][] = $tag + ['amount' => $share];
                 }
             }
         }

@@ -26,10 +26,15 @@ class StoqsCodes
         if (! config('stockkeeping.enabled')) {
             return;
         }
-        $ev = IntegrationEvent::create([
-            'type' => self::TYPE, 'status' => 'pending', 'available_at' => now(),
-            'payload' => array_filter(['coupon_id' => $couponId, 'code_id' => $codeId, 'delete' => $delete ?: null]),
-        ]);
+        // One waiting row per coupon (the daily sync re-queues unsent coupons).
+        $payload = array_filter(['coupon_id' => $couponId, 'code_id' => $codeId, 'delete' => $delete ?: null]);
+        $ev = IntegrationEvent::where('type', self::TYPE)->whereIn('status', ['pending', 'failed', 'blocked'])->get()
+            ->first(fn ($e) => (int) ($e->payload['coupon_id'] ?? 0) === $couponId);
+        if ($ev) {
+            $ev->update(['payload' => $payload + array_filter(['code_id' => $ev->payload['code_id'] ?? null]), 'status' => 'pending', 'available_at' => now()]);
+        } else {
+            $ev = IntegrationEvent::create(['type' => self::TYPE, 'status' => 'pending', 'available_at' => now(), 'payload' => $payload]);
+        }
         app(StockKeepingReporter::class)->deliver($ev);
     }
 

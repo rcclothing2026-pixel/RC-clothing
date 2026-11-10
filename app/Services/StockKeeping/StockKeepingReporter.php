@@ -364,8 +364,10 @@ class StockKeepingReporter
         } catch (Throwable $e) {
             $attempts = $event->attempts + 1;
             $blocked = $e instanceof StoqsApiError && $e->missingScope();
+            // A content row that cannot go out stops retrying and stops holding imports.
+            $dead = $event->type === StoqsContent::TYPE && ($blocked || StoqsContent::exhausted($event, $attempts));
             $event->update([
-                'status' => $blocked ? 'blocked' : 'failed',
+                'status' => $dead ? 'dead' : ($blocked ? 'blocked' : 'failed'),
                 'attempts' => $attempts,
                 'last_error' => mb_substr($e->getMessage(), 0, 2000),
                 // Exponential backoff, capped at ~30 min.

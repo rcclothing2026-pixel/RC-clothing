@@ -152,10 +152,25 @@ class StoqsContent
         return app(StockKeepingReporter::class)->deliver($ev);
     }
 
+    /** A failed row stops retrying (status «dead») after this many attempts or this many hours. */
+    public const MAX_ATTEMPTS = 5;
+
+    public const MAX_HOURS = 24;
+
+    /** Rows that may still go out: pending, or failed but still young. Only these hold a pull. */
     private static function waiting(Product $p)
     {
-        return IntegrationEvent::where('type', self::TYPE)->whereIn('status', ['pending', 'failed', 'blocked'])->orderByDesc('id')->get()
+        return IntegrationEvent::where('type', self::TYPE)
+            ->where(fn ($q) => $q->where('status', 'pending')->orWhere(fn ($q) => $q->where('status', 'failed')
+                ->where('attempts', '<', self::MAX_ATTEMPTS)->where('created_at', '>', now()->subHours(self::MAX_HOURS))))
+            ->orderByDesc('id')->get()
             ->filter(fn ($e) => (int) ($e->payload['product_id'] ?? 0) === (int) $p->id)->values();
+    }
+
+    /** Whether a failed row has used up its retries. */
+    public static function exhausted(IntegrationEvent $ev, int $attempts): bool
+    {
+        return $attempts >= self::MAX_ATTEMPTS || $ev->created_at?->lt(now()->subHours(self::MAX_HOURS));
     }
 
     /**
@@ -203,31 +218,34 @@ class StoqsContent
             }
         }
 
+        // Prices: always the list price (the struck one under a sale or the outlet),
+        // never a marked-down one; a size price below the list is not sent.
         $vids = (array) ($pl['variants'] ?? []);
         if (in_array('price', $fields, true) || $vids) {
-            if ($p->stoqs_discount) {
-                $notes[] = 'تخفیف یا اوتلت روی محصول است؛ قیمت فرستاده نشد';
-            } else {
-                if (in_array('price', $fields, true)) {
-                    $base = self::basePrice($p);
-                    foreach ($pids as $spid) {
-                        if ((int) round((float) ($p->stoqs_meta['p'][$spid]['base']['base_price'] ?? -1)) === $base) {
-                            continue;
-                        }
-                        $r = StoqsApi::call('PATCH', "products/$spid", ['base_price' => $base]);
-                        self::remember($p, (array) ($r['product'] ?? []));
-                        $done[] = 'قیمت پایه';
-                    }
-                }
-                foreach ($vids as $vid) {
-                    $v = $p->variants->firstWhere('id', (int) $vid);
-                    if (! $v || ! $v->stockkeeping_variant_id) {
+            $base = self::basePrice($p);
+            if (in_array('price', $fields, true) && $base > 0) {
+                foreach ($pids as $spid) {
+                    if ((int) round((float) ($p->stoqs_meta['p'][$spid]['base']['base_price'] ?? -1)) === $base) {
                         continue;
                     }
-                    $own = (int) ($v->price ?? $p->price);
-                    StoqsApi::call('PATCH', 'variants/'.(int) $v->stockkeeping_variant_id, ['price' => $own === self::pidBase($p, $v) ? null : $own]);
-                    $done[] = 'قیمت '.($v->size ?: $v->sku);
+                    $r = StoqsApi::call('PATCH', "products/$spid", ['base_price' => $base]);
+                    self::remember($p, (array) ($r['product'] ?? []));
+                    $done[] = 'قیمت پایه';
                 }
+            }
+            foreach ($vids as $vid) {
+                $v = $p->variants->firstWhere('id', (int) $vid);
+                if (! $v || ! $v->stockkeeping_variant_id) {
+                    continue;
+                }
+                $own = $v->price === null ? null : (int) $v->price;
+                if ($own !== null && $own < $base) {
+                    $notes[] = 'قیمت '.($v->size ?: $v->sku).' کمتر از قیمت اصلی است (تخفیف)؛ فرستاده نشد';
+
+                    continue;
+                }
+                StoqsApi::call('PATCH', 'variants/'.(int) $v->stockkeeping_variant_id, ['price' => $own === null || $own === self::pidBase($p, $v) ? null : $own]);
+                $done[] = 'قیمت '.($v->size ?: $v->sku);
             }
         }
 

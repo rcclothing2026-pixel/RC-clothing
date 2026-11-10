@@ -170,7 +170,7 @@ class ProductController extends Controller
         }
         $this->handleImages($product, $request);
 
-        return redirect()->route('admin.products.edit', $product)->with('success', 'محصول ایجاد شد.');
+        return redirect()->route('admin.products.edit', $product)->with('success', 'محصول ایجاد شد.')->with('warning', $this->belowFloor($product));
     }
 
     public function edit(Product $product): View
@@ -182,6 +182,22 @@ class ProductController extends Controller
             'sizeGuides' => SizeGuide::orderBy('name')->get(),
             'bundleCandidates' => $this->bundleCandidates($product->id),
         ]);
+    }
+
+    /**
+     * A warning (never a block) when the list price is under the margin floor
+     * (cost + the minimum margin, or the StoqS floor): this price reaches StoqS.
+     */
+    private function belowFloor(Product $product): ?string
+    {
+        $price = StoqsContent::basePrice($product->fresh());
+        request()->attributes->remove('margin.floors');
+        request()->attributes->remove('margin.costs');
+        $floor = \App\Support\Margin::floorOf((int) $product->id);
+
+        return $price > 0 && ! \App\Support\Margin::keeps($price, $floor)
+            ? 'هشدار: قیمت '.\App\Support\Margin::fa($price).' کمتر از حداقل '.\App\Support\Margin::fa((int) $floor).' تومان است (هزینه + '.\App\Support\Margin::fa(\App\Support\Margin::min()).'٪ سود)؛ این قیمت به StoqS هم می‌رود.'
+            : null;
     }
 
     public function update(Request $request, Product $product): RedirectResponse
@@ -203,7 +219,7 @@ class ProductController extends Controller
         $this->handleImages($product, $request);
         StoqsContent::captureEdit($product, $before);
 
-        return redirect()->route('admin.products.edit', $product)->with('success', 'تغییرات ذخیره شد.');
+        return redirect()->route('admin.products.edit', $product)->with('success', 'تغییرات ذخیره شد.')->with('warning', $this->belowFloor($product));
     }
 
     public function destroy(Product $product): RedirectResponse

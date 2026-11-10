@@ -10,6 +10,8 @@ use App\Services\StockKeeping\CatalogImporter;
 use App\Services\StockKeeping\StockKeepingClient;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -22,10 +24,18 @@ use Illuminate\Support\Facades\Log;
  */
 class StoqsWebhookController extends Controller
 {
+    private string $eventId = '';
+
+    private ?Carbon $at = null;
+
+    /** What this event changed, for the out-of-order guard (see inOrder()). */
+    private array $subjects = [];
+
     public function __invoke(Request $request): Response
     {
         $secret = (string) config('stockkeeping.webhook_secret');
         $raw = $request->getContent();
+        [$this->eventId, $this->at, $this->subjects] = ['', null, []];   // the route keeps one controller instance
 
         // Reject anything we can't verify. A missing secret = integration not
         // configured for inbound, so refuse rather than trust blindly.
@@ -54,9 +64,23 @@ class StoqsWebhookController extends Controller
             return response('ok (own echo skipped)', 200);
         }
 
+        // Replays: StoqS sends the same event_id on every retry of one event.
+        $this->eventId = mb_substr((string) ($body['event_id'] ?? $request->header('X-Stoqs-Event-Id', '')), 0, 64);
+        if ($this->eventId !== '' && $this->seen($this->eventId)) {
+            return response('ok (duplicate skipped)', 200);
+        }
+        try {
+            $this->at = ! empty($body['occurred_at']) ? Carbon::parse((string) $body['occurred_at'])->utc() : null;
+        } catch (\Throwable) {
+            $this->at = null;
+        }
+
         try {
             if ($event === 'stock.changed') {
                 $this->applyStockChanged($data);
+            } elseif (in_array($event, ['product.published', 'product.unpublished'], true)
+                && ! empty($data['product_id']) && ! $this->inOrder('p:'.$data['product_id'])) {
+                // An older catalog event than one already applied to this product: skipped.
             } elseif ($event === 'product.published') {
                 // Respect the "only in-stock" setting for real-time publishes too.
                 if (config('stockkeeping.import_in_stock_only', true) && ! $this->productHasStock($data)) {
@@ -91,6 +115,7 @@ class StoqsWebhookController extends Controller
             // Still 200 so StoqS doesn't hammer retries for a row we can't match;
             // the next pull will reconcile.
         }
+        $this->recordEvent();
 
         return response('ok', 200);
     }
@@ -153,7 +178,7 @@ class StoqsWebhookController extends Controller
     {
         $sp = (array) ($data['product'] ?? []);
         $skId = (string) ($sp['product_id'] ?? $data['product_id'] ?? '');
-        if (! $sp || $skId === '') {
+        if (! $sp || $skId === '' || ! $this->inOrder('p:'.$skId)) {
             return false;
         }
         $barcodes = collect($sp['variants'] ?? [])->map(fn ($v) => (string) ($v['barcode'] ?? ''))->filter()->all();
@@ -171,6 +196,54 @@ class StoqsWebhookController extends Controller
         );
 
         return true;
+    }
+
+    /** Whether an event with this id was already applied (a missing table counts as no). */
+    private function seen(string $id): bool
+    {
+        try {
+            return DB::table('stoqs_webhook_events')->where('event_id', $id)->exists();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * Out-of-order delivery: false when StoqS already sent a newer event for $subject
+     * («p:<product id>» for catalog events, «s:<barcode>» for absolute stock counts).
+     */
+    private function inOrder(string $subject): bool
+    {
+        if (! $this->at) {
+            return true;
+        }
+        try {
+            if (DB::table('stoqs_webhook_events')->where('subject', $subject)->where('occurred_at', '>', $this->at)->exists()) {
+                return false;
+            }
+        } catch (\Throwable) {
+            return true;
+        }
+        $this->subjects[] = $subject;
+
+        return true;
+    }
+
+    /** Remember this event (its id, and what it changed when) for 8 days. */
+    private function recordEvent(): void
+    {
+        if ($this->eventId === '' && ! $this->subjects) {
+            return;
+        }
+        $now = now();
+        try {
+            DB::table('stoqs_webhook_events')->insert(array_map(fn ($s) => [
+                'event_id' => $this->eventId, 'subject' => $s, 'occurred_at' => $this->at, 'created_at' => $now,
+            ], array_values(array_unique($this->subjects)) ?: [null]));
+            DB::table('stoqs_webhook_events')->where('created_at', '<', $now->copy()->subDays(8))->delete();
+        } catch (\Throwable $e) {
+            Log::warning('[stoqs-webhook] could not record the event', ['error' => $e->getMessage()]);
+        }
     }
 
     private function signatureValid(Request $request, string $raw, string $secret): bool
@@ -205,6 +278,9 @@ class StoqsWebhookController extends Controller
         $hasNew = array_key_exists('new_stock', $data) && $data['new_stock'] !== null;
         $reason = (string) ($data['reason'] ?? '');
 
+        if ($single && $hasNew && ! $this->inOrder('s:'.$barcode)) {
+            return; // an older absolute count than one already applied
+        }
         if ($single && $hasNew) {
             // Single-location mirror: new_stock IS our aggregate — set it (idempotent,
             // echo-safe even for our own reported sale).

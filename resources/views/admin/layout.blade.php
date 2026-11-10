@@ -158,6 +158,9 @@
                 @if (session('error'))
                     <div class="mb-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">{{ session('error') }}</div>
                 @endif
+                @if (session('warning'))
+                    <div class="mb-5 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">{{ session('warning') }}</div>
+                @endif
                 @if (session('success'))
                     <div class="mb-5 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700 ring-1 ring-green-200">{{ session('success') }}</div>
                 @endif

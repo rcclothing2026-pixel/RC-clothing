@@ -77,9 +77,10 @@ class StoqsContentSyncTest extends TestCase
         ];
     }
 
-    private function webhook(string $event, array $data, string $secret = self::SECRET)
+    private function webhook(string $event, array $data, string $secret = self::SECRET, ?string $id = null, ?string $at = null)
     {
-        $raw = json_encode(['event' => $event, 'event_id' => 'e1', 'brand_id' => 2, 'occurred_at' => now()->toAtomString(), 'data' => $data]);
+        $raw = json_encode(['event' => $event, 'event_id' => $id ?? (string) \Illuminate\Support\Str::uuid(), 'brand_id' => 2,
+            'occurred_at' => $at ?? now()->toAtomString(), 'data' => $data]);
 
         return $this->call('POST', '/webhooks/stoqs', [], [], [], [
             'CONTENT_TYPE' => 'application/json', 'HTTP_X_STOQS_EVENT' => $event,
@@ -199,10 +200,10 @@ class StoqsContentSyncTest extends TestCase
         Http::fake(['stoqs.test/api/v1/variants/*' => Http::response(['ok' => true, 'variant' => []])]);
 
         $form = $this->form($p->fresh('variants'));
-        $form['variants'][0]['price'] = 900_000;
+        $form['variants'][0]['price'] = 1_100_000;
         $this->actingAs($this->admin())->put(route('admin.products.update', $p), $form)->assertRedirect();
 
-        Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && $r->url() === self::API.'variants/11' && $r['price'] === 900_000);
+        Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && $r->url() === self::API.'variants/11' && $r['price'] === 1_100_000);
         Http::assertNotSent(fn (Request $r) => str_contains($r->url(), 'products/1'));
     }
 
@@ -283,14 +284,14 @@ class StoqsContentSyncTest extends TestCase
         Http::fake(['stoqs.test/*' => Http::response(['ok' => false, 'error' => ['code' => 'forbidden_scope', 'message' => 'This key is not authorised for scope: catalog:write']], 403)]);
 
         $this->assertFalse(StoqsContent::send(StoqsContent::enqueue($p, ['name'])));
-        $this->assertSame('blocked', IntegrationEvent::where('type', StoqsContent::TYPE)->first()->status);
+        $this->assertSame('dead', IntegrationEvent::where('type', StoqsContent::TYPE)->first()->status);   // content rows stop for good
         $this->assertArrayHasKey('catalog:write', StoqsApi::missingScopes());
 
         app(StockKeepingReporter::class)->flushPending();   // the 5-minute flush skips blocked rows
         Http::assertSentCount(1);
         $this->assertSame(1, \App\Models\StockkeeepingLog::where('ref', 'catalog:write')->count());
 
-        $this->actingAs($this->admin())->get(route('admin.settings.integration'))->assertOk()->assertSee('منتظر دسترسی');
+        $this->actingAs($this->admin())->get(route('admin.settings.integration'))->assertOk()->assertSee('متوقف')->assertSee('حذف');
     }
 
     public function test_sites_hello_and_links(): void
@@ -379,5 +380,126 @@ class StoqsContentSyncTest extends TestCase
         request()->attributes->remove('margin.floors');
         request()->attributes->remove('margin.costs');
         $this->assertSame(500_000, Margin::floorOf($p->id));   // local cost wins: ceil(450k / 0.9)
+    }
+
+    public function test_only_live_outbox_rows_hold_a_pull_and_spent_ones_go_dead(): void
+    {
+        $p = $this->product();
+        $import = fn (bool $force = false) => app(\App\Services\StockKeeping\CatalogImporter::class)->importProduct($this->payload(['images' => []]), $force);
+        $reset = fn () => $p->forceFill(['name' => 'مانتو'])->saveQuietly();
+        $ev = StoqsContent::enqueue($p, ['name', 'price']);
+
+        $import();
+        $this->assertSame('مانتو', $p->fresh()->name);   // a pending shop edit holds
+        $import(true);
+        $this->assertSame('مانتو نو', $p->fresh()->name);   // «دریافت از StoqS» ignores it
+
+        foreach ([['status' => 'failed', 'attempts' => 5], ['status' => 'failed', 'attempts' => 1, 'created_at' => now()->subHours(25)],
+            ['status' => 'blocked'], ['status' => 'dead']] as $state) {
+            $reset();
+            $ev->forceFill($state + ['attempts' => 0, 'created_at' => now()])->save();
+            $import();
+            $this->assertSame('مانتو نو', $p->fresh()->name, json_encode($state));
+        }
+
+        // The 5th failure ends it: «dead», no more retries, listed with «حذف».
+        Http::fake(['stoqs.test/*' => Http::response(['ok' => false, 'error' => ['code' => 'server_error', 'message' => 'down']], 500)]);
+        $ev->forceFill(['status' => 'failed', 'attempts' => 4, 'created_at' => now(), 'available_at' => now()])->save();
+        $this->assertFalse(StoqsContent::send($ev->fresh()));
+        $this->assertSame('dead', $ev->fresh()->status);
+        app(StockKeepingReporter::class)->flushPending();
+        $this->assertCount(1, Http::recorded(fn (Request $r) => str_contains($r->url(), 'stoqs.test/api/v1/products')));
+        $this->actingAs($this->admin())->get(route('admin.settings.integration'))->assertOk()->assertSee('متوقف')->assertSee('حذف');
+    }
+
+    public function test_push_sends_the_list_price_not_the_outlet_price(): void
+    {
+        $p = $this->product(['price' => 800_000, 'compare_at_price' => 1_000_000]);
+        OutletItem::create(['product_id' => $p->id, 'percent' => 20, 'is_active' => true]);
+        $p->variants()->where('sku', '1001')->update(['price' => 800_000]);   // a marked-down size
+        StoqsContent::remember($p, $this->payload(['base_price' => 900_000]));
+        Http::fake(['stoqs.test/api/v1/products/1' => Http::response(['ok' => true, 'product' => $this->payload(['base_price' => 900_000])]),
+            'stoqs.test/*' => Http::response(['ok' => true])]);
+
+        StoqsContent::send(StoqsContent::enqueueAll($p->fresh()));
+
+        Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), 'products/1') && ($r['base_price'] ?? null) === 1_000_000);
+        Http::assertNotSent(fn (Request $r) => str_contains($r->body(), '800000'));
+        Http::assertNotSent(fn (Request $r) => str_ends_with($r->url(), 'variants/11'));
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'variants/12') && $r['price'] === null);
+    }
+
+    public function test_an_import_sets_but_never_clears_size_prices(): void
+    {
+        $p = $this->product();
+        $p->variants()->where('sku', '1001')->update(['price' => 950_000]);
+        app(\App\Services\StockKeeping\CatalogImporter::class)->importProduct($this->payload(['images' => []]));
+
+        $this->assertSame(950_000, (int) ProductVariant::where('sku', '1001')->value('price'));   // kept
+        $this->assertSame(1_200_000, (int) ProductVariant::where('sku', '1002')->value('price'));   // StoqS's own size price
+        // RC has no price.changed handler: nothing clears a shop size price.
+
+        // Read-only report of what differs.
+        Http::fake(['stoqs.test/api/v1/catalog*' => Http::response(['products' => [$this->payload()], 'has_more' => false])]);
+        ProductVariant::where('sku', '1001')->update(['price' => 950_000]);
+        $this->artisan('stoqs:size-price-diff')->expectsOutputToContain('1 size price(s) differ.')->assertSuccessful();
+        $this->assertSame(950_000, (int) ProductVariant::where('sku', '1001')->value('price'));
+    }
+
+    public function test_webhook_replays_and_older_events_are_skipped(): void
+    {
+        $this->product();
+        $send = fn (string $id, string $at, string $name) => $this->webhook('product.content_changed',
+            ['product_id' => 1, 'product' => $this->payload(['name' => $name, 'images' => []])], id: $id, at: $at)->assertOk();
+
+        $send('a', '2026-11-10T10:00:00+03:30', 'نام ۱');
+        $this->assertSame('نام ۱', Product::first()->name);
+        $send('a', '2026-11-10T10:00:00+03:30', 'نام تکراری');   // a retry of the same event
+        $send('b', '2026-11-10T09:59:00+03:30', 'نام قدیمی');   // arrived late
+        $this->assertSame('نام ۱', Product::first()->name);
+        $send('c', '2026-11-10T10:01:00+03:30', 'نام ۲');
+        $this->assertSame('نام ۲', Product::first()->name);
+        $this->assertSame(2, \Illuminate\Support\Facades\DB::table('stoqs_webhook_events')->where('subject', 'p:1')->count());
+    }
+
+    public function test_line_discounts_never_exceed_a_line(): void
+    {
+        $a = Product::create(['name' => 'A', 'slug' => 'a', 'price' => 100_000, 'is_active' => true]);
+        $b = Product::create(['name' => 'B', 'slug' => 'b', 'price' => 100_000, 'is_active' => true]);
+        $line = fn ($p) => ['variant' => ProductVariant::create(['product_id' => $p->id, 'sku' => 'X'.$p->id, 'size' => 'L', 'stock_qty' => 5, 'is_active' => true])->load('product'),
+            'quantity' => 1, 'unit_price' => 100_000, 'line_total' => 100_000];
+        $lines = collect([$line($a), $line($b)]);
+        $onB = DiscountRule::create(['name' => 'B only', 'priority' => 1, 'conditions' => [['type' => 'cart_has_products', 'product_ids' => [$b->id]]],
+            'actions' => [], 'apply_mode' => 'all', 'stack_mode' => 'all', 'is_active' => true]);
+        $all = DiscountRule::create(['name' => 'all', 'priority' => 2, 'conditions' => [], 'actions' => [], 'apply_mode' => 'all', 'stack_mode' => 'all', 'is_active' => true]);
+        $cart = \Mockery::mock(Cart::class)->makePartial();
+        $cart->shouldReceive('lines')->andReturn($lines);
+        $cart->shouldReceive('appliedCoupon')->andReturn(null);
+        $cart->shouldReceive('ruleDiscountBreakdown')->andReturn([['rule_id' => $onB->id, 'amount' => 90_000], ['rule_id' => $all->id, 'amount' => 150_000]]);
+        $cart->shouldReceive('combinedDiscount')->andReturn(240_000);
+
+        $out = $cart->lineDiscounts();
+
+        // B had 10k of room left after the first rule: the rest of its share moved to A, and what A could not take was dropped.
+        $this->assertSame([['type' => 'rule', 'amount' => 100_000]], $out[$lines[0]['variant']->id]);
+        $this->assertSame([['type' => 'rule', 'amount' => 90_000], ['type' => 'rule', 'amount' => 10_000]], $out[$lines[1]['variant']->id]);
+    }
+
+    public function test_unsent_coupons_are_queued_once_and_a_low_price_warns(): void
+    {
+        Http::fake(['stoqs.test/api/v1/discounts/*' => Http::response(['ok' => false, 'error' => ['code' => 'forbidden_scope', 'message' => 'discounts:write']], 403),
+            'stoqs.test/api/v1/sites/*' => Http::response(['ok' => true, 'count' => 0])]);
+        $c = Coupon::create(['code' => 'YALDA', 'type' => 'percent', 'value' => 15, 'is_active' => true]);
+        StoqsSites::sync();
+        StoqsSites::sync();
+        $rows = IntegrationEvent::where('type', \App\Services\StockKeeping\StoqsCodes::TYPE)->get();
+        $this->assertSame(1, $rows->filter(fn ($e) => (int) $e->payload['coupon_id'] === $c->id)->count());
+        $this->assertSame(Coupon::count(), $rows->count());   // one row per coupon (seeded ones too)
+
+        $p = $this->product(['stockkeeping_id' => null]);
+        \App\Models\ProductCost::create(['product_id' => $p->id, 'cost' => 950_000]);   // floor ≈ 1,055,556
+        $this->actingAs($this->admin())->put(route('admin.products.update', $p), $this->form($p->fresh('variants')))
+            ->assertRedirect()->assertSessionHas('success')->assertSessionHas('warning');
+        $this->assertSame(1_000_000, (int) $p->fresh()->price);   // saved anyway
     }
 }
