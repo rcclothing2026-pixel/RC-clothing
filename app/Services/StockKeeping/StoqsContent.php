@@ -218,8 +218,11 @@ class StoqsContent
             }
         }
 
-        // Prices: always the list price (the struck one under a sale or the outlet),
-        // never a marked-down one; a size price below the list is not sent.
+        // Prices: the product's list price (the struck one under a sale or the outlet,
+        // which only ever live on products.price/compare_at), and each size's own
+        // regular price (variants.price, null = follows the product), cheaper sizes too.
+        // A size price StoqS set (stoqs_size_price) is StoqS's already and is not sent
+        // back; in chiiaco that is also where a StoqS per-size sale sits.
         $vids = (array) ($pl['variants'] ?? []);
         if (in_array('price', $fields, true) || $vids) {
             $base = self::basePrice($p);
@@ -235,15 +238,11 @@ class StoqsContent
             }
             foreach ($vids as $vid) {
                 $v = $p->variants->firstWhere('id', (int) $vid);
-                if (! $v || ! $v->stockkeeping_variant_id) {
+                if (! $v || ! $v->stockkeeping_variant_id
+                    || ($v->price !== null && $v->stoqs_size_price !== null && (int) $v->stoqs_size_price === (int) $v->price)) {
                     continue;
                 }
                 $own = $v->price === null ? null : (int) $v->price;
-                if ($own !== null && $own < $base) {
-                    $notes[] = 'قیمت '.($v->size ?: $v->sku).' کمتر از قیمت اصلی است (تخفیف)؛ فرستاده نشد';
-
-                    continue;
-                }
                 StoqsApi::call('PATCH', 'variants/'.(int) $v->stockkeeping_variant_id, ['price' => $own === null || $own === self::pidBase($p, $v) ? null : $own]);
                 $done[] = 'قیمت '.($v->size ?: $v->sku);
             }

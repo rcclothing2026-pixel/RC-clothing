@@ -448,7 +448,11 @@ class ProductController extends Controller
 
                     continue;
                 }
-                $variant->update($this->variantAttributes($row));
+                $attrs = $this->variantAttributes($row);
+                if ($attrs['price'] !== $variant->price) {
+                    $variant->stoqs_size_price = null;   // typed here = shop-set; the import leaves it alone
+                }
+                $variant->fill($attrs)->save();
             } elseif (! $delete && (! empty($row['size']) || ! empty($row['color']))) {
                 $product->variants()->create($this->variantAttributes($row));
             }
@@ -462,11 +466,22 @@ class ProductController extends Controller
             'color' => $row['color'] ?? null,
             'color_hex' => $row['color_hex'] ?? null,
             'sku' => $row['sku'] ?? null,
-            'price' => ($row['price'] ?? '') !== '' ? (int) $row['price'] : null,
+            'price' => self::sizePrice($row['price'] ?? null),
             'stock_qty' => (int) ($row['stock_qty'] ?? 0),
             'is_active' => ! empty($row['is_active']),
             'stockkeeping_variant_id' => $row['stockkeeping_variant_id'] ?? null,
         ];
+    }
+
+    /** A size price as typed: Persian/Arabic digits and separators are fine; empty = follows the product. */
+    private static function sizePrice(mixed $raw): ?int
+    {
+        $digits = preg_replace('/\D+/', '', strtr((string) $raw, [
+            '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+            '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+        ]));
+
+        return (int) $digits ?: null;   // empty or 0 = follows the product
     }
 
     /** Handle deletes, primary selection, and uploaded image files. */

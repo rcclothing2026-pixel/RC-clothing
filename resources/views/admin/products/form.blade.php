@@ -76,37 +76,41 @@
                     <span data-matrix-note class="ms-2 text-xs text-brand-400"></span>
                 </div>
 
-                <div class="grid grid-cols-12 gap-2 px-1 pb-1 text-[11px] text-brand-400">
+                @php($sizePh = $product->price ? \App\Support\Money::toman((int) $product->price, false) : 'قیمت محصول')
+                {{-- Phones: 6 columns (size·colour·hex / barcode·price / stock·active·delete); md+: one row of 12. --}}
+                <div class="hidden grid-cols-12 gap-2 px-1 pb-1 text-[11px] text-brand-400 md:grid">
                     <span class="col-span-2">سایز</span><span class="col-span-2">رنگ</span><span class="col-span-1">کد رنگ</span>
-                    <span class="col-span-3">بارکد (SKU)</span><span class="col-span-2">موجودی</span><span class="col-span-1">فعال</span><span class="col-span-1">حذف</span>
+                    <span class="col-span-2">بارکد (SKU)</span><span class="col-span-2">قیمت (اختیاری)</span><span class="col-span-1">موجودی</span><span class="col-span-1">فعال</span><span class="col-span-1">حذف</span>
                 </div>
                 <div class="space-y-2" data-variant-list>
                     @foreach ($product->variants as $i => $variant)
-                        <div class="grid grid-cols-12 items-center gap-2" data-variant-row>
+                        <div class="grid grid-cols-6 items-center gap-2 border-b border-brand-50 pb-2 md:grid-cols-12 md:border-0 md:pb-0" data-variant-row>
                             <input type="hidden" name="variants[{{ $i }}][id]" value="{{ $variant->id }}">
                             <input type="hidden" name="variants[{{ $i }}][stockkeeping_variant_id]" value="{{ $variant->stockkeeping_variant_id }}">
-                            <input name="variants[{{ $i }}][size]" value="{{ $variant->size }}" placeholder="سایز" class="col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
-                            <input name="variants[{{ $i }}][color]" value="{{ $variant->color }}" placeholder="رنگ" class="col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
-                            <input name="variants[{{ $i }}][color_hex]" value="{{ $variant->color_hex }}" placeholder="#" dir="ltr" class="col-span-1 rounded-lg border border-brand-200 px-1 py-1.5 text-xs">
-                            <input name="variants[{{ $i }}][sku]" value="{{ $variant->sku }}" placeholder="بارکد" dir="ltr" class="col-span-3 rounded-lg border border-brand-200 px-2 py-1.5 text-xs">
-                            <input name="variants[{{ $i }}][stock_qty]" value="{{ $variant->stock_qty }}" type="number" class="col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm fa-num">
-                            <label class="col-span-1 flex items-center justify-center"><input type="checkbox" name="variants[{{ $i }}][is_active]" value="1" @checked($variant->is_active)></label>
-                            <label class="col-span-1 flex items-center justify-center"><input type="checkbox" name="variants[{{ $i }}][_delete]" value="1" title="حذف" class="accent-red-500"></label>
+                            <input name="variants[{{ $i }}][size]" value="{{ $variant->size }}" placeholder="سایز" aria-label="سایز" class="col-span-2 md:col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
+                            <input name="variants[{{ $i }}][color]" value="{{ $variant->color }}" placeholder="رنگ" aria-label="رنگ" class="col-span-2 md:col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
+                            <input name="variants[{{ $i }}][color_hex]" value="{{ $variant->color_hex }}" placeholder="#" dir="ltr" aria-label="کد رنگ" class="col-span-2 md:col-span-1 rounded-lg border border-brand-200 px-1 py-1.5 text-xs">
+                            <input name="variants[{{ $i }}][sku]" value="{{ $variant->sku }}" placeholder="بارکد" dir="ltr" aria-label="بارکد" class="col-span-3 md:col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-xs">
+                            <input name="variants[{{ $i }}][price]" value="{{ $variant->price }}" placeholder="{{ $sizePh }}" inputmode="numeric" aria-label="قیمت این سایز (خالی = قیمت محصول)" class="col-span-3 md:col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm fa-num">
+                            <input name="variants[{{ $i }}][stock_qty]" value="{{ $variant->stock_qty }}" type="number" aria-label="موجودی" class="col-span-2 md:col-span-1 rounded-lg border border-brand-200 px-2 py-1.5 text-sm fa-num">
+                            <label class="col-span-2 flex items-center justify-center gap-1 text-[11px] text-brand-400 md:col-span-1"><input type="checkbox" name="variants[{{ $i }}][is_active]" value="1" @checked($variant->is_active)><span class="md:hidden">فعال</span></label>
+                            <label class="col-span-2 flex items-center justify-center gap-1 text-[11px] text-red-400 md:col-span-1"><input type="checkbox" name="variants[{{ $i }}][_delete]" value="1" title="حذف" class="accent-red-500"><span class="md:hidden">حذف</span></label>
                         </div>
                     @endforeach
                 </div>
-                <p class="mt-2 text-xs text-brand-400">بارکد هر تنوع باید با بارکد همان تنوع در StoqS یکی باشد تا موجودی متناظر شود.</p>
+                <p class="mt-2 text-xs text-brand-400">بارکد هر تنوع باید با بارکد همان تنوع در StoqS یکی باشد تا موجودی متناظر شود. هر سایز می‌تواند قیمت خودش را داشته باشد؛ خالی یعنی همان قیمت محصول. قیمت سایز با StoqS هم‌گام می‌شود.</p>
 
                 {{-- Template for new rows --}}
                 <template data-variant-template>
-                    <div class="grid grid-cols-12 items-center gap-2" data-variant-row>
-                        <input name="variants[__I__][size]" placeholder="سایز" class="col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
-                        <input name="variants[__I__][color]" placeholder="رنگ" class="col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
-                        <input name="variants[__I__][color_hex]" placeholder="#" dir="ltr" class="col-span-1 rounded-lg border border-brand-200 px-1 py-1.5 text-xs">
-                        <input name="variants[__I__][sku]" placeholder="بارکد" dir="ltr" class="col-span-3 rounded-lg border border-brand-200 px-2 py-1.5 text-xs">
-                        <input name="variants[__I__][stock_qty]" type="number" value="0" class="col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm fa-num">
-                        <label class="col-span-1 flex items-center justify-center"><input type="checkbox" name="variants[__I__][is_active]" value="1" checked></label>
-                        <button type="button" data-remove-row class="col-span-1 text-red-400 hover:text-red-600">✕</button>
+                    <div class="grid grid-cols-6 items-center gap-2 border-b border-brand-50 pb-2 md:grid-cols-12 md:border-0 md:pb-0" data-variant-row>
+                        <input name="variants[__I__][size]" placeholder="سایز" aria-label="سایز" class="col-span-2 md:col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
+                        <input name="variants[__I__][color]" placeholder="رنگ" aria-label="رنگ" class="col-span-2 md:col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm">
+                        <input name="variants[__I__][color_hex]" placeholder="#" dir="ltr" aria-label="کد رنگ" class="col-span-2 md:col-span-1 rounded-lg border border-brand-200 px-1 py-1.5 text-xs">
+                        <input name="variants[__I__][sku]" placeholder="بارکد" dir="ltr" aria-label="بارکد" class="col-span-3 md:col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-xs">
+                        <input name="variants[__I__][price]" placeholder="{{ $sizePh }}" inputmode="numeric" aria-label="قیمت این سایز (خالی = قیمت محصول)" class="col-span-3 md:col-span-2 rounded-lg border border-brand-200 px-2 py-1.5 text-sm fa-num">
+                        <input name="variants[__I__][stock_qty]" type="number" value="0" aria-label="موجودی" class="col-span-2 md:col-span-1 rounded-lg border border-brand-200 px-2 py-1.5 text-sm fa-num">
+                        <label class="col-span-2 flex items-center justify-center gap-1 text-[11px] text-brand-400 md:col-span-1"><input type="checkbox" name="variants[__I__][is_active]" value="1" checked><span class="md:hidden">فعال</span></label>
+                        <button type="button" data-remove-row class="col-span-2 text-red-400 hover:text-red-600 md:col-span-1">✕</button>
                     </div>
                 </template>
             </section>

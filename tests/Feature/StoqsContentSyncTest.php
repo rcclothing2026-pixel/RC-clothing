@@ -416,7 +416,8 @@ class StoqsContentSyncTest extends TestCase
     {
         $p = $this->product(['price' => 800_000, 'compare_at_price' => 1_000_000]);
         OutletItem::create(['product_id' => $p->id, 'percent' => 20, 'is_active' => true]);
-        $p->variants()->where('sku', '1001')->update(['price' => 800_000]);   // a marked-down size
+        // The outlet never writes sizes; a size price StoqS set (here a StoqS size sale) is not sent back.
+        $p->variants()->where('sku', '1001')->update(['price' => 800_000, 'stoqs_size_price' => 800_000]);
         StoqsContent::remember($p, $this->payload(['base_price' => 900_000]));
         Http::fake(['stoqs.test/api/v1/products/1' => Http::response(['ok' => true, 'product' => $this->payload(['base_price' => 900_000])]),
             'stoqs.test/*' => Http::response(['ok' => true])]);
@@ -427,6 +428,39 @@ class StoqsContentSyncTest extends TestCase
         Http::assertNotSent(fn (Request $r) => str_contains($r->body(), '800000'));
         Http::assertNotSent(fn (Request $r) => str_ends_with($r->url(), 'variants/11'));
         Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'variants/12') && $r['price'] === null);
+    }
+
+    public function test_admin_size_prices_are_shop_set_and_pushed_cheaper_ones_too(): void
+    {
+        $p = $this->product();
+        StoqsContent::remember($p, $this->payload());
+        ProductVariant::where('sku', '1002')->update(['price' => 1_200_000, 'stoqs_size_price' => 1_200_000]);   // set by StoqS
+        Http::fake(['stoqs.test/api/v1/variants/*' => Http::response(['ok' => true, 'variant' => []])]);
+        $admin = $this->admin();
+
+        $form = $this->form($p->fresh('variants'));
+        $form['variants'][0]['price'] = '900,000';            // S cheaper than the product
+        $form['variants'][1]['price'] = '۱٬۱۰۰٬۰۰۰';          // M, typed in Persian
+        $this->actingAs($admin)->put(route('admin.products.update', $p), $form)->assertRedirect()->assertSessionHasNoErrors();
+
+        $m = ProductVariant::where('sku', '1002')->first();
+        $this->assertSame(1_100_000, $m->price);
+        $this->assertNull($m->stoqs_size_price);   // shop-set now
+        Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), 'variants/12') && $r['price'] === 1_100_000);
+        Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), 'variants/11') && $r['price'] === 900_000);
+
+        app(\App\Services\StockKeeping\CatalogImporter::class)->importProduct($this->payload(['images' => []]));   // StoqS still says M = 1.2M
+        $this->assertSame(1_100_000, ProductVariant::where('sku', '1002')->value('price'));
+        $this->assertSame(900_000, ProductVariant::where('sku', '1001')->value('price'));
+
+        $form = $this->form($p->fresh('variants'));
+        $form['variants'][1]['price'] = '';   // back to the product price
+        $this->actingAs($admin)->put(route('admin.products.update', $p), $form)->assertRedirect();
+        $this->assertNull(ProductVariant::where('sku', '1002')->value('price'));
+        Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), 'variants/12') && $r['price'] === null);
+
+        $this->actingAs($admin)->get(route('admin.products.edit', $p))->assertOk()
+            ->assertSee('name="variants[0][price]"', false)->assertSee('خالی یعنی همان قیمت محصول');
     }
 
     public function test_size_prices_set_by_stoqs_follow_stoqs_and_shop_ones_stay(): void
