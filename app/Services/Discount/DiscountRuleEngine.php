@@ -157,6 +157,15 @@ class DiscountRuleEngine
      */
     private function itemBase(DiscountRule $rule, Collection $lines, int $base): int
     {
+        return (int) $this->ruleLines($rule, $lines)->sum('line_total');   // = $base without item conditions
+    }
+
+    /**
+     * The discountable lines a rule's item conditions point at (products /
+     * categories / collections / shelf); every discountable line without any.
+     */
+    public function ruleLines(DiscountRule $rule, Collection $lines): Collection
+    {
         $p = $c = $k = $s = [];
         foreach ($rule->conditions ?? [] as $cond) {
             $t = (string) ($cond['type'] ?? '');
@@ -165,18 +174,16 @@ class DiscountRuleEngine
             elseif (str_ends_with($t, '_collections')) $k = array_merge($k, array_map('intval', $cond['collection_ids'] ?? []));
             elseif ($t === 'item_count_from_shelf') $s[] = (string) ($cond['shelf'] ?? '');
         }
-        if (! $p && ! $c && ! $k && ! $s) {
-            return $base;
-        }
+        $any = ! $p && ! $c && ! $k && ! $s;
 
-        return (int) $lines->filter(function ($l) use ($p, $c, $k, $s) {
+        return $lines->filter(function ($l) use ($p, $c, $k, $s, $any) {
             $prod = $l['variant']->product;
 
-            return Cart::isDiscountable($prod) && (in_array((int) $prod->id, $p, true)
+            return Cart::isDiscountable($prod) && ($any || in_array((int) $prod->id, $p, true)
                 || ($c && $this->productInCategories($prod, $c))
                 || in_array((int) $prod->collection_id, $k, true)
                 || collect($s)->contains(fn ($slug) => \App\Support\Campaigns::inShelf($prod, $slug)));
-        })->sum('line_total');
+        })->values();
     }
 
     private function rangeCheck(int $value, array $cond): bool

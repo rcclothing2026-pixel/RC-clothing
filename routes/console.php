@@ -64,6 +64,17 @@ Schedule::call(function () use ($due) {
     }
 })->everyMinute()->name('sk-catalog')->withoutOverlapping();
 
+// Tell StoqS where each product lives here (/sites/hello + /sites/links), re-try
+// rows a missing API scope parked, and register coupons not yet in StoqS. Also runs
+// after every full catalog import.
+Artisan::command('stoqs:sites', fn () => $this->info(\App\Services\StockKeeping\StoqsSites::sync()))
+    ->purpose('Introduce this shop to StoqS and send its product links');
+Schedule::call(function () use ($due) {
+    if ($due('sites', 1440)) {
+        Artisan::call('stoqs:sites');
+    }
+})->everyMinute()->name('stoqs-sites')->withoutOverlapping();
+
 // Keep local collections in sync with StoqS.
 Schedule::call(function () use ($due) {
     if ($due('collections', 1440)) {

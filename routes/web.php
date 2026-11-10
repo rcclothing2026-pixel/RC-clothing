@@ -199,6 +199,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/sell/links', [\App\Http\Controllers\Admin\SellController::class, 'links'])->name('sell.links');
     Route::post('/sell/links', [\App\Http\Controllers\Admin\SellController::class, 'store'])->name('sell.store');
     Route::post('/products/bulk', [AdminProductController::class, 'bulk'])->name('products.bulk');
+    Route::post('/products/{product}/stoqs', [AdminProductController::class, 'stoqs'])->name('products.stoqs');
     Route::resource('products', AdminProductController::class)->except('show');
     Route::resource('categories', AdminCategoryController::class)->except('show');
     Route::resource('collections', AdminCollectionController::class)->except('show');

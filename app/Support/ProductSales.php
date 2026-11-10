@@ -144,7 +144,7 @@ class ProductSales
             if (isset($outlet[$p->id])) {
                 continue;   // outlet items take no further discount
             }
-            $cost = Margin::costOf($p->id);
+            $cost = Margin::floorOf($p->id);
             $worst = self::worst($s, $own);
             $price = (int) $p->price;
             if (! Margin::keeps((int) floor($price * (100 - $worst) / 100), $cost)) {

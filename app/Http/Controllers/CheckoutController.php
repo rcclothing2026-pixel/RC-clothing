@@ -221,6 +221,9 @@ class CheckoutController extends Controller
         $giftUsed = $giftCard ? (int) min($giftCard->balance, $total) : 0;
         $payable = max(0, $total - $giftUsed);
 
+        // What each line got (outlet / coupon / rules), for the StoqS sale report.
+        $lineDiscounts = $this->cart->lineDiscounts();
+
         // Track which discount rules were applied for used_count increment.
         $appliedRuleIds = collect($this->cart->ruleDiscountBreakdown())
             ->pluck('rule_id')
@@ -229,7 +232,7 @@ class CheckoutController extends Controller
             ->values()
             ->toArray();
 
-        $order = DB::transaction(function () use ($request, $data, $address, $shipping, $lines, $subtotal, $shippingCost, $surcharge, $discount, $coupon, $redeemPoints, $loyaltyDiscount, $giftCard, $giftUsed, $total, $appliedRuleIds, $giftWrap, $giftWrapPrice, $giftMessage) {
+        $order = DB::transaction(function () use ($request, $data, $address, $shipping, $lines, $subtotal, $shippingCost, $surcharge, $discount, $coupon, $redeemPoints, $loyaltyDiscount, $giftCard, $giftUsed, $total, $appliedRuleIds, $giftWrap, $giftWrapPrice, $giftMessage, $lineDiscounts) {
             $order = Order::create([
                 'number' => Order::generateNumber(),
                 'user_id' => $request->user()->id,
@@ -271,6 +274,7 @@ class CheckoutController extends Controller
                     'unit_price' => $line['unit_price'],
                     'quantity' => $line['quantity'],
                     'line_total' => $line['line_total'],
+                    'discounts' => $lineDiscounts[$variant->id] ?? null,
                 ]);
             }
 

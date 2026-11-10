@@ -120,6 +120,13 @@
         </div>
     @endif
 
+    @if (! empty($status['missing_scopes']))
+        <div class="mb-6 rounded-card bg-red-50 p-4 text-sm leading-6 text-red-800 ring-1 ring-red-200">
+            کلید StoqS این دسترسی‌ها را ندارد: <b dir="ltr">{{ implode('، ', array_keys($status['missing_scopes'])) }}</b>.
+            ارسال محتوا/عکس/قیمت محصولات (catalog:write) یا کدهای تخفیف (discounts:write) تا اضافه شدن دسترسی در StoqS متوقف است؛ موارد «منتظر دسترسی» روزی یک بار دوباره امتحان می‌شوند.
+        </div>
+    @endif
+
     {{-- Outbox status --}}
     <div class="mb-6 grid gap-4 sm:grid-cols-3">
         <div class="rounded-card bg-white p-4 ring-1 ring-brand-100">
@@ -169,6 +176,8 @@
                                 \App\Models\IntegrationEvent::TYPE_SALE_CREATED => 'فروش',
                                 \App\Models\IntegrationEvent::TYPE_INCOME_RECORDED => 'درآمد',
                                 \App\Models\IntegrationEvent::TYPE_CUSTOMER_UPSERTED => 'مشتری',
+                                \App\Services\StockKeeping\StoqsContent::TYPE => 'محتوای محصول',
+                                \App\Services\StockKeeping\StoqsCodes::TYPE => 'کد تخفیف',
                                 default => $ev->type,
                             })
                             <tr class="{{ $ev->status === 'failed' ? 'bg-red-50/40' : '' }}">
@@ -176,10 +185,10 @@
                                 <td class="px-4 py-2 fa-num">
                                     @if ($ord)
                                         <a href="{{ url('/admin/orders/'.$ord) }}" class="font-medium text-accent-600 hover:underline" dir="ltr">{{ $ord }}</a>
-                                    @else — @endif
+                                    @else {{ $ev->payload['name'] ?? '—' }} @endif
                                 </td>
                                 <td class="px-4 py-2">
-                                    <span class="rounded-full px-2 py-0.5 text-[11px] font-bold {{ $ev->status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700' }}">{{ $ev->status === 'failed' ? 'ناموفق' : 'در صف' }}</span>
+                                    <span class="rounded-full px-2 py-0.5 text-[11px] font-bold {{ $ev->status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700' }}">{{ ['failed' => 'ناموفق', 'blocked' => 'منتظر دسترسی'][$ev->status] ?? 'در صف' }}</span>
                                 </td>
                                 <td class="px-4 py-2 fa-num text-brand-500">{{ \App\Support\Money::toPersianDigits((string) $ev->attempts) }}</td>
                                 <td class="px-4 py-2 text-red-500" dir="ltr">{{ \Illuminate\Support\Str::limit((string) $ev->last_error, 90) }}</td>

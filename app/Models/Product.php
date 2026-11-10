@@ -17,7 +17,7 @@ class Product extends Model
         'category_id', 'collection_id', 'size_guide_id', 'brand', 'name', 'slug', 'summary', 'description', 'name_en', 'summary_en', 'description_en', 'badges',
         'price', 'compare_at_price', 'is_active', 'is_featured', 'is_bundle',
         'external_enabled', 'external_url',
-        'stockkeeping_id', 'stock_synced_at', 'broadcast_at',
+        'stockkeeping_id', 'stock_synced_at', 'broadcast_at', 'stoqs_sync_mode',
     ];
 
     protected function casts(): array
@@ -32,6 +32,8 @@ class Product extends Model
             'stock_synced_at' => 'datetime',
             'broadcast_at' => 'datetime',
             'badges' => 'array',
+            'stoqs_meta' => 'array',
+            'stoqs_floor_price' => 'integer',
         ];
     }
 

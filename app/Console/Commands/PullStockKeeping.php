@@ -73,6 +73,9 @@ class PullStockKeeping extends Command
             }
 
             $variant = ProductVariant::where('sku', $barcode)->first();
+            if ($variant && $variant->product?->stoqs_sync_mode === 'ignore') {
+                continue;   // «نادیده»: StoqS changes nothing on this product
+            }
             if (! $variant) {
                 $unmatchedItems[] = [
                     'barcode' => $barcode,

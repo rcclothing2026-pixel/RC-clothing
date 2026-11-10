@@ -10,6 +10,8 @@ use App\Models\Media;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
+use App\Services\StockKeeping\StoqsApiError;
+use App\Services\StockKeeping\StoqsContent;
 use HTMLPurifier;
 use HTMLPurifier_Config;
 use Illuminate\Contracts\View\View;
@@ -46,7 +48,8 @@ class ProductController extends Controller
     public function bulk(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'bulk_action' => ['required', 'in:activate,deactivate,delete,category,collection'],
+            'bulk_action' => ['required', 'in:activate,deactivate,delete,category,collection,stoqs_mode,stoqs_push,stoqs_create'],
+            'stoqs_sync_mode' => ['nullable', 'in:'.implode(',', array_keys(StoqsContent::MODES))],
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer'],
             'category_id' => ['nullable', 'exists:categories,id'],
@@ -55,6 +58,9 @@ class ProductController extends Controller
 
         $query = Product::whereIn('id', $data['ids']);
         $count = (clone $query)->count();
+        if (in_array($data['bulk_action'], ['stoqs_push', 'stoqs_create'], true)) {
+            return $this->bulkStoqs($data['bulk_action'], (clone $query)->get());
+        }
 
         match ($data['bulk_action']) {
             'activate' => $query->update(['is_active' => true]),
@@ -62,9 +68,69 @@ class ProductController extends Controller
             'delete' => $query->delete(),
             'category' => $this->bulkSetCategory($data['ids'], $data['category_id'] ?? null),
             'collection' => $query->update(['collection_id' => $data['collection_id'] ?? null]),
+            'stoqs_mode' => $query->update(['stoqs_sync_mode' => $data['stoqs_sync_mode'] ?? 'auto']),
         };
 
         return back()->with('success', \App\Support\Money::toPersianDigits((string) $count).' محصول به‌روزرسانی شد.');
+    }
+
+    /** «ارسال به StoqS» / «ساخت در StoqS» for the selected products. */
+    private function bulkStoqs(string $action, \Illuminate\Support\Collection $products): RedirectResponse
+    {
+        if (! config('stockkeeping.enabled')) {
+            return back()->with('error', 'اتصال StoqS خاموش است.');
+        }
+        $ok = 0;
+        $problems = [];
+        foreach ($products as $p) {
+            if ($action === 'stoqs_create') {
+                $r = StoqsContent::createInStoqs($p);
+                $why = $r['ok'] ? null : $r['message'];
+            } elseif (StoqsContent::linked($p) && StoqsContent::mode($p) !== 'ignore') {
+                $why = StoqsContent::send(StoqsContent::enqueueAll($p)) ? null : '«'.$p->name.'» در صف ماند';
+            } else {
+                $why = '«'.$p->name.'» به StoqS وصل نیست یا «نادیده» است';
+            }
+            if ($why === null) {
+                $ok++;
+            } else {
+                $problems[] = $why;
+            }
+        }
+        $fa = fn ($n) => \App\Support\Money::toPersianDigits((string) $n);
+        $msg = ($action === 'stoqs_create' ? $fa($ok).' محصول در StoqS ساخته شد.' : $fa($ok).' محصول به StoqS فرستاده شد.')
+            .($problems ? ' '.implode(' · ', array_slice($problems, 0, 5)) : '');
+
+        return back()->with($problems ? 'error' : 'success', $msg);
+    }
+
+    /** Product page buttons: «ارسال به StoqS», «دریافت از StoqS», «ساخت در StoqS». */
+    public function stoqs(Request $request, Product $product): RedirectResponse
+    {
+        $action = $request->validate(['stoqs_action' => ['required', 'in:push,pull,create']])['stoqs_action'];
+        if (! config('stockkeeping.enabled')) {
+            return back()->with('error', 'اتصال StoqS خاموش است.');
+        }
+        if ($action === 'create') {
+            $r = StoqsContent::createInStoqs($product);
+
+            return back()->with($r['ok'] ? 'success' : 'error', $r['message']);
+        }
+        if (! StoqsContent::linked($product)) {
+            return back()->with('error', 'این محصول به StoqS وصل نیست؛ اول «ساخت در StoqS» را بزنید.');
+        }
+        if ($action === 'pull') {
+            try {
+                return back()->with('success', StoqsContent::pull($product));
+            } catch (StoqsApiError $e) {
+                return back()->with('error', 'دریافت از StoqS نشد: '.$e->getMessage());
+            }
+        }
+        $ev = StoqsContent::enqueueAll($product);
+
+        return StoqsContent::send($ev)
+            ? back()->with('success', 'به StoqS فرستاده شد.'.(($n = $product->fresh()->stoqs_meta['note']['text'] ?? null) ? ' '.$n : ''))
+            : back()->with('error', 'ارسال نشد و در صف ماند: '.$ev->fresh()->last_error);
     }
 
     /** Bulk-set the primary category on the given products and keep the pivot in sync. */
@@ -121,6 +187,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product): RedirectResponse
     {
         $data = $this->validateProduct($request);
+        $before = StoqsContent::snapshot($product);
 
         $product->update($data['core']);
         $product->categories()->sync($data['category_ids']);
@@ -134,6 +201,7 @@ class ProductController extends Controller
             $this->syncVariants($product, $request);
         }
         $this->handleImages($product, $request);
+        StoqsContent::captureEdit($product, $before);
 
         return redirect()->route('admin.products.edit', $product)->with('success', 'تغییرات ذخیره شد.');
     }
@@ -164,6 +232,7 @@ class ProductController extends Controller
             'is_active' => ['nullable', 'boolean'],
             'is_featured' => ['nullable', 'boolean'],
             'is_bundle' => ['nullable', 'boolean'],
+            'stoqs_sync_mode' => ['nullable', 'in:'.implode(',', array_keys(StoqsContent::MODES))],
             'external_enabled' => ['nullable', 'boolean'],
             'external_url' => ['nullable', 'url', 'max:2048'],
             'bundle_items' => ['nullable', 'array'],
@@ -210,6 +279,7 @@ class ProductController extends Controller
                 'external_enabled' => $request->boolean('external_enabled'),
                 'external_url' => $validated['external_url'] ?? null,
                 'badges' => $this->normalizeBadges($request->input('badges', [])),
+                'stoqs_sync_mode' => $validated['stoqs_sync_mode'] ?? ($request->route('product')?->stoqs_sync_mode ?: 'auto'),
             ],
         ];
     }

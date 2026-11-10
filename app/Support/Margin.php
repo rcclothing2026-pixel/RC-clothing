@@ -33,26 +33,45 @@ class Margin
         return self::costs()[$productId] ?? null;
     }
 
+    /**
+     * @return array<int, int> product id => lowest unit price allowed: from the local
+     * finished cost when there is one, else the StoqS floor_price the import saved.
+     */
+    public static function floors(): array
+    {
+        return request()->attributes->get('margin.floors') ?? tap(
+            array_map(fn ($c) => self::floor($c), self::costs())
+                + (Schema::hasColumn('products', 'stoqs_floor_price')
+                    ? Product::whereNotNull('stoqs_floor_price')->pluck('stoqs_floor_price', 'id')->map(fn ($f) => (int) $f)->all() : []),
+            fn ($m) => request()->attributes->set('margin.floors', $m),
+        );
+    }
+
+    public static function floorOf(int $productId): ?int
+    {
+        return self::floors()[$productId] ?? null;
+    }
+
     /** Lowest unit price that keeps the minimum margin over $cost. */
     public static function floor(int $cost): int
     {
         return (int) ceil($cost * 100 / (100 - self::min()));
     }
 
-    /** Largest whole percent off $price that keeps the margin; null without a cost. */
-    public static function maxPercent(int $price, ?int $cost): ?int
+    /** Largest whole percent off $price that stays at or above $floor; null without a floor. */
+    public static function maxPercent(int $price, ?int $floor): ?int
     {
-        if ($cost === null || $price <= 0) {
+        if ($floor === null || $price <= 0) {
             return null;
         }
 
-        return max(0, (int) floor((1 - self::floor($cost) / $price) * 100 + 1e-9));
+        return max(0, (int) floor((1 - $floor / $price) * 100 + 1e-9));
     }
 
-    /** True when $price keeps the margin (always true without a cost). */
-    public static function keeps(int $price, ?int $cost): bool
+    /** True when $price is at or above $floor (see floorOf; always true without one). */
+    public static function keeps(int $price, ?int $floor): bool
     {
-        return $cost === null || $price >= self::floor($cost);
+        return $floor === null || $price >= $floor;
     }
 
     /**
@@ -97,6 +116,7 @@ class Margin
             }
         });
         request()->attributes->remove('margin.costs');
+        request()->attributes->remove('margin.floors');
 
         return [];
     }

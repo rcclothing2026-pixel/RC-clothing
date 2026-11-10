@@ -159,6 +159,16 @@ class HttpStockKeepingClient implements StockKeepingClient
             } else {
                 // Still include the item; StoqS may match by name/price or accept it.
             }
+            // What the cart gave this line (outlet / coupon / rules / campaign). The
+            // outlet markdown is a discount off the struck price, so the line goes at
+            // that price and StoqS's revenue (unit × qty − discount) stays the same.
+            $disc = array_values(array_filter((array) ($line['discounts'] ?? []), fn ($d) => is_array($d) && (int) ($d['amount'] ?? 0) > 0));
+            if ($disc) {
+                $outlet = (int) collect($disc)->where('type', 'price_sheet')->sum('amount');
+                $item['unit_price'] += intdiv($outlet, max(1, $item['quantity']));
+                $item['discount_amount'] = (int) collect($disc)->sum('amount');
+                $item['discounts'] = array_map(fn ($d) => array_intersect_key($d, array_flip(['type', 'id', 'code', 'amount'])), $disc);
+            }
             $items[] = $item;
         }
 
@@ -178,6 +188,7 @@ class HttpStockKeepingClient implements StockKeepingClient
             'shipping_cost' => (int) ($sale['shipping_cost'] ?? 0),
             'discount' => (int) ($sale['discount'] ?? 0),
             'total' => (int) ($sale['total'] ?? 0),
+            'codes' => array_values((array) ($sale['codes'] ?? [])),
         ], fn ($v) => $v !== null && $v !== [] && $v !== 0);
 
         $resp = $this->request()->post('/api/v1/sales', $payload)->throw();

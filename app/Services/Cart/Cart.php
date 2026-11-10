@@ -328,15 +328,15 @@ class Cart
     /**
      * The most this cart may be discounted: line by line, the smaller of
      * shop.max_discount_percent of the line and what keeps that line at the
-     * minimum margin over its finished cost (a line without a cost has only the
-     * percent cap). So no product is sold below its floor, and a priced line
+     * minimum margin over its finished cost, or at the StoqS floor_price when it has
+     * no local cost (a line with neither has only the percent cap). So no product is sold below its floor, and a priced line
      * never borrows room from another.
      */
     public function discountCap(): int
     {
         $percent = (int) floor($this->discountableSubtotal() * config('shop.max_discount_percent', 100) / 100);
-        $costs = \App\Support\Margin::costs();
-        if ($costs === []) {
+        $floors = \App\Support\Margin::floors();
+        if ($floors === []) {
             return $percent;
         }
         $max = (int) config('shop.max_discount_percent', 100);
@@ -347,12 +347,68 @@ class Cart
                 continue;
             }
             $line = (int) $l['line_total'];
-            $cost = $costs[(int) $product->id] ?? null;
+            $floor = $floors[(int) $product->id] ?? null;
             $room += min((int) floor($line * $max / 100),
-                $cost === null ? $line : max(0, $line - \App\Support\Margin::floor($cost) * (int) $l['quantity']));
+                $floor === null ? $line : max(0, $line - $floor * (int) $l['quantity']));
         }
 
         return min($percent, $room);
+    }
+
+    /**
+     * What each line got, for the StoqS sale report (items[].discounts): the outlet
+     * markdown (price_sheet: struck price − outlet price), and the coupon and each
+     * counted rule (campaign rules as campaign) spread over the lines they apply to
+     * in proportion to the line totals, scaled down when the cap cut the total.
+     * Shop rule ids are not StoqS ids, so rules carry no id.
+     *
+     * @return array<int, array<int, array{type: string, code?: string, amount: int}>> variant id => discounts
+     */
+    public function lineDiscounts(): array
+    {
+        $lines = $this->lines();
+        $out = [];
+        foreach ($lines as $l) {
+            $p = $l['variant']->product;
+            if (\App\Support\Outlet::has((int) $p->id) && (int) $p->compare_at_price > (int) $l['unit_price']) {
+                $out[$l['variant']->id][] = ['type' => 'price_sheet', 'amount' => ((int) $p->compare_at_price - (int) $l['unit_price']) * (int) $l['quantity']];
+            }
+        }
+        $disc = $lines->filter(fn ($l) => self::isDiscountable($l['variant']->product))->values();
+        $sources = [];
+        if (($coupon = $this->appliedCoupon()) && ($amount = $this->discount()) > 0) {
+            $sources[] = [['type' => 'code', 'code' => $coupon->code], $amount, $disc];
+        }
+        $breakdown = array_filter($this->ruleDiscountBreakdown(), fn ($d) => (int) ($d['amount'] ?? 0) > 0);
+        $rules = \App\Models\DiscountRule::whereIn('id', array_column($breakdown, 'rule_id'))->get()->keyBy('id');
+        foreach ($breakdown as $d) {
+            $rule = $rules[$d['rule_id']] ?? null;
+            $type = str_starts_with((string) $rule?->description, 'campaign:') ? 'campaign' : 'rule';
+            $on = $rule ? app(DiscountRuleEngine::class)->ruleLines($rule, $lines) : $disc;
+            $sources[] = [['type' => $type], (int) $d['amount'], $on->isNotEmpty() ? $on : $disc];
+        }
+        $total = array_sum(array_column($sources, 1));
+        $given = $this->combinedDiscount();
+        if ($total > $given && $total > 0) {   // the cap cut it: scale, the last source takes the rounding
+            $left = $given;
+            foreach ($sources as $i => $s) {
+                $sources[$i][1] = $i === array_key_last($sources) ? $left : (int) floor($s[1] * $given / $total);
+                $left -= $sources[$i][1];
+            }
+        }
+        foreach ($sources as [$tag, $amount, $on]) {
+            $sum = (int) $on->sum('line_total');
+            $left = $amount;
+            foreach ($on->values() as $i => $l) {
+                $share = $i === $on->count() - 1 ? $left : min($left, (int) floor($amount * $l['line_total'] / max(1, $sum)));
+                $left -= $share;
+                if ($share > 0) {
+                    $out[$l['variant']->id][] = $tag + ['amount' => $share];
+                }
+            }
+        }
+
+        return $out;
     }
 
     /** Total surcharge from discount rules. */

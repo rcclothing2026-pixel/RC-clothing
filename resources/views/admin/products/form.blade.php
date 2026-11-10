@@ -436,9 +436,46 @@
                 <p class="mt-1 text-xs text-brand-400">اگر گزینهٔ بالا روشن باشد، دکمهٔ خرید به‌جای افزودن به سبد به این آدرس می‌رود.</p>
             </div>
 
+            {{-- StoqS: how this product syncs, and the manual buttons (their own form below) --}}
+            <div class="space-y-2 rounded-lg bg-brand-50 p-3 ring-1 ring-brand-100">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm font-medium text-brand-800">همگام‌سازی با StoqS</span>
+                    @if ($product->stockkeeping_id)
+                        <span class="rounded-full bg-green-50 px-2 py-0.5 text-[11px] text-green-700 fa-num" dir="ltr">#{{ $product->stockkeeping_id }}</span>
+                    @else
+                        <span class="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] text-brand-500">فقط در سایت</span>
+                    @endif
+                </div>
+                <select name="stoqs_sync_mode" class="w-full rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm">
+                    @foreach (\App\Services\StockKeeping\StoqsContent::MODES as $key => $label)
+                        <option value="{{ $key }}" @selected(old('stoqs_sync_mode', $product->stoqs_sync_mode ?: 'auto') === $key)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <p class="text-xs leading-5 text-brand-400">دوطرفه: نام، توضیحات، خلاصه، قیمت‌ها و عکس‌ها هر دو طرف به‌روز می‌شوند. فقط موجودی: محتوا دست نمی‌خورد. فقط دستی: فقط با دکمه‌های زیر. نادیده: StoqS به این محصول کاری ندارد.</p>
+                @if ($product->exists)
+                    @if ($product->stockkeeping_id)
+                        <div class="flex gap-2">
+                            <button form="stoqs-actions" name="stoqs_action" value="push" class="flex-1 rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-brand-700 ring-1 ring-brand-200 hover:bg-brand-100">ارسال به StoqS</button>
+                            <button form="stoqs-actions" name="stoqs_action" value="pull" class="flex-1 rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-brand-700 ring-1 ring-brand-200 hover:bg-brand-100">دریافت از StoqS</button>
+                        </div>
+                    @elseif (! $product->is_bundle)
+                        <button form="stoqs-actions" name="stoqs_action" value="create" class="w-full rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-brand-700 ring-1 ring-brand-200 hover:bg-brand-100">ساخت در StoqS</button>
+                    @endif
+                    @if ($note = $product->stoqs_meta['note'] ?? null)
+                        <p class="rounded-lg bg-amber-50 px-2 py-1.5 text-xs leading-5 text-amber-800 ring-1 ring-amber-200">{{ $note['text'] ?? '' }}</p>
+                    @endif
+                    @if ($missing = \App\Services\StockKeeping\StoqsApi::missingScopes())
+                        <p class="rounded-lg bg-red-50 px-2 py-1.5 text-xs leading-5 text-red-700 ring-1 ring-red-200">کلید StoqS دسترسی <span dir="ltr">{{ implode('، ', array_keys($missing)) }}</span> ندارد؛ تغییرات محتوا تا اضافه شدن دسترسی در صف می‌مانند.</p>
+                    @endif
+                @endif
+            </div>
+
             <button class="w-full rounded-lg bg-brand-900 py-2.5 text-sm font-semibold text-white">{{ $product->exists ? 'ذخیره تغییرات' : 'ایجاد محصول' }}</button>
         </aside>
     </form>
+    @if ($product->exists)
+        <form id="stoqs-actions" method="POST" action="{{ route('admin.products.stoqs', $product) }}" class="hidden">@csrf</form>
+    @endif
 
     <script>
         (function () {

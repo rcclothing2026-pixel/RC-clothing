@@ -24,9 +24,14 @@ use Illuminate\Support\Str;
 class CatalogImporter
 {
     /**
+     * Per-product sync mode (products.stoqs_sync_mode, see StoqsContent): «ignore»
+     * leaves the product untouched; «stock_only» and «manual» keep their name, text,
+     * prices and photos (manual takes them only when $force — «دریافت از StoqS»).
+     * A field the shop edited and has not sent yet is never overwritten.
+     *
      * @param  array<string, mixed>  $data  one product payload
      */
-    public function importProduct(array $data): Product
+    public function importProduct(array $data, bool $force = false): Product
     {
         $skId = (string) ($data['product_id'] ?? '');
         $name = trim((string) ($data['name'] ?? '')) ?: 'محصول';
@@ -38,16 +43,28 @@ class CatalogImporter
             ?? Product::whereNotNull('stockkeeping_id')->where('name', $name)->first()
             ?? new Product;
         $isNew = ! $product->exists;
+        $mode = StoqsContent::mode($product);
+        if (! $isNew && $mode === 'ignore' && ! $force) {
+            return $product;
+        }
+        $content = $isNew || $force || $mode === 'auto';
+        $pending = $isNew ? [] : StoqsContent::pending($product);
+        $primary = $isNew || empty($product->stockkeeping_id) || (string) $product->stockkeeping_id === $skId;
 
-        $product->name = $name;
+        if ($content && ! in_array('name', $pending, true)) {
+            $product->name = $name;
+        }
         if (empty($product->stockkeeping_id)) {
             $product->stockkeeping_id = $skId;
         }
-        $product->price = $price;
-        // Outlet markdowns (admin → اوتلت) sit on top of the StoqS price.
-        \App\Support\Outlet::apply($product, $price);
-        if (array_key_exists('description', $data) && $data['description']) {
-            $product->description = $data['description'];
+        $prices = $content && ! in_array('price', $pending, true);
+        if ($prices) {
+            $product->price = $price;
+            // Outlet markdowns (admin → اوتلت) sit on top of the StoqS price.
+            \App\Support\Outlet::apply($product, $price);
+        }
+        if ($content) {
+            StoqsContent::pullText($product, $data, $primary, $pending);
         }
         $product->is_active = (bool) ($data['active'] ?? true);
         $product->stock_synced_at = now();
@@ -75,8 +92,37 @@ class CatalogImporter
         foreach ($data['variants'] ?? [] as $v) {
             $this->importVariant($product, $v, $color);
         }
+        if ($prices) {
+            $this->applyVariantPrices($product, $data);
+        }
+        StoqsContent::remember($product, $data);
+        if ($content && ! in_array('images', $pending, true)) {
+            StoqsContent::pullImages($product, $data, $primary);
+        }
 
         return $product;
+    }
+
+    /**
+     * Per-size prices: a size whose StoqS price equals the product price (or, for an
+     * outlet product, its base price) follows the product (null); others carry it.
+     */
+    private function applyVariantPrices(Product $product, array $data): void
+    {
+        $ref = \App\Support\Outlet::has((int) $product->id) && $product->compare_at_price ? (int) $product->compare_at_price : (int) $product->price;
+        foreach ($data['variants'] ?? [] as $v) {
+            $barcode = (string) ($v['barcode'] ?? $v['sku'] ?? '');
+            if ($barcode === '' || ! isset($v['price'])) {
+                continue;
+            }
+            $variant = ProductVariant::where('sku', $barcode)->where('product_id', $product->id)->first();
+            $own = (int) round((float) $v['price']);
+            $override = ($own === (int) $product->price || $own === $ref) ? null : $own;
+            if ($variant && $variant->price !== $override) {
+                $variant->price = $override;
+                $variant->save();
+            }
+        }
     }
 
     private function importVariant(Product $product, array $v, ?string $color): void

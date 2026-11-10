@@ -34,7 +34,7 @@ class IntegrationController extends Controller
             'cfg' => $this->config(),
             'locations' => Cache::get('stockkeeping:locations', []),
             'recentLogs' => $recentLogs,
-            'outbox' => IntegrationEvent::whereIn('status', ['pending', 'failed'])
+            'outbox' => IntegrationEvent::whereIn('status', ['pending', 'failed', 'blocked'])
                 ->orderBy('id')->limit(50)->get(),
             'lastSyncs' => [
                 'catalog' => StockkeeepingLog::where('event_type', StockkeeepingLog::TYPE_CATALOG_IMPORT)->where('status', 'ok')->latest()->first(),
@@ -44,7 +44,9 @@ class IntegrationController extends Controller
             'status' => [
                 'last_pull' => Cache::get('stockkeeping:last_pull'),
                 'last_catalog' => Cache::get('stockkeeping:catalog_since'),
-                'outbox_pending' => IntegrationEvent::whereIn('status', ['pending', 'failed'])->count(),
+                'outbox_pending' => IntegrationEvent::whereIn('status', ['pending', 'failed', 'blocked'])->count(),
+                'missing_scopes' => \App\Services\StockKeeping\StoqsApi::missingScopes(),
+                'sites_synced_at' => \App\Models\Setting::get('stockkeeping.sites_synced_at'),
                 'outbox_sent' => IntegrationEvent::where('status', 'sent')->count(),
                 // Heartbeat written every minute by the schedule:run cron. If it's
                 // stale/missing, the cron isn't running → auto-sync is off.
@@ -154,7 +156,7 @@ class IntegrationController extends Controller
      */
     public function retryOutbox(StockKeepingReporter $reporter): RedirectResponse
     {
-        $events = IntegrationEvent::whereIn('status', ['pending', 'failed'])->get();
+        $events = IntegrationEvent::whereIn('status', ['pending', 'failed', 'blocked'])->get();
         $before = $events->count();
         if ($before === 0) {
             return back()->with('success', 'صف ارسال خالی است — چیزی برای تلاش مجدد نیست.');

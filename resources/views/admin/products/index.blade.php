@@ -55,6 +55,13 @@
             </select>
             <button type="button" data-bulk="collection" class="rounded-lg bg-brand-100 px-3 py-1.5 text-xs text-brand-700">اعمال مجموعه</button>
             <span class="mx-1 h-5 w-px bg-brand-200"></span>
+            <select name="stoqs_sync_mode" class="rounded-lg border border-brand-200 px-2 py-1.5 text-xs">
+                @foreach (\App\Services\StockKeeping\StoqsContent::MODES as $key => $label)<option value="{{ $key }}">StoqS: {{ $label }}</option>@endforeach
+            </select>
+            <button type="button" data-bulk="stoqs_mode" class="rounded-lg bg-brand-100 px-3 py-1.5 text-xs text-brand-700">اعمال حالت</button>
+            <button type="button" data-bulk="stoqs_push" class="rounded-lg bg-brand-100 px-3 py-1.5 text-xs text-brand-700">ارسال به StoqS</button>
+            <button type="button" data-bulk="stoqs_create" data-confirm="محصول‌های انتخاب‌شده‌ای که در StoqS نیستند آنجا ساخته شوند؟" class="rounded-lg bg-brand-100 px-3 py-1.5 text-xs text-brand-700">ساخت در StoqS</button>
+            <span class="mx-1 h-5 w-px bg-brand-200"></span>
             <button type="button" data-bulk="delete" data-confirm="حذف محصول‌های انتخاب‌شده؟" class="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600">حذف</button>
         </div>
 
@@ -79,7 +86,14 @@
                             <td class="p-3">
                                 <a href="{{ route('admin.products.edit', $product) }}" class="flex items-center gap-3 hover:text-accent-600">
                                     <img src="{{ $product->primary_image_url ?? '/placeholder?w=80&h=80&label='.urlencode($product->name) }}" class="h-10 w-10 rounded-lg object-cover" alt="">
-                                    <span class="font-medium text-brand-800">{{ $product->name }}</span>
+                                    <span>
+                                        <span class="font-medium text-brand-800">{{ $product->name }}</span>
+                                        @if (! $product->stockkeeping_id)
+                                            <span class="block text-[11px] text-brand-400">فقط در سایت</span>
+                                        @elseif (($product->stoqs_sync_mode ?: 'auto') !== 'auto')
+                                            <span class="block text-[11px] text-amber-600">StoqS: {{ \App\Services\StockKeeping\StoqsContent::MODES[$product->stoqs_sync_mode] ?? $product->stoqs_sync_mode }}</span>
+                                        @endif
+                                    </span>
                                 </a>
                             </td>
                             <td class="p-3 text-brand-500">{{ ($product->categories->isNotEmpty() ? $product->categories : collect([$product->category])->filter())->pluck('name')->implode('، ') ?: '—' }}</td>

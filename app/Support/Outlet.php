@@ -64,7 +64,7 @@ class Outlet
         if ($percent < 1 || $percent > $max) {
             return 'اوتلت «'.$p->name.'»: درصد باید بین ۱ و '.Margin::fa($max).' باشد.';
         }
-        $cost = Margin::costOf((int) $p->id);
+        $cost = Margin::floorOf((int) $p->id);
         if (! Margin::keeps(self::priceFor(self::base($p), $percent), $cost)) {
             return 'اوتلت «'.$p->name.'»: با '.Margin::fa($percent).'٪ حاشیه از '.Margin::fa(Margin::min()).'٪ کمتر می‌شود؛ حداکثر '
                 .Margin::fa(min($max, (int) Margin::maxPercent(self::base($p), $cost))).'٪.';

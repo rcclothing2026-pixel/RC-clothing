@@ -15,6 +15,10 @@ class StockkeeepingLog extends Model
     public const TYPE_CATALOG_IMPORT = 'catalog_import';
     public const TYPE_COLLECTIONS_IMPORT = 'collections_import';
     public const TYPE_WEBHOOK_PRODUCT = 'webhook_product';
+    public const TYPE_CONTENT_PUSH = 'content_push';
+    public const TYPE_CONTENT_PULL = 'content_pull';
+    public const TYPE_SITES = 'sites';
+    public const TYPE_DISCOUNTS = 'discounts';
 
     public const SOURCE_MANUAL = 'manual';
     public const SOURCE_AUTO = 'auto';
@@ -28,6 +32,10 @@ class StockkeeepingLog extends Model
         self::TYPE_CATALOG_IMPORT => 'وارد کردن کاتالوگ',
         self::TYPE_COLLECTIONS_IMPORT => 'وارد کردن مجموعه‌ها',
         self::TYPE_WEBHOOK_PRODUCT => 'محصول جدید/به‌روز (وب‌هوک)',
+        self::TYPE_CONTENT_PUSH => 'ارسال محتوا به StoqS',
+        self::TYPE_CONTENT_PULL => 'دریافت محتوا از StoqS',
+        self::TYPE_SITES => 'معرفی سایت و پیوند محصولات',
+        self::TYPE_DISCOUNTS => 'کدهای تخفیف در StoqS',
     ];
 
     protected $table = 'stockkeeping_log';

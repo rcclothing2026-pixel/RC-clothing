@@ -37,6 +37,21 @@ class Coupon extends Model
         ];
     }
 
+    /** Register the shop's coupons in StoqS (StoqsCodes); used_count changes are not sent. */
+    protected static function booted(): void
+    {
+        static::saved(function (self $c) {
+            if ($c->wasRecentlyCreated || $c->wasChanged(\App\Services\StockKeeping\StoqsCodes::FIELDS)) {
+                \App\Services\StockKeeping\StoqsCodes::enqueue((int) $c->id);
+            }
+        });
+        static::deleted(function (self $c) {
+            if ($c->stoqs_code_id) {
+                \App\Services\StockKeeping\StoqsCodes::enqueue((int) $c->id, (int) $c->stoqs_code_id, true);
+            }
+        });
+    }
+
     public static function findByCode(string $code): ?self
     {
         return static::where('code', mb_strtoupper(trim($code)))->first();

@@ -9,7 +9,7 @@ use App\Models\StockkeeepingLog;
 use App\Services\StockKeeping\CatalogImporter;
 use App\Services\StockKeeping\StockKeepingClient;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -40,6 +40,11 @@ class StoqsWebhookController extends Controller
 
         $event = (string) ($body['event'] ?? '');
         $data = (array) ($body['data'] ?? []);
+
+        // StoqS «ارسال پیام آزمایشی»: a signed ping proves URL + secret; nothing else runs.
+        if ($event === 'ping') {
+            return response()->json(['ok' => true, 'pong' => true, 'site' => 'racketclub']);
+        }
 
         // Echo prevention: if the webhook carries source_instance_id matching our
         // own, it was caused by this Chiiaco instance — skip to avoid loops.
@@ -75,7 +80,10 @@ class StoqsWebhookController extends Controller
                     Product::where('stockkeeping_id', (string) $data['product_id'])
                         ->update(['is_active' => false]);
                 }
+            } elseif ($event === 'product.content_changed') {
+                $this->applyContentChanged($data);
             }
+            // discounts.changed / campaign.changed and unknown events: acknowledged (200).
             // sale.created is informational here: its per-item stock effect already
             // arrives as stock.changed events, so we don't double-apply it.
         } catch (\Throwable $e) {
@@ -136,6 +144,35 @@ class StoqsWebhookController extends Controller
         return true;
     }
 
+    /**
+     * product.content_changed: name / text / prices / photos changed in StoqS. data =
+     * {product_id, fields[], product{full catalog payload}}. Only a product the shop
+     * already has is updated (its sync mode and unsent shop edits are respected).
+     */
+    private function applyContentChanged(array $data): bool
+    {
+        $sp = (array) ($data['product'] ?? []);
+        $skId = (string) ($sp['product_id'] ?? $data['product_id'] ?? '');
+        if (! $sp || $skId === '') {
+            return false;
+        }
+        $barcodes = collect($sp['variants'] ?? [])->map(fn ($v) => (string) ($v['barcode'] ?? ''))->filter()->all();
+        $known = Product::where('stockkeeping_id', $skId)->exists()
+            || ($barcodes && ProductVariant::whereIn('sku', $barcodes)->exists());
+        if (! $known) {
+            return false;
+        }
+        $product = app(CatalogImporter::class)->importProduct($sp + ['product_id' => $skId]);
+        StockkeeepingLog::record(
+            StockkeeepingLog::TYPE_CONTENT_PULL, 'in', $skId, null,
+            ['fields' => $data['fields'] ?? [], 'product_id' => $product->id],
+            source: StockkeeepingLog::SOURCE_AUTO,
+            summary: $product->name.' ← StoqS: '.implode('، ', array_map(fn ($f) => \App\Services\StockKeeping\StoqsContent::LABELS[$f] ?? $f, (array) ($data['fields'] ?? []))),
+        );
+
+        return true;
+    }
+
     private function signatureValid(Request $request, string $raw, string $secret): bool
     {
         $header = (string) $request->header('X-Stoqs-Signature', '');
@@ -155,8 +192,8 @@ class StoqsWebhookController extends Controller
         }
 
         $variant = ProductVariant::where('sku', $barcode)->first();
-        if (! $variant) {
-            return; // not a product we publish — ignore
+        if (! $variant || $variant->product?->stoqs_sync_mode === 'ignore') {
+            return; // not a product we publish (or set to «نادیده») — ignore
         }
 
         // Map the StoqS variant id if we don't have it yet.

@@ -110,6 +110,14 @@ class ImportStoqsCatalog extends Command
             }
         }
 
+        if ($this->option('full') && $count > 0) {
+            try {
+                $this->line('  '.\App\Services\StockKeeping\StoqsSites::sync(false));
+            } catch (\Throwable $e) {
+                $this->warn('  ⚠ پیوند محصولات به StoqS فرستاده نشد: '.$e->getMessage());
+            }
+        }
+
         Cache::put('stockkeeping:catalog_since', $startedAt->copy()->subMinute()->toDateString(), now()->addYears(5));
 
         // Prune variants deleted in StoqS. Only on a --full run: a full run sees

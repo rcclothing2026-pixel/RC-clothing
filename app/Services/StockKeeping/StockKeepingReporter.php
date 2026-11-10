@@ -104,6 +104,9 @@ class StockKeepingReporter
             'redeem_points' => (int) ($order->loyalty_points_used ?? 0),
             'customer' => $customer ?? $this->customerProfile($order),
             'items' => $order->items->flatMap(fn ($i) => $this->expandSaleItems($i))->values()->all(),
+            // The coupon used, with what it gave over all lines (StoqS records one use).
+            'codes' => $order->coupon_code ? [['code' => $order->coupon_code, 'amount' => (int) $order->items->sum(
+                fn ($i) => collect((array) $i->discounts)->where('type', 'code')->sum('amount'))]] : [],
         ];
     }
 
@@ -162,6 +165,7 @@ class StockKeepingReporter
                 'unit_price' => $orderItem->unit_price,
                 'quantity' => $orderItem->quantity,
                 'line_total' => $orderItem->line_total,
+                'discounts' => (array) ($orderItem->discounts ?? []),
             ]];
         }
 
@@ -300,55 +304,80 @@ class StockKeepingReporter
             ->get();
 
         foreach ($events as $event) {
-            try {
-                $remoteId = match ($event->type) {
-                    IntegrationEvent::TYPE_SALE_CREATED => $this->client->reportSale($event->payload),
-                    IntegrationEvent::TYPE_INCOME_RECORDED => $this->client->reportIncome($event->payload),
-                    IntegrationEvent::TYPE_CUSTOMER_UPSERTED => $this->client->upsertCustomer($event->payload),
-                    default => null,
-                };
+            $this->deliver($event);
+        }
+    }
 
-                $event->update([
-                    'status' => 'sent',
-                    'remote_id' => $remoteId,
-                    'processed_at' => now(),
-                    'last_error' => null,
-                ]);
+    /**
+     * Deliver one outbox row now. True when it went through. A refusal for a scope
+     * the key lacks parks the row as «blocked» (no retry storm; StoqsSites::sync()
+     * re-tries blocked rows once a day). Content/coupon rows StoqS refuses for good
+     * return '' from their handler and are dismissed.
+     */
+    public function deliver(IntegrationEvent $event): bool
+    {
+        try {
+            $remoteId = match ($event->type) {
+                IntegrationEvent::TYPE_SALE_CREATED => $this->client->reportSale($event->payload),
+                IntegrationEvent::TYPE_INCOME_RECORDED => $this->client->reportIncome($event->payload),
+                IntegrationEvent::TYPE_CUSTOMER_UPSERTED => $this->client->upsertCustomer($event->payload),
+                StoqsContent::TYPE => StoqsContent::deliver($event),
+                StoqsCodes::TYPE => StoqsCodes::deliver($event),
+                default => null,
+            };
+            if ($remoteId === '' && in_array($event->type, [StoqsContent::TYPE, StoqsCodes::TYPE], true)) {
+                $event->update(['status' => 'dismissed', 'processed_at' => now(), 'last_error' => null]);
 
-                // Link the remote StoqS sale (batch_id) back onto the order so the
-                // order record shows it was reported and which location it left.
-                if ($event->type === IntegrationEvent::TYPE_SALE_CREATED
-                    && $remoteId
-                    && ! empty($event->payload['order_number'])) {
-                    $order = Order::where('number', $event->payload['order_number'])
-                        ->whereNull('stockkeeping_sale_id')
-                        ->first();
-                    if ($order) {
-                        $order->update(['stockkeeping_sale_id' => $remoteId]);
-                        StockkeeepingLog::record(
-                            StockkeeepingLog::TYPE_SALE_PUSH,
-                            'out',
-                            $event->payload['order_number'],
-                            $order->id,
-                            ['items' => $event->payload['items'] ?? [], 'total' => $event->payload['total'] ?? null],
-                            'ok',
-                            $remoteId,
-                        );
-                    }
+                return true;
+            }
+
+            $event->update([
+                'status' => 'sent',
+                'remote_id' => is_string($remoteId) ? mb_substr($remoteId, 0, 250) : $remoteId,
+                'processed_at' => now(),
+                'last_error' => null,
+            ]);
+
+            // Link the remote StoqS sale (batch_id) back onto the order so the
+            // order record shows it was reported and which location it left.
+            if ($event->type === IntegrationEvent::TYPE_SALE_CREATED
+                && $remoteId
+                && ! empty($event->payload['order_number'])) {
+                $order = Order::where('number', $event->payload['order_number'])
+                    ->whereNull('stockkeeping_sale_id')
+                    ->first();
+                if ($order) {
+                    $order->update(['stockkeeping_sale_id' => $remoteId]);
+                    StockkeeepingLog::record(
+                        StockkeeepingLog::TYPE_SALE_PUSH,
+                        'out',
+                        $event->payload['order_number'],
+                        $order->id,
+                        ['items' => $event->payload['items'] ?? [], 'total' => $event->payload['total'] ?? null],
+                        'ok',
+                        $remoteId,
+                    );
                 }
-            } catch (Throwable $e) {
-                $attempts = $event->attempts + 1;
-                $event->update([
-                    'status' => 'failed',
-                    'attempts' => $attempts,
-                    'last_error' => $e->getMessage(),
-                    // Exponential backoff, capped at ~30 min.
-                    'available_at' => now()->addSeconds(min(1800, 30 * (2 ** $attempts))),
-                ]);
+            }
+
+            return true;
+        } catch (Throwable $e) {
+            $attempts = $event->attempts + 1;
+            $blocked = $e instanceof StoqsApiError && $e->missingScope();
+            $event->update([
+                'status' => $blocked ? 'blocked' : 'failed',
+                'attempts' => $attempts,
+                'last_error' => mb_substr($e->getMessage(), 0, 2000),
+                // Exponential backoff, capped at ~30 min.
+                'available_at' => now()->addSeconds(min(1800, 30 * (2 ** $attempts))),
+            ]);
+            if (! $blocked) {
                 Log::warning('[stock-keeping] event delivery failed', [
                     'event_id' => $event->id, 'type' => $event->type, 'error' => $e->getMessage(),
                 ]);
             }
+
+            return false;
         }
     }
 }
