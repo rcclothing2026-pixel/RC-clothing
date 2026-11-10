@@ -93,7 +93,7 @@ class CatalogImporter
             $this->importVariant($product, $v, $color);
         }
         if ($prices) {
-            $this->applyVariantPrices($product, $data);   // sets StoqS size prices, never clears one
+            $this->applyVariantPrices($product, $data);
         }
         StoqsContent::remember($product, $data);
         if ($content && ! in_array('images', $pending, true)) {
@@ -118,11 +118,25 @@ class CatalogImporter
             $variant = ProductVariant::where('sku', $barcode)->where('product_id', $product->id)->first();
             $own = (int) round((float) $v['price']);
             $override = ($own === (int) $product->price || $own === $ref) ? null : $own;
-            // RC has no price.changed handler, so nothing here may clear a shop size price.
-            if ($variant && $override !== null && $variant->price !== $override) {
-                $variant->price = $override;
-                $variant->save();
+            if ($variant) {
+                $this->setSizePrice($variant, $override);
             }
+        }
+    }
+
+    /**
+     * A size price from StoqS (null = follow the product). Applied only to a size that
+     * follows the product, already has that price, or whose price StoqS set last
+     * (stoqs_size_price); a size price set in the shop is left alone.
+     */
+    private function setSizePrice(ProductVariant $variant, ?int $override): void
+    {
+        $mine = $variant->price === null || $variant->price === $override   // following, or already agreeing
+            || ($variant->stoqs_size_price !== null && (int) $variant->stoqs_size_price === (int) $variant->price);
+        if ($mine && ($variant->price !== $override || $variant->stoqs_size_price !== $override)) {
+            $variant->price = $override;
+            $variant->stoqs_size_price = $override;
+            $variant->save();
         }
     }
 

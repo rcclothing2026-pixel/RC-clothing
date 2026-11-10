@@ -71,7 +71,8 @@ Artisan::command('stoqs:sites', fn () => $this->info(\App\Services\StockKeeping\
     ->purpose('Introduce this shop to StoqS and send its product links');
 
 // Read-only: size prices on this shop that differ from StoqS (list prices; a size
-// with no own price follows its product). Changes nothing.
+// with no own price follows its product). «set by»: StoqS = the import may still
+// change it, shop = an admin set it and imports leave it. Changes nothing.
 Artisan::command('stoqs:size-price-diff', function (\App\Services\StockKeeping\StockKeepingClient $client) {
     $rows = [];
     foreach ($client->catalog(null) as $sp) {
@@ -85,11 +86,13 @@ Artisan::command('stoqs:size-price-diff', function (\App\Services\StockKeeping\S
             $stoqs = (int) round((float) ($sv['price'] ?? $sBase));
             if ($local !== $stoqs) {
                 $rows[] = [$v->sku, $v->product->name, (string) $v->size, $v->price === null ? "$local (product)" : (string) $local,
-                    ! empty($sv['price_override']) ? (string) $stoqs : "$stoqs (product)", (string) ($sv['sale_price'] ?? ''), $v->product->stoqs_sync_mode ?? 'auto'];
+                    ! empty($sv['price_override']) ? (string) $stoqs : "$stoqs (product)", (string) ($sv['sale_price'] ?? ''),
+                    $v->price === null ? '-' : ($v->stoqs_size_price !== null && (int) $v->stoqs_size_price === (int) $v->price ? 'StoqS' : 'shop'),
+                    $v->product->stoqs_sync_mode ?? 'auto'];
             }
         }
     }
-    $rows ? $this->table(['sku', 'product', 'size', 'shop', 'StoqS', 'StoqS sale', 'mode'], $rows) : $this->info('No differences.');
+    $rows ? $this->table(['sku', 'product', 'size', 'shop', 'StoqS', 'StoqS sale', 'set by', 'mode'], $rows) : $this->info('No differences.');
     $this->info(count($rows).' size price(s) differ.');
 })->purpose('List local size prices that differ from StoqS (read-only)');
 Schedule::call(function () use ($due) {

@@ -19,6 +19,7 @@ class ProductVariant extends Model
     {
         return [
             'price' => 'integer',
+            'stoqs_size_price' => 'integer',
             'stock_qty' => 'integer',
             'weight' => 'integer',
             'is_active' => 'boolean',

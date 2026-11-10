@@ -10,6 +10,7 @@ use App\Services\StockKeeping\CatalogImporter;
 use App\Services\StockKeeping\StockKeepingClient;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -64,15 +65,16 @@ class StoqsWebhookController extends Controller
             return response('ok (own echo skipped)', 200);
         }
 
-        // Replays: StoqS sends the same event_id on every retry of one event.
-        $this->eventId = mb_substr((string) ($body['event_id'] ?? $request->header('X-Stoqs-Event-Id', '')), 0, 64);
-        if ($this->eventId !== '' && $this->seen($this->eventId)) {
-            return response('ok (duplicate skipped)', 200);
-        }
         try {
             $this->at = ! empty($body['occurred_at']) ? Carbon::parse((string) $body['occurred_at'])->utc() : null;
         } catch (\Throwable) {
             $this->at = null;
+        }
+        // Replays: StoqS sends the same event_id on every retry of one event. The id is
+        // claimed before anything is applied, so two overlapping copies cannot both run.
+        $this->eventId = mb_substr((string) ($body['event_id'] ?? $request->header('X-Stoqs-Event-Id', '')), 0, 64);
+        if (! $this->claim()) {
+            return response('ok (duplicate skipped)', 200);
         }
 
         try {
@@ -114,8 +116,12 @@ class StoqsWebhookController extends Controller
             Log::warning('[stoqs-webhook] processing failed', ['event' => $event, 'error' => $e->getMessage()]);
             // Still 200 so StoqS doesn't hammer retries for a row we can't match;
             // the next pull will reconcile.
+            $this->release();   // ... but a retry of this event may run again
+            $failed = true;
         }
-        $this->recordEvent();
+        if (empty($failed)) {
+            $this->recordEvent();
+        }
 
         return response('ok', 200);
     }
@@ -198,13 +204,30 @@ class StoqsWebhookController extends Controller
         return true;
     }
 
-    /** Whether an event with this id was already applied (a missing table counts as no). */
-    private function seen(string $id): bool
+    /** Claim this event id (unique with subject ''); false when another delivery has it. */
+    private function claim(): bool
+    {
+        if ($this->eventId === '') {
+            return true;
+        }
+        try {
+            DB::table('stoqs_webhook_events')->insert(['event_id' => $this->eventId, 'subject' => '', 'occurred_at' => $this->at, 'created_at' => now()]);
+        } catch (UniqueConstraintViolationException) {
+            return false;
+        } catch (\Throwable $e) {
+            Log::warning('[stoqs-webhook] could not claim the event', ['error' => $e->getMessage()]);   // e.g. not migrated yet
+        }
+
+        return true;
+    }
+
+    private function release(): void
     {
         try {
-            return DB::table('stoqs_webhook_events')->where('event_id', $id)->exists();
+            if ($this->eventId !== '') {
+                DB::table('stoqs_webhook_events')->where('event_id', $this->eventId)->delete();
+            }
         } catch (\Throwable) {
-            return false;
         }
     }
 
@@ -229,17 +252,17 @@ class StoqsWebhookController extends Controller
         return true;
     }
 
-    /** Remember this event (its id, and what it changed when) for 8 days. */
+    /** Remember what this event changed, and when, for 8 days (the id was claimed already). */
     private function recordEvent(): void
     {
-        if ($this->eventId === '' && ! $this->subjects) {
-            return;
-        }
         $now = now();
+        $id = $this->eventId !== '' ? $this->eventId : 'no-id-'.bin2hex(random_bytes(8));
         try {
-            DB::table('stoqs_webhook_events')->insert(array_map(fn ($s) => [
-                'event_id' => $this->eventId, 'subject' => $s, 'occurred_at' => $this->at, 'created_at' => $now,
-            ], array_values(array_unique($this->subjects)) ?: [null]));
+            if ($this->subjects) {
+                DB::table('stoqs_webhook_events')->insert(array_map(fn ($s) => [
+                    'event_id' => $id, 'subject' => $s, 'occurred_at' => $this->at, 'created_at' => $now,
+                ], array_values(array_unique($this->subjects))));
+            }
             DB::table('stoqs_webhook_events')->where('created_at', '<', $now->copy()->subDays(8))->delete();
         } catch (\Throwable $e) {
             Log::warning('[stoqs-webhook] could not record the event', ['error' => $e->getMessage()]);

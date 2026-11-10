@@ -387,6 +387,9 @@ class Cart
             $on = $rule ? app(DiscountRuleEngine::class)->ruleLines($rule, $lines) : $disc;
             $sources[] = [['type' => $type], (int) $d['amount'], $on->isNotEmpty() ? $on : $disc];
         }
+        // Rules bound to some lines go first, so a cart-wide coupon or rule spreads over
+        // what room is left instead of squeezing them out (usort is stable).
+        usort($sources, fn ($a, $b) => ($a[2]->count() < $disc->count() ? 0 : 1) <=> ($b[2]->count() < $disc->count() ? 0 : 1));
         $total = array_sum(array_column($sources, 1));
         $given = $this->combinedDiscount();
         if ($total > $given && $total > 0) {   // the cap cut it: scale, the last source takes the rounding

@@ -429,21 +429,92 @@ class StoqsContentSyncTest extends TestCase
         Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'variants/12') && $r['price'] === null);
     }
 
-    public function test_an_import_sets_but_never_clears_size_prices(): void
+    public function test_size_prices_set_by_stoqs_follow_stoqs_and_shop_ones_stay(): void
     {
         $p = $this->product();
-        $p->variants()->where('sku', '1001')->update(['price' => 950_000]);
-        app(\App\Services\StockKeeping\CatalogImporter::class)->importProduct($this->payload(['images' => []]));
+        $import = fn (array $over = []) => app(\App\Services\StockKeeping\CatalogImporter::class)->importProduct($this->payload($over + ['images' => []]));
+        $v = fn (string $sku) => ProductVariant::where('sku', $sku)->first();
+        $v('1001')->update(['price' => 950_000]);   // set by the shop admin
 
-        $this->assertSame(950_000, (int) ProductVariant::where('sku', '1001')->value('price'));   // kept
-        $this->assertSame(1_200_000, (int) ProductVariant::where('sku', '1002')->value('price'));   // StoqS's own size price
-        // RC has no price.changed handler: nothing clears a shop size price.
+        $import();   // StoqS: M (1002) has its own 1.2M
+        $this->assertSame(950_000, $v('1001')->price);
+        $this->assertSame(1_200_000, $v('1002')->price);
+        $this->assertSame(1_200_000, $v('1002')->stoqs_size_price);
 
-        // Read-only report of what differs.
         Http::fake(['stoqs.test/api/v1/catalog*' => Http::response(['products' => [$this->payload()], 'has_more' => false])]);
-        ProductVariant::where('sku', '1001')->update(['price' => 950_000]);
         $this->artisan('stoqs:size-price-diff')->expectsOutputToContain('1 size price(s) differ.')->assertSuccessful();
-        $this->assertSame(950_000, (int) ProductVariant::where('sku', '1001')->value('price'));
+        $this->assertSame(950_000, $v('1001')->price);   // read-only
+
+        // StoqS drops M's own price and raises the product to 1.5M: M follows the product.
+        $follow = ['base_price' => 1_500_000, 'price' => 1_500_000, 'variants' => [
+            ['variant_id' => 11, 'barcode' => '1001', 'size' => 'S', 'active' => true, 'price' => 1_500_000, 'price_override' => false, 'sale_price' => null],
+            ['variant_id' => 12, 'barcode' => '1002', 'size' => 'M', 'active' => true, 'price' => 1_500_000, 'price_override' => false, 'sale_price' => null],
+        ]];
+        $import($follow);
+        $this->assertSame(1_500_000, (int) $p->fresh()->price);
+        $this->assertNull($v('1002')->price);
+        $this->assertNull($v('1002')->stoqs_size_price);
+        $this->assertSame(950_000, $v('1001')->price);   // the admin's price survives
+
+        // A new StoqS size price lands on a StoqS-owned size, but not while a shop price edit is unsent.
+        StoqsContent::enqueue($p, ['price']);
+        $import();
+        $this->assertNull($v('1002')->price);
+        IntegrationEvent::query()->update(['status' => 'sent']);
+        $import();
+        $this->assertSame(1_200_000, $v('1002')->price);
+    }
+
+    public function test_an_overlapping_copy_is_skipped_and_a_failed_event_can_be_retried(): void
+    {
+        $this->product();
+        \Illuminate\Support\Facades\DB::table('stoqs_webhook_events')->insert(['event_id' => 'busy', 'subject' => '', 'created_at' => now()]);   // another copy is running
+        $this->webhook('product.content_changed', ['product_id' => 1, 'product' => $this->payload(['images' => []])], id: 'busy')
+            ->assertOk()->assertSee('duplicate');
+        $this->assertSame('مانتو', Product::first()->name);
+
+        $this->mock(\App\Services\StockKeeping\CatalogImporter::class)->shouldReceive('importProduct')->andThrow(new \RuntimeException('db down'));
+        $this->webhook('product.content_changed', ['product_id' => 1, 'product' => $this->payload(['images' => []])], id: 'flaky')->assertOk();
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('stoqs_webhook_events')->where('event_id', 'flaky')->count());   // claim released
+        $this->app->forgetInstance(\App\Services\StockKeeping\CatalogImporter::class);
+        $this->app->offsetUnset(\App\Services\StockKeeping\CatalogImporter::class);
+        $this->webhook('product.content_changed', ['product_id' => 1, 'product' => $this->payload(['images' => []])], id: 'flaky')->assertOk();
+        $this->assertSame('مانتو نو', Product::first()->name);   // the retry went through
+    }
+
+    public function test_line_bound_rules_are_spread_before_the_coupon(): void
+    {
+        $x = Product::create(['name' => 'X', 'slug' => 'x', 'price' => 900_000, 'is_active' => true]);
+        $y = Product::create(['name' => 'Y', 'slug' => 'y', 'price' => 100_000, 'is_active' => true]);
+        $line = fn ($p) => ['variant' => ProductVariant::create(['product_id' => $p->id, 'sku' => 'L'.$p->id, 'size' => 'L', 'stock_qty' => 5, 'is_active' => true])->load('product'),
+            'quantity' => 1, 'unit_price' => (int) $p->price, 'line_total' => (int) $p->price];
+        $lines = collect([$line($x), $line($y)]);
+        $free = DiscountRule::create(['name' => 'Y free', 'priority' => 1, 'conditions' => [['type' => 'cart_has_products', 'product_ids' => [$y->id]]],
+            'actions' => [], 'apply_mode' => 'all', 'stack_mode' => 'all', 'is_active' => true]);
+        $cart = \Mockery::mock(Cart::class)->makePartial();
+        $cart->shouldReceive('lines')->andReturn($lines);
+        $cart->shouldReceive('appliedCoupon')->andReturn(new Coupon(['code' => 'TEN']));
+        $cart->shouldReceive('discount')->andReturn(100_000);   // 10% of 1M
+        $cart->shouldReceive('ruleDiscountBreakdown')->andReturn([['rule_id' => $free->id, 'amount' => 100_000]]);
+        $cart->shouldReceive('combinedDiscount')->andReturn(200_000);
+
+        $out = $cart->lineDiscounts();
+
+        $this->assertSame([['type' => 'code', 'code' => 'TEN', 'amount' => 100_000]], $out[$lines[0]['variant']->id]);
+        $this->assertSame([['type' => 'rule', 'amount' => 100_000]], $out[$lines[1]['variant']->id]);
+    }
+
+    public function test_base_price_is_the_list_price_after_a_sale_or_outlet_ends(): void
+    {
+        $p = Product::create(['name' => 'O', 'slug' => 'o', 'price' => 1_000_000, 'is_active' => true]);
+        $this->assertSame([], \App\Support\Outlet::sync(['o' => 20]));
+        $this->assertSame(1_000_000, StoqsContent::basePrice($p->fresh()));   // outlet on: the struck price
+        $this->assertSame(800_000, (int) $p->fresh()->price);
+        $this->assertSame([], \App\Support\Outlet::sync(['o' => 0]));
+        $this->assertSame(1_000_000, StoqsContent::basePrice($p->fresh()));   // outlet off: price restored
+        $this->assertNull($p->fresh()->compare_at_price);
+        $p->fresh()->update(['price' => 1_200_000, 'compare_at_price' => 1_000_000]);   // a stale struck price below the price
+        $this->assertSame(1_200_000, StoqsContent::basePrice($p->fresh()));
     }
 
     public function test_webhook_replays_and_older_events_are_skipped(): void
@@ -475,13 +546,13 @@ class StoqsContentSyncTest extends TestCase
         $cart = \Mockery::mock(Cart::class)->makePartial();
         $cart->shouldReceive('lines')->andReturn($lines);
         $cart->shouldReceive('appliedCoupon')->andReturn(null);
-        $cart->shouldReceive('ruleDiscountBreakdown')->andReturn([['rule_id' => $onB->id, 'amount' => 90_000], ['rule_id' => $all->id, 'amount' => 150_000]]);
-        $cart->shouldReceive('combinedDiscount')->andReturn(240_000);
+        $cart->shouldReceive('ruleDiscountBreakdown')->andReturn([['rule_id' => $onB->id, 'amount' => 90_000], ['rule_id' => $all->id, 'amount' => 100_000]]);
+        $cart->shouldReceive('combinedDiscount')->andReturn(190_000);
 
         $out = $cart->lineDiscounts();
 
-        // B had 10k of room left after the first rule: the rest of its share moved to A, and what A could not take was dropped.
-        $this->assertSame([['type' => 'rule', 'amount' => 100_000]], $out[$lines[0]['variant']->id]);
+        // B had 10k of room left after the first rule: the rest of its share moved to A, nothing dropped.
+        $this->assertSame([['type' => 'rule', 'amount' => 90_000]], $out[$lines[0]['variant']->id]);
         $this->assertSame([['type' => 'rule', 'amount' => 90_000], ['type' => 'rule', 'amount' => 10_000]], $out[$lines[1]['variant']->id]);
     }
 
