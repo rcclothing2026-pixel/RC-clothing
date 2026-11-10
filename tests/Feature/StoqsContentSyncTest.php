@@ -117,8 +117,27 @@ class StoqsContentSyncTest extends TestCase
         $this->webhook('something.new', [])->assertOk();
     }
 
+    public function test_photos_are_not_pulled_while_pull_images_is_off(): void
+    {
+        $this->fakeImages();
+        $this->assertFalse((bool) config('stockkeeping.pull_images'));   // the default
+        $p = $this->product();
+        $a = $p->images()->create(['path' => '/storage/products/a.jpg', 'position' => 1, 'is_primary' => true]);
+        $b = $p->images()->create(['path' => '/storage/products/b.jpg', 'position' => 2]);
+
+        $this->webhook('product.content_changed', ['product_id' => 1, 'fields' => ['images'], 'product' => $this->payload()])->assertOk();
+        app(\App\Services\StockKeeping\CatalogImporter::class)->importProduct($this->payload(), true);   // as «دریافت از StoqS»
+
+        $p->refresh();
+        $this->assertSame('مانتو نو', $p->name);   // text still arrives
+        $this->assertSame([$a->id, $b->id], $p->images()->orderBy('position')->pluck('id')->all());
+        $this->assertSame(0, $p->images()->whereNotNull('stoqs_media_id')->count());
+        $this->assertCount(0, Http::recorded(fn (Request $r) => str_contains($r->url(), '/m/')));
+    }
+
     public function test_content_changed_imports_text_prices_and_photos_in_stoqs_order(): void
     {
+        config(['stockkeeping.pull_images' => true]);
         $this->fakeImages();
         $p = $this->product(['summary' => 'خلاصهٔ قدیمی']);
         $local = $p->images()->create(['path' => '/storage/products/own.jpg', 'alt' => 'own', 'position' => 1]);
@@ -219,6 +238,7 @@ class StoqsContentSyncTest extends TestCase
 
     public function test_photos_go_up_removed_ones_are_deleted_and_order_is_sent(): void
     {
+        $this->assertFalse((bool) config('stockkeeping.pull_images'));   // pushes work with pulling off
         $p = $this->product();
         StoqsContent::remember($p, $this->payload());
         $p->forceFill(['stoqs_meta' => array_replace_recursive($p->stoqs_meta, ['p' => [1 => ['m' => [501, 502]]]])])->saveQuietly();

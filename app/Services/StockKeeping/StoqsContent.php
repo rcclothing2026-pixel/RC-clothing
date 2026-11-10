@@ -399,6 +399,9 @@ class StoqsContent
     /** The album after the importer saved: StoqS photos (in StoqS order), then shop-only ones. */
     public static function pullImages(Product $p, array $data, bool $primary): void
     {
+        if (! config('stockkeeping.pull_images')) {
+            return;   // off by default: StoqS photos never touch the shop albums
+        }
         $spid = (int) ($data['product_id'] ?? 0);
         if (! $spid || ! array_key_exists('images', $data) || ! is_array($data['images'])) {
             return;

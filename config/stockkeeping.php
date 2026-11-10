@@ -11,6 +11,11 @@ return [
     // have stock available in StoqS; out-of-stock products are skipped.
     'import_in_stock_only' => env('STOCKKEEPING_IMPORT_IN_STOCK_ONLY', true),
 
+    // When false (default), StoqS photos never change the shop's albums (import,
+    // product.content_changed, «دریافت از StoqS»); shop → StoqS photo pushes still run.
+    // Admin → StoqS settings overrides this.
+    'pull_images' => env('STOQS_PULL_IMAGES', false),
+
     // Stock locations (warehouses and/or shops) this site mirrors, as a CSV of
     // "<type>:<id>" tokens, e.g. "warehouse:1,shop:3". Availability shown on the
     // storefront is the SUM across these. Empty = whatever the API key allows.

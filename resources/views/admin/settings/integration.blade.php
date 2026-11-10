@@ -224,6 +224,14 @@
             </span>
         </label>
 
+        <label class="flex items-start gap-2 text-sm font-medium text-brand-800">
+            <input type="checkbox" name="pull_images" value="1" @checked($cfg['pull_images']) class="mt-0.5 rounded">
+            <span>
+                عکس‌های StoqS وارد آلبوم محصولات شوند
+                <span class="block text-xs font-normal text-brand-400">خاموش: عکس‌های سایت از StoqS اضافه، حذف یا جابه‌جا نمی‌شوند (ارسال عکس از سایت به StoqS همچنان انجام می‌شود).</span>
+            </span>
+        </label>
+
         <div class="grid gap-4 sm:grid-cols-2">
             <div>
                 <label class="mb-1 block text-sm font-medium text-brand-700">آدرس StoqS</label>

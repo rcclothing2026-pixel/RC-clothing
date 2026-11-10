@@ -74,7 +74,7 @@ class AppServiceProvider extends ServiceProvider
         // Let admin-managed settings override env-based config (stock-keeping + SMS).
         if (Schema::hasTable('settings')) {
             $stored = \App\Models\Setting::map();
-            foreach (['enabled', 'base_url', 'api_key', 'locations', 'fulfillment_location', 'webhook_secret', 'import_in_stock_only'] as $k) {
+            foreach (['enabled', 'base_url', 'api_key', 'locations', 'fulfillment_location', 'webhook_secret', 'import_in_stock_only', 'pull_images'] as $k) {
                 if (array_key_exists("stockkeeping.$k", $stored)) {
                     config(["stockkeeping.$k" => $stored["stockkeeping.$k"]]);
                 }

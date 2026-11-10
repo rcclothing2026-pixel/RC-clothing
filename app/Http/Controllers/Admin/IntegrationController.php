@@ -79,6 +79,7 @@ class IntegrationController extends Controller
         $v = $request->validate([
             'enabled' => ['nullable', 'boolean'],
             'import_in_stock_only' => ['nullable', 'boolean'],
+            'pull_images' => ['nullable', 'boolean'],
             'base_url' => ['nullable', 'string', 'max:200'],
             'api_key' => ['nullable', 'string', 'max:200'],
             'locations' => ['nullable', 'array'],
@@ -90,6 +91,7 @@ class IntegrationController extends Controller
         $values = [
             'stockkeeping.enabled' => $request->boolean('enabled'),
             'stockkeeping.import_in_stock_only' => $request->boolean('import_in_stock_only'),
+            'stockkeeping.pull_images' => $request->boolean('pull_images'),
             'stockkeeping.base_url' => $v['base_url'] ?? null,
             'stockkeeping.locations' => array_values($v['locations'] ?? []),
             'stockkeeping.fulfillment_location' => $v['fulfillment_location'] ?? null,
@@ -199,6 +201,7 @@ class IntegrationController extends Controller
         return [
             'enabled' => (bool) config('stockkeeping.enabled'),
             'import_in_stock_only' => (bool) config('stockkeeping.import_in_stock_only', true),
+            'pull_images' => (bool) config('stockkeeping.pull_images', false),
             'base_url' => (string) config('stockkeeping.base_url'),
             'has_key' => (bool) config('stockkeeping.api_key'),
             'has_secret' => (bool) config('stockkeeping.webhook_secret'),
