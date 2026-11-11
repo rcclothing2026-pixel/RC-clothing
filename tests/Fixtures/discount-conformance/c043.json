@@ -1,0 +1,45 @@
+{
+    "id": "c043",
+    "title": "A code with its own window: refused before it opens",
+    "schema": 1,
+    "opts": {
+        "customer": null,
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "rules": [],
+    "codes": [
+        {
+            "starts_at": "2026-11-25 00:00:00",
+            "ends_at": "2026-11-28 00:00:00",
+            "id": 7,
+            "code": "WELCOME",
+            "type": "percent",
+            "value": 10,
+            "enabled": 1,
+            "channels": "web,brand,stores"
+        }
+    ],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 3000000
+        }
+    ],
+    "expect": {
+        "discount": 0,
+        "codes": [
+            {
+                "code": "WELCOME",
+                "valid": false
+            }
+        ]
+    }
+}

@@ -506,6 +506,7 @@ class CampaignPlan
                 'categories' => Category::orderBy('name')->get(['slug', 'name'])->map(fn ($c) => ['slug' => $c->slug, 'name' => $c->name])->all(),
                 'collections' => ShopCollection::orderBy('name')->get(['slug', 'name'])->map(fn ($c) => ['slug' => $c->slug, 'name' => $c->name])->all(),
                 'products' => self::productRows(),
+                'shelf_products' => self::shelfProducts(),
                 'brands' => self::named(Product::whereNotNull('brand')->where('brand', '!=', '')->distinct()->orderBy('brand')->pluck('brand')->all()),
                 'groups' => self::named(\App\Models\User::whereNotNull('group')->where('group', '!=', '')->distinct()->orderBy('group')->pluck('group')->all()),
                 'payment_methods' => \App\Models\PaymentMethod::orderBy('id')->get()->map(fn ($m) => ['slug' => $m->key, 'name' => $m->name ?: $m->key])->all(),
@@ -546,7 +547,32 @@ class CampaignPlan
                 'base' => Outlet::base($p), 'cost' => $costs[$p->id] ?? null, 'outlet' => $outlet[$p->id] ?? null,
                 'winter' => $skip !== [] && $p->categories->pluck('slug')->push($p->category?->slug)->intersect($skip)->isNotEmpty(),
                 'category' => $p->category?->name, 'stock' => (int) $p->variants->where('is_active', true)->sum('stock_qty'),
+                // every category slug the product is in (StoqS's import turns a category rule into products)
+                'categories' => $p->categories->pluck('slug')->push($p->category?->slug)->filter()->unique()->values()->all(),
             ])->all();
+    }
+
+    /**
+     * The products on each shelf of the plan today ({shelf slug: [product slugs]}), live or not:
+     * a shelf is a query (categories, outlet, stock), so StoqS's import can only take a snapshot.
+     */
+    private static function shelfProducts(): array
+    {
+        $out = [];
+        foreach ((array) config('campaigns.shelves', []) as $slug => $s) {
+            if (! is_array($s)) {
+                continue;
+            }
+            try {
+                $q = Product::query()->where('is_active', true);
+                Campaigns::applyShelf($q, $s + ['slug' => (string) $slug]);
+                $out[(string) $slug] = $q->limit(2000)->pluck('slug')->all();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $out;
     }
 
     private static function named(array $values): array

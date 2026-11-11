@@ -1,0 +1,48 @@
+{
+    "id": "c040",
+    "title": "First-order code: refused for a customer with a paid order",
+    "schema": 1,
+    "opts": {
+        "customer": {
+            "registered": true,
+            "paid_orders": 1,
+            "code_uses": 0
+        },
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "rules": [],
+    "codes": [
+        {
+            "first_order_only": true,
+            "id": 7,
+            "code": "WELCOME",
+            "type": "percent",
+            "value": 10,
+            "enabled": 1,
+            "channels": "web,brand,stores"
+        }
+    ],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 2,
+            "unit_price": 3000000
+        }
+    ],
+    "expect": {
+        "discount": 0,
+        "codes": [
+            {
+                "code": "WELCOME",
+                "valid": false
+            }
+        ]
+    }
+}

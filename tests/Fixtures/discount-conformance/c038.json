@@ -1,0 +1,55 @@
+{
+    "id": "c038",
+    "title": "Planner offer «order n=2»: a guest (no customer facts) gets nothing",
+    "schema": 1,
+    "opts": {
+        "customer": null,
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "rules": [
+        {
+            "id": 1,
+            "label": "Plan · ۱۰٪ تخفیف سفارش ۲م",
+            "priority": 10,
+            "conditions": [
+                {
+                    "type": "user_previous_order_count",
+                    "min": 1,
+                    "max": 1
+                }
+            ],
+            "actions": [
+                {
+                    "type": "cart_discount_percent",
+                    "value": 10
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": "plan-1-o0",
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        }
+    ],
+    "codes": [],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 3000000
+        }
+    ],
+    "expect": {
+        "discount": 0
+    }
+}

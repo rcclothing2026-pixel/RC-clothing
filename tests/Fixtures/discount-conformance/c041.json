@@ -1,0 +1,44 @@
+{
+    "id": "c041",
+    "title": "Code minimum subtotal: refused under it",
+    "schema": 1,
+    "opts": {
+        "customer": null,
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "rules": [],
+    "codes": [
+        {
+            "min_subtotal": 4000000,
+            "id": 7,
+            "code": "WELCOME",
+            "type": "percent",
+            "value": 10,
+            "enabled": 1,
+            "channels": "web,brand,stores"
+        }
+    ],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 3000000
+        }
+    ],
+    "expect": {
+        "discount": 0,
+        "codes": [
+            {
+                "code": "WELCOME",
+                "valid": false
+            }
+        ]
+    }
+}

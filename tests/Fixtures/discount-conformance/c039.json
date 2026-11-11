@@ -1,0 +1,51 @@
+{
+    "id": "c039",
+    "title": "First-order code with a minimum subtotal: valid on a first order over the minimum",
+    "schema": 1,
+    "opts": {
+        "customer": {
+            "registered": true,
+            "paid_orders": 0,
+            "code_uses": 0
+        },
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "rules": [],
+    "codes": [
+        {
+            "min_subtotal": 4000000,
+            "first_order_only": true,
+            "per_customer_limit": 1,
+            "id": 7,
+            "code": "WELCOME",
+            "type": "percent",
+            "value": 10,
+            "enabled": 1,
+            "channels": "web,brand,stores"
+        }
+    ],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 2,
+            "unit_price": 3000000
+        }
+    ],
+    "expect": {
+        "discount": 600000,
+        "codes": [
+            {
+                "code": "WELCOME",
+                "valid": true,
+                "applied": true
+            }
+        ]
+    }
+}

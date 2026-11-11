@@ -35,16 +35,56 @@ class Campaigns
         });
     }
 
-    /** Approved campaign windows pushed from NJ Focus: key => [from, to] (Y-m-d). */
+    /**
+     * The campaign windows content follows: key => [from, to] (Tehran Y-m-d).
+     * Shop-managed: the approvals pushed from NJ Focus. Managed by StoqS: the StoqS plans of
+     * this site that carry the campaign's key (site_campaign_key in the pulled payload), so a
+     * campaign's banners, pop-ups and badges show only while its StoqS plan is applied and
+     * inside its dates. The payload is the last one pulled: when StoqS is unreachable the shop
+     * keeps it, and each window still ends on its own date.
+     */
     public static function approvals(): array
     {
         return request()->attributes->get('campaigns.approvals') ?? tap(
-            Schema::hasTable('campaign_approvals')
+            self::stoqsWindows() ?? (Schema::hasTable('campaign_approvals')
                 ? CampaignApproval::where('approved', true)->get()
                     ->mapWithKeys(fn ($a) => [$a->key => [$a->starts_on->toDateString(), $a->ends_on->toDateString()]])->all()
-                : [],
+                : []),
             fn ($m) => request()->attributes->set('campaigns.approvals', $m),
         );
+    }
+
+    /** Managed by StoqS: key => [from, to] from the payload's plans; null when the shop manages itself. */
+    public static function stoqsWindows(): ?array
+    {
+        try {
+            if (! \App\Services\StockKeeping\StoqsPromotions::managed()) {
+                return null;
+            }
+            $plans = (array) (\App\Services\StockKeeping\StoqsPromotions::payload()['plans'] ?? []);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        $out = [];
+        foreach ($plans as $pl) {
+            $key = is_array($pl) && is_string($pl['site_campaign_key'] ?? null) ? trim($pl['site_campaign_key']) : '';
+            if ($key === '') {
+                continue;
+            }
+            try {
+                $from = ! empty($pl['from']) ? Carbon::parse($pl['from'])->setTimezone('Asia/Tehran')->toDateString() : '2000-01-01';
+                // a plan ends at a midnight it does not include: the last day is the one before
+                $to = ! empty($pl['to']) ? Carbon::parse($pl['to'])->setTimezone('Asia/Tehran')->subSecond()->toDateString() : '2999-12-31';
+            } catch (\Throwable $e) {
+                continue;
+            }
+            if ($to < $from) {
+                continue;
+            }
+            $out[$key] = isset($out[$key]) ? [min($out[$key][0], $from), max($out[$key][1], $to)] : [$from, $to];
+        }
+
+        return $out;
     }
 
     /** Days the approved campaign moved from its planned start; null while unapproved. */

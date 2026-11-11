@@ -118,16 +118,21 @@ class StoqsCart
      * customer has a phone: their uses of the code and their paid orders, as far as this shop
      * knows them (orders paid here), so per_customer_limit and first_order_only agree with
      * StoqS for this shop's own history. StoqS's answer at checkout covers the rest.
+     * A logged-in customer also brings their order history (facts()), with or without a code,
+     * so a «second order» rule gives the same answer here and in StoqS's evaluate.
      */
     public static function evaluate(Collection $lines, array $codes = [], array $context = [], ?User $user = null): array
     {
         [$eng, $meta] = self::lines($lines);
         $rows = [];
-        $cust = null;
+        $facts = self::facts($user);
+        $cust = $facts === null ? null : ['phone' => StoqsEngine::phone_norm((string) ($user?->phone ?? '')), 'registered' => true,
+            'previous_order_count' => $facts['orders'], 'previous_order_total' => $facts['orders_total'],
+            'paid_orders' => $facts['orders'], 'code_uses' => 0];
         foreach ($codes as $text) {
             $row = self::findCode((string) $text);
             if ($row && ($c = self::customer($user, (string) $row['code'])) !== null) {
-                $cust ??= $c;
+                $cust = $cust === null ? $c : $cust + $c;
                 $row['customer_uses'] = $c['code_uses'];
             }
             $rows[] = $row ?? ['code' => (string) $text, '_reason' => 'not_found', 'enabled' => false];
@@ -142,6 +147,21 @@ class StoqsCart
         $ev['version'] = StoqsPromotions::version();
 
         return $ev;
+    }
+
+    /**
+     * A logged-in customer's earlier orders here, as the shop's own engine counts them
+     * (paid, processing, shipped, delivered): {orders, orders_total}; null for a guest.
+     * Sent to StoqS's evaluate as `customer` and used by the local engine alike.
+     */
+    public static function facts(?User $user): ?array
+    {
+        if (! $user || ! $user->id) {
+            return null;
+        }
+        $q = $user->orders()->whereIn('status', [\App\Models\Order::STATUS_PAID, \App\Models\Order::STATUS_PROCESSING, \App\Models\Order::STATUS_SHIPPED, \App\Models\Order::STATUS_DELIVERED]);
+
+        return ['orders' => (int) (clone $q)->count(), 'orders_total' => (int) round((float) (clone $q)->sum('total'))];
     }
 
     /** The customer as StoqS's evaluate sees them for $code (de_code_customer), from this shop's paid orders; null for a guest. */
@@ -237,6 +257,9 @@ class StoqsCart
         }
         if ($user?->phone) {
             $body['customer_phone'] = (string) $user->phone;
+        }
+        if (($facts = self::facts($user)) !== null) {
+            $body['customer'] = $facts;
         }
         try {
             $resp = StoqsApi::client()->timeout(8)->post('promotions/evaluate', $body);

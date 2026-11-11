@@ -1,0 +1,89 @@
+{
+    "id": "c050",
+    "title": "Planner offer «pieces»: a no-discount line counts toward the pieces but gets no discount",
+    "schema": 1,
+    "opts": {
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "rules": [
+        {
+            "id": 1,
+            "label": "Plan · ۲ قطعه ۱۰٪، ۳ قطعه ۱۵٪ روی سبد · ۲ قطعه",
+            "priority": 10,
+            "conditions": [
+                {
+                    "type": "cart_item_count",
+                    "min": 2,
+                    "max": 2
+                }
+            ],
+            "actions": [
+                {
+                    "type": "cart_discount_percent",
+                    "value": 10
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": "plan-1-o0",
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        },
+        {
+            "id": 2,
+            "label": "Plan · ۲ قطعه ۱۰٪، ۳ قطعه ۱۵٪ روی سبد · ۳ قطعه",
+            "priority": 10,
+            "conditions": [
+                {
+                    "type": "cart_item_count",
+                    "min": 3
+                }
+            ],
+            "actions": [
+                {
+                    "type": "cart_discount_percent",
+                    "value": 15
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": "plan-1-o0",
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        }
+    ],
+    "codes": [],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000
+        },
+        {
+            "variant_id": 20,
+            "product_id": 2,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 2000000,
+            "discountable": false
+        }
+    ],
+    "expect": {
+        "discount": 100000
+    }
+}
