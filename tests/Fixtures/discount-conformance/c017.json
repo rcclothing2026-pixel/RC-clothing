@@ -1,0 +1,45 @@
+{
+  "id": "c017",
+  "title": "A till-only code is refused on the web",
+  "schema": 1,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [],
+  "codes": [
+    {
+      "id": 1,
+      "code": "TILL",
+      "type": "percent",
+      "value": 10,
+      "enabled": 1,
+      "individual_use": false,
+      "channels": "brand"
+    }
+  ],
+  "lines": [
+    {
+      "variant_id": 1,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 10000000
+    }
+  ],
+  "expect": {
+    "discount": 0,
+    "codes": [
+      {
+        "code": "TILL",
+        "valid": false,
+        "reason": "channel",
+        "applied": false
+      }
+    ]
+  }
+}

@@ -40,8 +40,8 @@ class StoqsSites
         try {
             StoqsApi::call('POST', 'sites/hello', [
                 'kind' => 'laravel', 'url' => rtrim((string) config('app.url'), '/'),
-                'plugin_version' => (string) config('stockkeeping.site_version', '1.0.0'), 'capabilities' => self::CAPABILITIES,
-            ]);
+                'plugin_version' => (string) config('stockkeeping.site_version', '1.0.0'), 'capabilities' => self::capabilities(),
+            ] + (StoqsPromotions::managed() ? ['engine_schema' => 2] : []));
             $links = self::links();
             $count = 0;
             foreach (array_chunk($links, 5000) as $chunk) {
@@ -59,6 +59,16 @@ class StoqsSites
             source: StockkeeepingLog::SOURCE_AUTO, summary: $line);
 
         return $line;
+    }
+
+    /**
+     * What hello reports. While StoqS manages this site's promotions the shop prices each size
+     * from /promotions and runs the schema 2 cart engine, so it says so; otherwise the list is
+     * the same as before.
+     */
+    public static function capabilities(): array
+    {
+        return StoqsPromotions::managed() ? [...self::CAPABILITIES, 'size_prices', 'engine_schema_2'] : self::CAPABILITIES;
     }
 
     /** One link per StoqS product behind each linked shop product. */

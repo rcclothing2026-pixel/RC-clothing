@@ -1,0 +1,39 @@
+{
+  "id": "c034",
+  "title": "Schema 2: split-cart invariance, the campaign line alone",
+  "schema": 2,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [],
+  "codes": [
+    {
+      "id": 9,
+      "code": "A25",
+      "type": "percent",
+      "value": 25,
+      "enabled": 1,
+      "individual_use": true,
+      "channels": "web,brand,stores",
+      "vs_list": true
+    }
+  ],
+  "lines": [
+    {
+      "variant_id": 1,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 8000000,
+      "list_price": 10000000
+    }
+  ],
+  "expect": {
+    "discount": 500000
+  }
+}

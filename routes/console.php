@@ -150,3 +150,12 @@ Schedule::call(function () use ($due) {
 
 Schedule::call(fn () => Artisan::call('campaigns:sync'))
     ->dailyAt('03:30')->name('campaigns-sync')->withoutOverlapping();
+
+// StoqS-managed promotions (campaign planner): pull /promotions (304 when unchanged), apply
+// the window prices that hold now, report shop-set size prices, ack. Webhooks do it at once;
+// this catches window starts/ends and lost hooks within a minute.
+Schedule::call(function () use ($due) {
+    if ($due('promotions', 1)) {
+        Artisan::call('stoqs:promotions-sync');
+    }
+})->everyMinute()->name('stoqs-promotions')->withoutOverlapping();

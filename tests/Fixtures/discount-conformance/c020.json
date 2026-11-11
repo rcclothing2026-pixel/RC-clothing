@@ -1,0 +1,66 @@
+{
+  "id": "c020",
+  "title": "discount_cap holds a rule to its amount",
+  "schema": 1,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [
+    {
+      "id": 1,
+      "label": "10 capped",
+      "priority": 1,
+      "conditions": [
+        {
+          "type": "cart_subtotal",
+          "min": 5000000
+        }
+      ],
+      "actions": [
+        {
+          "type": "cart_discount_percent",
+          "value": 10
+        },
+        {
+          "type": "discount_cap",
+          "value": 300000
+        }
+      ],
+      "apply_mode": "all",
+      "stack_mode": "all",
+      "exclusive": false,
+      "enabled": 1,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "codes": [],
+  "lines": [
+    {
+      "variant_id": 11,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 4300000
+    },
+    {
+      "variant_id": 13,
+      "product_id": 3,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 5000000
+    }
+  ],
+  "expect": {
+    "discount": 300000,
+    "rules_applied": [
+      1
+    ]
+  }
+}

@@ -6,6 +6,8 @@ use App\Models\Coupon;
 use App\Models\ProductVariant;
 use App\Models\SavedCart;
 use App\Services\Discount\DiscountRuleEngine;
+use App\Services\Discount\StoqsCart;
+use App\Services\StockKeeping\StoqsPromotions;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +24,9 @@ class Cart
 
     private ?array $ruleResultsCache = null;
 
+    /** StoqS-managed promotions only: the engine's result for this cart (StoqsCart). */
+    private ?array $stoqsCache = null;
+
     public function __construct(private readonly Session $session) {}
 
     /** @return array<int,int> variantId => qty */
@@ -33,6 +38,7 @@ class Cart
     private function persist(array $items): void
     {
         $this->ruleResultsCache = null;
+        $this->stoqsCache = null;
         $this->session->put(self::KEY, $items);
         $this->syncSaved($items);
     }
@@ -105,6 +111,11 @@ class Cart
         if (! $code) {
             return null;
         }
+        if (StoqsPromotions::managed()) {
+            $c = $this->stoqs()['codes'][0] ?? null;
+
+            return $c && ! empty($c['valid']) && ($row = StoqsCart::findCode((string) $code)) ? StoqsCart::couponModel($row) : null;
+        }
         $coupon = Coupon::findByCode($code);
         if (! $coupon || ! $coupon->isValidFor($this->subtotal(), Auth::user())) {
             return null;
@@ -116,6 +127,9 @@ class Cart
     /** @return array{ok: bool, message: string} */
     public function applyCoupon(string $code): array
     {
+        if (StoqsPromotions::managed()) {
+            return $this->applyStoqsCode($code);
+        }
         $coupon = Coupon::findByCode($code);
         if (! $coupon) {
             return ['ok' => false, 'message' => 'کد تخفیف نامعتبر است.'];
@@ -134,6 +148,82 @@ class Cart
     public function removeCoupon(): void
     {
         $this->session->forget(self::COUPON);
+        $this->stoqsCache = null;
+    }
+
+    /** StoqS-managed: a code is one of StoqS's codes for this site, checked by its engine. */
+    private function applyStoqsCode(string $code): array
+    {
+        $row = StoqsCart::findCode($code);
+        $ev = StoqsCart::evaluate($this->lines(), [$row['code'] ?? $code], $this->ruleContext);
+        $c = $ev['codes'][0] ?? null;
+        if (! $row || ! $c || empty($c['valid'])) {
+            return ['ok' => false, 'message' => (string) ($c['message'] ?? 'کد تخفیف نامعتبر است.')];
+        }
+        $this->session->put(self::COUPON, (string) $row['code']);
+        $this->stoqsCache = null;
+
+        return ['ok' => true, 'message' => 'کد تخفیف اعمال شد.'];
+    }
+
+    /**
+     * StoqS-managed: this cart through StoqS's engine on the /promotions payload (or StoqS's
+     * own answer after promotionsCheck()).
+     */
+    public function stoqs(): array
+    {
+        if ($this->stoqsCache === null) {
+            $code = $this->session->get(self::COUPON);
+            $this->stoqsCache = StoqsCart::evaluate($this->lines(), $code ? [(string) $code] : [], $this->ruleContext);
+        }
+
+        return $this->stoqsCache;
+    }
+
+    /**
+     * At order placement, when StoqS manages this site: ask StoqS (POST /promotions/evaluate)
+     * and use its answer for the order. When StoqS cannot be reached the order is sold on the
+     * local evaluation and marked eval «local» (StoqS flags it). When StoqS prices a line
+     * differently (outside its 10-minute grace) the prices are pulled again; if that changes
+     * what this cart shows, refresh is true and the customer should see the cart again.
+     * Null when StoqS does not manage this site (nothing changes then).
+     *
+     * @return array{eval: string, version: ?int, refresh: bool}|null
+     */
+    public function promotionsCheck(): ?array
+    {
+        if (! StoqsPromotions::managed()) {
+            return null;
+        }
+        $code = $this->session->get(self::COUPON);
+        $codes = $code ? [(string) $code] : [];
+        $remote = StoqsCart::remote($this->lines(), $codes, Auth::user());
+        if ($remote === null) {
+            $this->stoqsCache = null;
+            $ev = $this->stoqs();
+
+            return ['eval' => 'local', 'version' => $ev['version'] ?? null, 'refresh' => false];
+        }
+        $off = array_filter($remote['mismatch'], fn ($m) => ($m['field'] ?? '') === 'unit_price' && empty($m['within_grace']));
+        if ($off) {
+            $before = $this->lines()->mapWithKeys(fn ($l) => [$l['variant']->id => $l['unit_price']])->all();
+            StoqsPromotions::pull();
+            StoqsPromotions::apply();
+            $this->stoqsCache = null;
+            $after = $this->lines()->mapWithKeys(fn ($l) => [$l['variant']->id => $l['unit_price']])->all();
+            if ($after !== $before) {
+                return ['eval' => 'stoqs', 'version' => $remote['version'], 'refresh' => true];
+            }
+        }
+        $this->stoqsCache = $remote;
+
+        return ['eval' => 'stoqs', 'version' => $remote['version'], 'refresh' => false];
+    }
+
+    /** StoqS-managed: the list price each line was priced from (order_items.list_price); [] otherwise. */
+    public function listPrices(): array
+    {
+        return StoqsPromotions::managed() ? StoqsCart::listPrices($this->stoqs()) : [];
     }
 
     /* --------------------------- Discount Rules ------------------------- */
@@ -149,6 +239,7 @@ class Cart
     {
         $this->ruleContext = $context;
         $this->ruleResultsCache = null;
+        $this->stoqsCache = null;
     }
 
     /**
@@ -161,6 +252,17 @@ class Cart
     {
         if ($this->ruleResultsCache !== null) {
             return $this->ruleResultsCache;
+        }
+
+        if (StoqsPromotions::managed()) {   // StoqS's rules, not the shop's own
+            $ev = $this->isEmpty() ? null : $this->stoqs();
+
+            return $this->ruleResultsCache = $ev === null ? ['discounts' => [], 'blocks' => [], 'shipping_free' => false] : [
+                'discounts' => array_map(fn ($r) => ['rule_id' => (int) $r['rule_id'], 'rule_name' => (string) ($r['label'] ?? ''),
+                    'amount' => (int) $r['amount'], 'exclusive' => ! empty($r['exclusive']), 'group' => $r['group'] ?? null, 'stoqs' => true], (array) $ev['rules']),
+                'blocks' => (array) ($ev['blocks'] ?? []),
+                'shipping_free' => (bool) ($ev['shipping_free'] ?? false),
+            ];
         }
 
         if ($this->isEmpty() || ! Schema::hasTable('discount_rules')) {
@@ -222,6 +324,15 @@ class Cart
      */
     public function discountChoice(): array
     {
+        if (StoqsPromotions::managed()) {
+            $ev = $this->stoqs();
+
+            return [
+                'coupon' => (bool) array_filter((array) $ev['codes'], fn ($c) => ! empty($c['applied']) && (int) ($c['amount'] ?? 0) > 0),
+                'rules' => array_values(array_map(fn ($r) => (int) $r['rule_id'], array_filter((array) $ev['rules'], fn ($r) => ! empty($r['applied']) && (int) $r['amount'] > 0))),
+                'dropped' => (array) ($ev['dropped'] ?? []), 'alone' => $ev['alone'] ?? null,
+            ];
+        }
         $coupon = $this->coupon();
         $c = $coupon ? $coupon->discountFor($this->discountableSubtotal()) : 0;
         $cx = $coupon && $coupon->exclusive && $c > 0;
@@ -256,6 +367,11 @@ class Cart
     /** The coupon that actually counts on this order (null when «use alone» set it aside). */
     public function appliedCoupon(): ?Coupon
     {
+        if (StoqsPromotions::managed()) {
+            $c = collect((array) $this->stoqs()['codes'])->first(fn ($c) => ! empty($c['applied']));
+
+            return $c && ($row = StoqsCart::findCode((string) $c['code'])) ? StoqsCart::couponModel($row) : null;
+        }
         $coupon = $this->coupon();
         if (! $coupon || $coupon->isFreeShipping()) {
             return $coupon;
@@ -267,6 +383,9 @@ class Cart
     /** One sentence for the customer when «use alone» left a discount out; null otherwise. */
     public function discountNotice(): ?string
     {
+        if (StoqsPromotions::managed()) {
+            return $this->isEmpty() ? null : ($this->stoqs()['notice'] ?? null);
+        }
         $choice = $this->discountChoice();
         if (! $choice['dropped']) {
             return null;
@@ -313,6 +432,10 @@ class Cart
     /** Coupon-only discount (backward compatible; use combinedDiscount() for total). */
     public function discount(): int
     {
+        if (StoqsPromotions::managed()) {   // what the codes got, line by line
+            return (int) collect((array) $this->stoqs()['lines'])->flatMap(fn ($l) => (array) ($l['parts'] ?? []))
+                ->where('type', 'code')->sum('amount');
+        }
         $coupon = $this->appliedCoupon();
 
         return $coupon ? $coupon->discountFor($this->discountableSubtotal()) : 0;
@@ -322,6 +445,10 @@ class Cart
      *  Promotion engine was merged into the discount-rule engine in R-10. */
     public function combinedDiscount(): int
     {
+        if (StoqsPromotions::managed()) {
+            return $this->isEmpty() ? 0 : (int) $this->stoqs()['discount'];
+        }
+
         return (int) min($this->discount() + $this->ruleDiscount(), $this->discountCap());
     }
 
@@ -334,6 +461,9 @@ class Cart
      */
     public function discountCap(): int
     {
+        if (StoqsPromotions::managed()) {
+            return $this->isEmpty() ? 0 : (int) $this->stoqs()['cap'];
+        }
         $percent = (int) floor($this->discountableSubtotal() * config('shop.max_discount_percent', 100) / 100);
         $floors = \App\Support\Margin::floors();
         if ($floors === []) {
@@ -366,6 +496,9 @@ class Cart
      */
     public function lineDiscounts(): array
     {
+        if (StoqsPromotions::managed()) {
+            return $this->isEmpty() ? [] : StoqsCart::lineDiscounts($this->stoqs());
+        }
         $lines = $this->lines();
         $out = [];
         foreach ($lines as $l) {
@@ -547,6 +680,16 @@ class Cart
     {
         if ($this->isEmpty() || ! Schema::hasTable('discount_rules')) {
             return null;
+        }
+        if (StoqsPromotions::managed()) {
+            $best = StoqsCart::nextOffer($this->stoqs(), $this->lines());
+            if (! $best) {
+                return null;
+            }
+            $best['text'] = ($best['items'] ? \App\Support\Money::toPersianDigits((string) $best['gap']).' قطعهٔ دیگر' : \App\Support\Money::toman($best['gap']).' دیگر')
+                .' اضافه کنید: '.$best['label'];
+
+            return $best;
         }
         $applied = collect($this->ruleDiscountBreakdown())->pluck('rule_id')->all();
         $lines = $this->lines();

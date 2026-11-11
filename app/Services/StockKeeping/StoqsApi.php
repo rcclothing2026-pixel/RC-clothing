@@ -4,6 +4,7 @@ namespace App\Services\StockKeeping;
 
 use App\Models\Setting;
 use App\Models\StockkeeepingLog;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -22,11 +23,7 @@ class StoqsApi
     /** @return array<string, mixed> decoded JSON body */
     public static function call(string $method, string $path, ?array $body = null, array $query = [], ?string $file = null, array $fields = []): array
     {
-        $req = Http::baseUrl(rtrim((string) config('stockkeeping.base_url'), '/').'/api/v1')
-            ->withToken((string) config('stockkeeping.api_key'))
-            ->withHeader('X-Instance-ID', (string) config('stockkeeping.instance_id', ''))
-            ->acceptJson()
-            ->timeout(15);
+        $req = self::client();
 
         $path = ltrim($path, '/');
         if ($file !== null) {
@@ -49,6 +46,22 @@ class StoqsApi
         throw self::error($resp, $scope);
     }
 
+    /** The authenticated /api/v1 client every call starts from. */
+    public static function client(): PendingRequest
+    {
+        return Http::baseUrl(rtrim((string) config('stockkeeping.base_url'), '/').'/api/v1')
+            ->withToken((string) config('stockkeeping.api_key'))
+            ->withHeader('X-Instance-ID', (string) config('stockkeeping.instance_id', ''))
+            ->acceptJson()
+            ->timeout(15);
+    }
+
+    /** A refused response as StoqsApiError, remembering a missing scope (for callers that send their own request). */
+    public static function failure(Response $resp, string $scope): StoqsApiError
+    {
+        return self::error($resp, $scope);
+    }
+
     private static function error(Response $resp, string $scope): StoqsApiError
     {
         $json = (array) $resp->json();
@@ -63,6 +76,9 @@ class StoqsApi
 
     public static function scopeOf(string $method, string $path): string
     {
+        if (str_starts_with($path, 'promotions')) {
+            return 'discounts:read';   // GET /promotions and POST /promotions/evaluate, /ack
+        }
         if (str_starts_with($path, 'discounts')) {
             return strtoupper($method) === 'GET' ? 'discounts:read' : 'discounts:write';
         }

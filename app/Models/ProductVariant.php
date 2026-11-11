@@ -20,6 +20,8 @@ class ProductVariant extends Model
         return [
             'price' => 'integer',
             'stoqs_size_price' => 'integer',
+            'promo_price' => 'integer',
+            'site_price_reported' => 'integer',
             'stock_qty' => 'integer',
             'weight' => 'integer',
             'is_active' => 'boolean',
@@ -31,9 +33,17 @@ class ProductVariant extends Model
         return $this->belongsTo(Product::class);
     }
 
-    /** Effective price: variant override or the product's price. */
+    /**
+     * Effective price: variant override or the product's price. While StoqS manages this
+     * site's promotions, a size whose StoqS window price differs from that carries it in
+     * promo_price (StoqsPromotions::applyProduct); it is null otherwise.
+     */
     public function effectivePrice(): int
     {
+        if ($this->promo_price !== null && \App\Services\StockKeeping\StoqsPromotions::managed()) {
+            return (int) $this->promo_price;
+        }
+
         return (int) ($this->price ?? $this->product->price);
     }
 

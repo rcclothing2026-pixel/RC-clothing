@@ -60,6 +60,11 @@ class CatalogImporter
         $prices = $content && ! in_array('price', $pending, true);
         if ($prices) {
             $product->price = $price;
+            if (StoqsPromotions::managed()) {
+                // StoqS runs this site's promotions: the list price only; its windows go on
+                // top in applyWindows() (the shop's own outlet is set aside).
+                $product->compare_at_price = null;
+            }
             // Outlet markdowns (admin → اوتلت) sit on top of the StoqS price.
             \App\Support\Outlet::apply($product, $price);
         }
@@ -96,6 +101,9 @@ class CatalogImporter
             $this->applyVariantPrices($product, $data);
         }
         StoqsContent::remember($product, $data);
+        if ($prices) {
+            $this->applyWindows($product);
+        }
         if ($content && ! in_array('images', $pending, true)) {
             StoqsContent::pullImages($product, $data, $primary);
         }
@@ -109,7 +117,7 @@ class CatalogImporter
      */
     private function applyVariantPrices(Product $product, array $data): void
     {
-        $ref = \App\Support\Outlet::has((int) $product->id) && $product->compare_at_price ? (int) $product->compare_at_price : (int) $product->price;
+        $ref = ! StoqsPromotions::managed() && \App\Support\Outlet::has((int) $product->id) && $product->compare_at_price ? (int) $product->compare_at_price : (int) $product->price;
         foreach ($data['variants'] ?? [] as $v) {
             $barcode = (string) ($v['barcode'] ?? $v['sku'] ?? '');
             if ($barcode === '' || ! isset($v['price'])) {
@@ -121,6 +129,15 @@ class CatalogImporter
             if ($variant) {
                 $this->setSizePrice($variant, $override);
             }
+        }
+    }
+
+    /** StoqS-managed promotions: the window prices of this moment, on top of the list prices just set. */
+    private function applyWindows(Product $product): void
+    {
+        if (StoqsPromotions::managed()) {
+            $product->unsetRelation('variants');
+            StoqsPromotions::applyProduct($product);
         }
     }
 

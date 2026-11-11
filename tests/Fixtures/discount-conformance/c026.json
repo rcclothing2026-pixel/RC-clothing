@@ -1,0 +1,54 @@
+{
+  "id": "c026",
+  "title": "Schema 2: the floor binds before the list cap",
+  "schema": 2,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [
+    {
+      "id": 1,
+      "label": "10",
+      "priority": 1,
+      "conditions": [],
+      "actions": [
+        {
+          "type": "cart_discount_percent",
+          "value": 10
+        }
+      ],
+      "apply_mode": "all",
+      "stack_mode": "all",
+      "exclusive": false,
+      "enabled": 1,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "codes": [],
+  "lines": [
+    {
+      "variant_id": 1,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 8000000,
+      "list_price": 10000000,
+      "floor_price": 7800000
+    }
+  ],
+  "expect": {
+    "discount": 200000,
+    "lines": [
+      {
+        "discount": 200000,
+        "room": 200000,
+        "margin_ok": true
+      }
+    ]
+  }
+}

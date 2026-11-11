@@ -29,6 +29,17 @@ class CampaignPlan
 
     public const LISTS = ['slides', 'badges'];
 
+    /** The sections StoqS owns while it manages this site's promotions (read-only here then). */
+    public const STOQS_SECTIONS = ['rules', 'sales', 'coupons'];
+
+    public const STOQS_LOCKED = 'تخفیف‌ها و کدهای این سایت در StoqS مدیریت می‌شوند؛ آن‌ها را در StoqS («برنامه‌ریزی کمپین») تغییر دهید.';
+
+    /** Whether StoqS runs this site's discounts (the rules, product sales and codes are locked). */
+    public static function stoqsManaged(): bool
+    {
+        return \App\Services\StockKeeping\StoqsPromotions::managed();
+    }
+
     /** Percent discounts are capped at shop.max_discount_percent; surcharges at 100. */
     private const PERCENT = ['cart_discount_percent', 'item_discount_percent'];
 
@@ -79,6 +90,18 @@ class CampaignPlan
     public static function save(array $editor, ?string $by = null): array
     {
         $plan = self::fromEditor($editor);
+        if (self::stoqsManaged()) {
+            // StoqS's discounts count: the plan's own rules, product sales and codes stay as
+            // they were (any change to them is refused); the content is saved as usual.
+            $old = config('campaigns', []);
+            foreach (self::STOQS_SECTIONS as $sec) {
+                if (json_encode(array_values($plan[$sec] ?? [])) !== json_encode(array_values(self::fromEditor(self::toEditor($old))[$sec] ?? []))
+                    || array_keys($plan[$sec] ?? []) !== array_keys($old[$sec] ?? [])) {
+                    return [self::STOQS_LOCKED];
+                }
+                $plan[$sec] = $old[$sec] ?? [];
+            }
+        }
         if ($errors = self::validate($plan)) {
             return $errors;
         }
@@ -463,6 +486,9 @@ class CampaignPlan
 
         return [
             'edited' => self::edited(),
+            // StoqS manages this site's discounts: these sections are read-only in the editor
+            'locked' => self::stoqsManaged() ? self::STOQS_SECTIONS : [],
+            'locked_message' => self::stoqsManaged() ? self::STOQS_LOCKED : null,
             'plan' => self::toEditor($plan),
             'limits' => [
                 'max_percent' => (int) config('shop.max_discount_percent', 25),
@@ -532,6 +558,9 @@ class CampaignPlan
     /** Create ($rule null) or replace a shop-admin rule from an editor rule. */
     public static function saveRule(?DiscountRule $rule, array $d): array
     {
+        if (self::stoqsManaged()) {
+            return [self::STOQS_LOCKED];
+        }
         if ($rule && str_starts_with((string) $rule->description, 'campaign:')) {
             return ['این تخفیف بخشی از برنامهٔ کمپین‌هاست؛ آن را در خود کمپین ویرایش کنید.'];
         }
@@ -567,6 +596,9 @@ class CampaignPlan
 
     public static function deleteRule(DiscountRule $rule): array
     {
+        if (self::stoqsManaged()) {
+            return [self::STOQS_LOCKED];
+        }
         if (str_starts_with((string) $rule->description, 'campaign:')) {
             return ['این تخفیف بخشی از برنامهٔ کمپین‌هاست؛ آن را در خود کمپین حذف کنید.'];
         }
@@ -577,6 +609,9 @@ class CampaignPlan
 
     public static function createCoupon(array $d): array
     {
+        if (self::stoqsManaged()) {
+            return [self::STOQS_LOCKED];
+        }
         $code = strtoupper(trim((string) ($d['code'] ?? '')));
         if (! preg_match('/^[A-Z0-9_-]{3,30}$/', $code)) {
             return ['کد: فقط حروف بزرگ انگلیسی و عدد، ۳ تا ۳۰ حرف.'];
@@ -595,6 +630,9 @@ class CampaignPlan
 
     public static function deleteCoupon(Coupon $coupon): array
     {
+        if (self::stoqsManaged()) {
+            return [self::STOQS_LOCKED];
+        }
         if (array_key_exists($coupon->code, config('campaigns.coupons', []))) {
             return ['این کد بخشی از برنامهٔ کمپین‌هاست؛ آن را در خود کمپین حذف کنید.'];
         }
@@ -610,6 +648,9 @@ class CampaignPlan
 
     public static function updateCoupon(Coupon $coupon, array $d): array
     {
+        if (self::stoqsManaged()) {
+            return [self::STOQS_LOCKED];
+        }
         if (array_key_exists($coupon->code, config('campaigns.coupons', []))) {
             return ['این کد بخشی از برنامهٔ کمپین‌هاست؛ آن را در خود کمپین ویرایش کنید.'];
         }

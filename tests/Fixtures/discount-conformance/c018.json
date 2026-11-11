@@ -1,0 +1,45 @@
+{
+  "id": "c018",
+  "title": "A code below its minimum subtotal is refused",
+  "schema": 1,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [],
+  "codes": [
+    {
+      "id": 1,
+      "code": "MIN5M",
+      "type": "percent",
+      "value": 10,
+      "enabled": 1,
+      "individual_use": false,
+      "channels": "web,brand,stores",
+      "min_subtotal": 5000000
+    }
+  ],
+  "lines": [
+    {
+      "variant_id": 11,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 4300000
+    }
+  ],
+  "expect": {
+    "discount": 0,
+    "codes": [
+      {
+        "code": "MIN5M",
+        "valid": false,
+        "reason": "min_subtotal"
+      }
+    ]
+  }
+}

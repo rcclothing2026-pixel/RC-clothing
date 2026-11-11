@@ -10,7 +10,7 @@ class OrderItem extends Model
 {
     protected $fillable = [
         'order_id', 'product_id', 'product_variant_id', 'name', 'size', 'color',
-        'sku', 'stockkeeping_variant_id', 'unit_price', 'quantity', 'line_total', 'discounts',
+        'sku', 'stockkeeping_variant_id', 'unit_price', 'quantity', 'line_total', 'discounts', 'list_price',
     ];
 
     protected function casts(): array
@@ -20,6 +20,7 @@ class OrderItem extends Model
             'quantity' => 'integer',
             'line_total' => 'integer',
             'discounts' => 'array',
+            'list_price' => 'integer',
         ];
     }
 

@@ -182,6 +182,14 @@ class CheckoutController extends Controller
             'shipping_city' => $address->city ?? '',
         ]);
 
+        // StoqS-managed promotions: StoqS's own answer for this order (POST /promotions/evaluate);
+        // unreachable = sold on the local evaluation, marked «local». Null when the shop runs its
+        // own promotions: nothing below changes then.
+        $promo = $this->cart->promotionsCheck();
+        if ($promo && $promo['refresh']) {
+            return redirect()->route('cart.index')->with('error', 'قیمت بعضی کالاها همین حالا تغییر کرد؛ لطفاً سبد خرید را دوباره ببینید.');
+        }
+
         // Combined discount: coupon + promotion + discount rules.
         $coupon = $this->cart->appliedCoupon();
         $discount = $this->cart->combinedDiscount();
@@ -231,9 +239,18 @@ class CheckoutController extends Controller
             ->unique()
             ->values()
             ->toArray();
+        // StoqS-managed: the rules are StoqS's (their ids are not this shop's), the order keeps
+        // how it was priced and each line's list price; StoqS records the code's use.
+        $promoCols = [];
+        $listPrices = [];
+        if ($promo) {
+            $appliedRuleIds = [];
+            $promoCols = ['promo_eval' => $promo['eval'], 'promo_version' => $promo['version']];
+            $listPrices = $this->cart->listPrices();
+        }
 
-        $order = DB::transaction(function () use ($request, $data, $address, $shipping, $lines, $subtotal, $shippingCost, $surcharge, $discount, $coupon, $redeemPoints, $loyaltyDiscount, $giftCard, $giftUsed, $total, $appliedRuleIds, $giftWrap, $giftWrapPrice, $giftMessage, $lineDiscounts) {
-            $order = Order::create([
+        $order = DB::transaction(function () use ($request, $data, $address, $shipping, $lines, $subtotal, $shippingCost, $surcharge, $discount, $coupon, $redeemPoints, $loyaltyDiscount, $giftCard, $giftUsed, $total, $appliedRuleIds, $giftWrap, $giftWrapPrice, $giftMessage, $lineDiscounts, $promoCols, $listPrices) {
+            $order = Order::create($promoCols + [
                 'number' => Order::generateNumber(),
                 'user_id' => $request->user()->id,
                 'status' => Order::STATUS_PENDING,
@@ -275,7 +292,7 @@ class CheckoutController extends Controller
                     'quantity' => $line['quantity'],
                     'line_total' => $line['line_total'],
                     'discounts' => $lineDiscounts[$variant->id] ?? null,
-                ]);
+                ] + (isset($listPrices[$variant->id]) ? ['list_price' => $listPrices[$variant->id]] : []));
             }
 
             return $order;
@@ -408,13 +425,14 @@ class CheckoutController extends Controller
 
             $order->update(['status' => Order::STATUS_PAID, 'paid_at' => now()]);
 
-            // Count the coupon redemption now that payment succeeded.
-            if ($order->coupon_code) {
+            // Count the coupon redemption now that payment succeeded. A StoqS-priced order
+            // (promo_eval set) used StoqS's code and rules: StoqS counts them from the sale.
+            if ($order->coupon_code && $order->promo_eval === null) {
                 \App\Models\Coupon::where('code', $order->coupon_code)->increment('used_count');
             }
 
             // Count discount rule usage.
-            if (! empty($order->applied_discount_rules)) {
+            if (! empty($order->applied_discount_rules) && $order->promo_eval === null) {
                 \App\Models\DiscountRule::whereIn('id', $order->applied_discount_rules)->increment('used_count');
             }
 

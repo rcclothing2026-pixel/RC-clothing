@@ -162,12 +162,17 @@ class HttpStockKeepingClient implements StockKeepingClient
             // What the cart gave this line (outlet / coupon / rules / campaign). The
             // outlet markdown is a discount off the struck price, so the line goes at
             // that price and StoqS's revenue (unit × qty − discount) stays the same.
+            // A StoqS-managed line also carries its window markdown (`layer: price`, a campaign
+            // or price-sheet window): StoqS takes it off unit_price again when it checks the price.
             $disc = array_values(array_filter((array) ($line['discounts'] ?? []), fn ($d) => is_array($d) && (int) ($d['amount'] ?? 0) > 0));
+            if (isset($line['list_price'])) {
+                $item['list_price'] = (int) $line['list_price'];
+            }
             if ($disc) {
-                $outlet = (int) collect($disc)->where('type', 'price_sheet')->sum('amount');
+                $outlet = (int) collect($disc)->filter(fn ($d) => ($d['type'] ?? '') === 'price_sheet' || ($d['layer'] ?? '') === 'price')->sum('amount');
                 $item['unit_price'] += intdiv($outlet, max(1, $item['quantity']));
                 $item['discount_amount'] = (int) collect($disc)->sum('amount');
-                $item['discounts'] = array_map(fn ($d) => array_intersect_key($d, array_flip(['type', 'id', 'code', 'amount'])), $disc);
+                $item['discounts'] = array_map(fn ($d) => array_intersect_key($d, array_flip(['type', 'id', 'code', 'amount', 'plan_id', 'version'])), $disc);
             }
             $items[] = $item;
         }
@@ -189,6 +194,11 @@ class HttpStockKeepingClient implements StockKeepingClient
             'discount' => (int) ($sale['discount'] ?? 0),
             'total' => (int) ($sale['total'] ?? 0),
             'codes' => array_values((array) ($sale['codes'] ?? [])),
+            // StoqS-managed orders only (absent otherwise): when and where the cart was priced,
+            // and `eval: local` when StoqS could not be asked at checkout.
+            'ordered_at' => $sale['ordered_at'] ?? null,
+            'eval' => $sale['eval'] ?? null,
+            'site_url' => $sale['site_url'] ?? null,
         ], fn ($v) => $v !== null && $v !== [] && $v !== 0);
 
         $resp = $this->request()->post('/api/v1/sales', $payload)->throw();

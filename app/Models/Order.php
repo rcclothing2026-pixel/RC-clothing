@@ -34,7 +34,7 @@ class Order extends Model
         'customer_name', 'customer_phone', 'stockkeeping_sale_id',
         'stockkeeping_location', 'stockkeeping_location_name',
         'loyalty_points_used', 'loyalty_discount', 'gift_card_code', 'gift_used', 'placed_at', 'paid_at', 'customer_note',
-        'applied_discount_rules',
+        'applied_discount_rules', 'promo_eval', 'promo_version',
         'gift_wrap', 'gift_wrap_price', 'gift_message',
     ];
 
@@ -65,6 +65,7 @@ class Order extends Model
             'placed_at' => 'datetime',
             'paid_at' => 'datetime',
             'applied_discount_rules' => 'array',
+            'promo_version' => 'integer',
             'gift_wrap' => 'boolean',
             'gift_wrap_price' => 'integer',
             'shipping_cost_on_delivery' => 'boolean',

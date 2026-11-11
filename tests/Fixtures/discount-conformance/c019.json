@@ -1,0 +1,57 @@
+{
+  "id": "c019",
+  "title": "A code with include_product_ids works on those products only",
+  "schema": 1,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [],
+  "codes": [
+    {
+      "id": 1,
+      "code": "ONLYC",
+      "type": "percent",
+      "value": 10,
+      "enabled": 1,
+      "individual_use": false,
+      "channels": "web,brand,stores",
+      "include_product_ids": [
+        3
+      ]
+    }
+  ],
+  "lines": [
+    {
+      "variant_id": 11,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 4300000
+    },
+    {
+      "variant_id": 13,
+      "product_id": 3,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 5000000
+    }
+  ],
+  "expect": {
+    "discount": 500000,
+    "lines": [
+      {
+        "discount": 0
+      },
+      {
+        "discount": 500000
+      }
+    ]
+  }
+}

@@ -13,6 +13,34 @@
         <div class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{{ $errors->first() }}</div>
     @endif
 
+    @if (! empty($managed))
+        {{-- StoqS manages this site's promotions: its outlet is shown, read-only. --}}
+        <div class="mb-4 rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-800">{{ \App\Support\Outlet::MANAGED }}</div>
+        <div class="overflow-hidden rounded-card bg-white ring-1 ring-brand-100">
+            <table class="w-full text-sm">
+                <thead class="bg-brand-50 text-xs text-brand-500">
+                    <tr>
+                        <th class="p-3 text-right font-medium">محصول</th>
+                        <th class="p-3 text-right font-medium">قیمت پایه</th>
+                        <th class="p-3 text-right font-medium">قیمت اوتلت</th>
+                        <th class="p-3 text-right font-medium">تخفیف</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-brand-50">
+                    @forelse ($stoqsOutlet as $row)
+                        <tr>
+                            <td class="p-3 font-semibold text-brand-800"><a href="{{ route('product.show', $row['product']) }}" target="_blank" class="hover:underline">{{ $row['product']->name }}</a></td>
+                            <td class="p-3 fa-num text-brand-500">{{ \App\Support\Money::toman((int) ($row['product']->compare_at_price ?: $row['product']->price)) }}</td>
+                            <td class="p-3 fa-num font-semibold text-accent-600">{{ \App\Support\Money::toman((int) $row['product']->price) }}</td>
+                            <td class="p-3 fa-num text-brand-700">{{ \App\Support\Money::toPersianDigits((string) $row['percent']) }}٪</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4" class="p-6 text-center text-brand-400">اوتلت StoqS الان محصولی در این سایت ندارد.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    @else
     <form method="POST" action="{{ route('admin.outlet.store') }}" class="mb-8 flex flex-wrap items-end gap-3 rounded-card bg-white p-4 ring-1 ring-brand-100">
         @csrf
         <label class="min-w-[16rem] flex-1 text-sm">
@@ -71,4 +99,5 @@
             </tbody>
         </table>
     </div>
+    @endif
 @endsection

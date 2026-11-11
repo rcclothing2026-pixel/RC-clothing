@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\OutletItem;
 use App\Models\Product;
+use App\Services\StockKeeping\StoqsPromotions;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -12,14 +13,22 @@ use Illuminate\Support\Facades\Schema;
  * base as the struck price, so cart, schema, Instagram API and the StoqS sale
  * report all see the same price. `stoqs_discount` marks it as a synced
  * discount, so the next StoqS import clears it once the item is removed.
+ *
+ * While StoqS manages this site's promotions the outlet is StoqS's: percents() lists the
+ * products a StoqS outlet window prices now (StoqsPromotions::outletPercents), apply()
+ * does nothing (the window applier sets the prices) and sync() refuses. The shop's own
+ * outlet_items stay as they are, for when the shop runs its promotions again.
  */
 class Outlet
 {
+    public const MANAGED = 'اوتلت این سایت در StoqS مدیریت می‌شود؛ آن را در StoqS («برنامه‌ریزی کمپین» ← اوتلت) تغییر دهید.';
+
     /** @return array<int, int> product id => percent, for active items */
     public static function percents(): array
     {
         return request()->attributes->get('outlet.percents') ?? tap(
-            Schema::hasTable('outlet_items') ? OutletItem::where('is_active', true)->pluck('percent', 'product_id')->all() : [],
+            StoqsPromotions::managed() ? StoqsPromotions::outletPercents()
+                : (Schema::hasTable('outlet_items') ? OutletItem::where('is_active', true)->pluck('percent', 'product_id')->all() : []),
             fn ($m) => request()->attributes->set('outlet.percents', $m),
         );
     }
@@ -81,6 +90,9 @@ class Outlet
      */
     public static function sync(array $bySlug): array
     {
+        if (StoqsPromotions::managed()) {
+            return [self::MANAGED];
+        }
         $products = Product::with(['category', 'categories'])->whereIn('slug', array_map('strval', array_keys($bySlug)))->get()->keyBy('slug');
         $err = [];
         foreach ($bySlug as $slug => $pct) {
@@ -132,6 +144,9 @@ class Outlet
      */
     public static function apply(Product $p, ?int $base = null, ?int $stoqsSale = null): void
     {
+        if (StoqsPromotions::managed()) {
+            return;   // StoqS's outlet windows price it (StoqsPromotions::applyProduct)
+        }
         $item = OutletItem::where('product_id', $p->id)->where('is_active', true)->first();
         if (! $item) {
             return;

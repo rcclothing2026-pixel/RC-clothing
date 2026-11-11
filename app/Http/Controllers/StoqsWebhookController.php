@@ -8,6 +8,7 @@ use App\Models\ProductVariant;
 use App\Models\StockkeeepingLog;
 use App\Services\StockKeeping\CatalogImporter;
 use App\Services\StockKeeping\StockKeepingClient;
+use App\Services\StockKeeping\StoqsPromotions;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -108,8 +109,14 @@ class StoqsWebhookController extends Controller
                 }
             } elseif ($event === 'product.content_changed') {
                 $this->applyContentChanged($data);
+            } elseif (in_array($event, ['promotions.changed', 'outlet.changed'], true)
+                || (in_array($event, ['discounts.changed', 'campaign.changed'], true) && StoqsPromotions::managed())) {
+                // Promotions API v2: a thin «pull /promotions» signal (also how this site learns
+                // StoqS took its promotions over or gave them back).
+                $this->pullPromotions($event);
             }
-            // discounts.changed / campaign.changed and unknown events: acknowledged (200).
+            // discounts.changed / campaign.changed (while the shop runs its own promotions) and
+            // unknown events: acknowledged (200).
             // sale.created is informational here: its per-item stock effect already
             // arrives as stock.changed events, so we don't double-apply it.
         } catch (\Throwable $e) {
@@ -202,6 +209,26 @@ class StoqsWebhookController extends Controller
         );
 
         return true;
+    }
+
+    /**
+     * promotions.changed / outlet.changed (and, while StoqS manages this site, discounts.changed /
+     * campaign.changed): pull /promotions (If-None-Match), put this moment's window prices on the
+     * products and ack the version. Returns whether a price changed.
+     */
+    private function pullPromotions(string $event): bool
+    {
+        $pull = StoqsPromotions::pull();
+        $applied = StoqsPromotions::apply();
+        StoqsPromotions::ack();
+        StockkeeepingLog::record(
+            StockkeeepingLog::TYPE_WEBHOOK_PRODUCT, 'in', $event, null,
+            ['status' => $pull['status'], 'managed' => $pull['managed'], 'version' => StoqsPromotions::version(), 'changed' => $applied['changed']],
+            $pull['ok'] ? 'ok' : 'failed', error: $pull['message'] ?? null, source: StockkeeepingLog::SOURCE_AUTO,
+            summary: 'تخفیف‌های StoqS — '.($pull['managed'] ? $applied['changed'].' محصول' : 'این سایت با خود فروشگاه'),
+        );
+
+        return $applied['changed'] > 0;
     }
 
     /** Claim this event id (unique with subject ''); false when another delivery has it. */

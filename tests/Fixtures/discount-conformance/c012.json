@@ -1,0 +1,47 @@
+{
+  "id": "c012",
+  "title": "A code is refused when nothing in the cart can take it",
+  "schema": 1,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [],
+  "codes": [
+    {
+      "id": 1,
+      "code": "TEN",
+      "type": "percent",
+      "value": 10,
+      "enabled": 1,
+      "individual_use": false,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "lines": [
+    {
+      "variant_id": 14,
+      "product_id": 4,
+      "category_ids": [
+        2
+      ],
+      "qty": 1,
+      "unit_price": 8900000,
+      "discountable": false
+    }
+  ],
+  "expect": {
+    "discount": 0,
+    "codes": [
+      {
+        "code": "TEN",
+        "valid": false,
+        "applied": false,
+        "reason": "not_applicable",
+        "amount": 0
+      }
+    ]
+  }
+}

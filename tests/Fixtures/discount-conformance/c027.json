@@ -1,0 +1,64 @@
+{
+  "id": "c027",
+  "title": "Schema 2: three pieces, tier plus shared code, held at the list cap",
+  "schema": 2,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [
+    {
+      "id": 1,
+      "label": "10",
+      "priority": 1,
+      "conditions": [],
+      "actions": [
+        {
+          "type": "cart_discount_percent",
+          "value": 10
+        }
+      ],
+      "apply_mode": "all",
+      "stack_mode": "all",
+      "exclusive": false,
+      "enabled": 1,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "codes": [
+    {
+      "id": 1,
+      "code": "FIVE",
+      "type": "percent",
+      "value": 5,
+      "enabled": 1,
+      "individual_use": false,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "lines": [
+    {
+      "variant_id": 1,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 3,
+      "unit_price": 850000,
+      "list_price": 1000000
+    }
+  ],
+  "expect": {
+    "subtotal": 2550000,
+    "cap": 300000,
+    "discount": 300000,
+    "lines": [
+      {
+        "discount": 300000,
+        "room": 300000
+      }
+    ]
+  }
+}

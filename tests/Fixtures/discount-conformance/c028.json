@@ -1,0 +1,66 @@
+{
+  "id": "c028",
+  "title": "Schema 2: a campaign line and a plain line in one cart",
+  "schema": 2,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [
+    {
+      "id": 1,
+      "label": "10",
+      "priority": 1,
+      "conditions": [],
+      "actions": [
+        {
+          "type": "cart_discount_percent",
+          "value": 10
+        }
+      ],
+      "apply_mode": "all",
+      "stack_mode": "all",
+      "exclusive": false,
+      "enabled": 1,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "codes": [],
+  "lines": [
+    {
+      "variant_id": 1,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 8000000,
+      "list_price": 10000000
+    },
+    {
+      "variant_id": 2,
+      "product_id": 2,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 4000000
+    }
+  ],
+  "expect": {
+    "cap": 1500000,
+    "discount": 1200000,
+    "lines": [
+      {
+        "discount": 500000,
+        "room": 500000
+      },
+      {
+        "discount": 700000,
+        "room": 1000000
+      }
+    ]
+  }
+}

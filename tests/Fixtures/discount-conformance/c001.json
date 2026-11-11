@@ -1,0 +1,51 @@
+{
+  "id": "c001",
+  "title": "One 10% cart rule on one line",
+  "schema": 1,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [
+    {
+      "id": 1,
+      "label": "10",
+      "priority": 1,
+      "conditions": [],
+      "actions": [
+        {
+          "type": "cart_discount_percent",
+          "value": 10
+        }
+      ],
+      "apply_mode": "all",
+      "stack_mode": "all",
+      "exclusive": false,
+      "enabled": 1,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "codes": [],
+  "lines": [
+    {
+      "variant_id": 1,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 10000000
+    }
+  ],
+  "expect": {
+    "subtotal": 10000000,
+    "cap": 2500000,
+    "discount": 1000000,
+    "total": 9000000,
+    "rules_applied": [
+      1
+    ]
+  }
+}

@@ -21,6 +21,10 @@ use Illuminate\Support\Facades\DB;
  * products priced off their parts' live prices. Idempotent; runs daily so
  * bundle prices follow StoqS price changes. Rules dropped from the config are
  * switched off, never deleted.
+ *
+ * While StoqS manages this site's promotions only the content is written (bundles; the
+ * shelves, slides, pop-ups and badges are read from the plan directly): StoqS's rules and
+ * codes count instead, and the shop's own rules and coupons are left exactly as they are.
  */
 class SyncCampaigns extends Command
 {
@@ -31,11 +35,17 @@ class SyncCampaigns extends Command
     public function handle(): int
     {
         request()->attributes->remove('campaigns.approvals');
-        DB::transaction(function () {
-            $this->rules();
-            $this->coupons();
+        $managed = \App\Services\StockKeeping\StoqsPromotions::managed();
+        DB::transaction(function () use ($managed) {
+            if (! $managed) {
+                $this->rules();
+                $this->coupons();
+            }
             $this->bundles();
         });
+        if ($managed) {
+            $this->info('StoqS manages this site\'s promotions: rules and coupons not synced (content only)');
+        }
 
         return self::SUCCESS;
     }

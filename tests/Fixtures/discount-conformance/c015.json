@@ -1,0 +1,70 @@
+{
+  "id": "c015",
+  "title": "An item rule over its line's room spills to the other line",
+  "schema": 1,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [
+    {
+      "id": 7,
+      "label": "a 20",
+      "priority": 1,
+      "conditions": [
+        {
+          "type": "item_products",
+          "product_ids": [
+            1
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "type": "item_discount_percent",
+          "value": 20
+        }
+      ],
+      "apply_mode": "all",
+      "stack_mode": "all",
+      "exclusive": false,
+      "enabled": 1,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "codes": [],
+  "lines": [
+    {
+      "variant_id": 11,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 4300000,
+      "cost": 3600000
+    },
+    {
+      "variant_id": 13,
+      "product_id": 3,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 5000000
+    }
+  ],
+  "expect": {
+    "discount": 860000,
+    "lines": [
+      {
+        "discount": 300000
+      },
+      {
+        "discount": 560000
+      }
+    ]
+  }
+}

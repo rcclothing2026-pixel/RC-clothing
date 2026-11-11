@@ -92,7 +92,15 @@ class StockKeepingReporter
     {
         $order->loadMissing(['items.variant.product.bundleItems.variant.product', 'items.variant.product.variants']);
 
-        return [
+        // A StoqS-priced order (promo_eval set) adds when and where it was priced, and «local»
+        // when StoqS was not reachable at checkout. Orders the shop priced itself send nothing new.
+        $promo = $order->promo_eval !== null ? array_filter([
+            'ordered_at' => optional($order->placed_at ?? $order->created_at)->toIso8601String(),
+            'eval' => $order->promo_eval === 'local' ? 'local' : null,
+            'site_url' => \App\Services\StockKeeping\StoqsPromotions::siteUrl(),
+        ]) : [];
+
+        return $promo + [
             'order_number' => $order->number,
             'placed_at' => optional($order->placed_at)->toIso8601String(),
             'paid_at' => optional($order->paid_at)->toIso8601String(),
@@ -166,7 +174,7 @@ class StockKeepingReporter
                 'quantity' => $orderItem->quantity,
                 'line_total' => $orderItem->line_total,
                 'discounts' => (array) ($orderItem->discounts ?? []),
-            ]];
+            ] + ($orderItem->list_price !== null ? ['list_price' => (int) $orderItem->list_price] : [])];
         }
 
         $bundleItems = $product->bundleItems;

@@ -1,0 +1,58 @@
+{
+  "id": "c010",
+  "title": "A code skips a line that takes no discount",
+  "schema": 1,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [],
+  "codes": [
+    {
+      "id": 1,
+      "code": "TEN",
+      "type": "percent",
+      "value": 10,
+      "enabled": 1,
+      "individual_use": false,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "lines": [
+    {
+      "variant_id": 11,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 4300000
+    },
+    {
+      "variant_id": 14,
+      "product_id": 4,
+      "category_ids": [
+        2
+      ],
+      "qty": 1,
+      "unit_price": 8900000,
+      "discountable": false
+    }
+  ],
+  "expect": {
+    "subtotal": 13200000,
+    "discountable_subtotal": 4300000,
+    "discount": 430000,
+    "lines": [
+      {
+        "discount": 430000
+      },
+      {
+        "discount": 0,
+        "room": 0
+      }
+    ]
+  }
+}

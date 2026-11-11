@@ -1,0 +1,53 @@
+{
+  "id": "c008",
+  "title": "A precomputed floor_price works the same as a cost",
+  "schema": 1,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [
+    {
+      "id": 1,
+      "label": "25",
+      "priority": 1,
+      "conditions": [],
+      "actions": [
+        {
+          "type": "cart_discount_percent",
+          "value": 25
+        }
+      ],
+      "apply_mode": "all",
+      "stack_mode": "all",
+      "exclusive": false,
+      "enabled": 1,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "codes": [],
+  "lines": [
+    {
+      "variant_id": 11,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 4300000,
+      "floor_price": 4000000
+    }
+  ],
+  "expect": {
+    "discount": 300000,
+    "lines": [
+      {
+        "discount": 300000,
+        "room": 300000,
+        "floor_price": 4000000
+      }
+    ]
+  }
+}

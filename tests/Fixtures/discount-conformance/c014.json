@@ -1,0 +1,94 @@
+{
+  "id": "c014",
+  "title": "Piece tiers count quantity: three pieces get the 10% band only",
+  "schema": 1,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [
+    {
+      "id": 1,
+      "label": "from 2 pieces 5%",
+      "priority": 1,
+      "conditions": [
+        {
+          "type": "cart_item_count",
+          "min": 2,
+          "max": 2
+        }
+      ],
+      "actions": [
+        {
+          "type": "cart_discount_percent",
+          "value": 5
+        }
+      ],
+      "apply_mode": "all",
+      "stack_mode": "all",
+      "exclusive": false,
+      "enabled": 1,
+      "channels": "web,brand,stores"
+    },
+    {
+      "id": 2,
+      "label": "from 3 pieces 10%",
+      "priority": 1,
+      "conditions": [
+        {
+          "type": "cart_item_count",
+          "min": 3
+        }
+      ],
+      "actions": [
+        {
+          "type": "cart_discount_percent",
+          "value": 10
+        }
+      ],
+      "apply_mode": "all",
+      "stack_mode": "all",
+      "exclusive": false,
+      "enabled": 1,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "codes": [],
+  "lines": [
+    {
+      "variant_id": 11,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 4300000
+    },
+    {
+      "variant_id": 13,
+      "product_id": 3,
+      "category_ids": [
+        1
+      ],
+      "qty": 2,
+      "unit_price": 5000000
+    }
+  ],
+  "expect": {
+    "subtotal": 14300000,
+    "discount": 1430000,
+    "rules_applied": [
+      2
+    ],
+    "lines": [
+      {
+        "discount": 430000
+      },
+      {
+        "discount": 1000000
+      }
+    ]
+  }
+}

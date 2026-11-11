@@ -1,0 +1,68 @@
+{
+  "id": "c029",
+  "title": "Schema 2: an alone code (vs_list) smaller than campaign + tier loses",
+  "schema": 2,
+  "opts": {
+    "max_discount_percent": 25,
+    "min_margin_percent": 10,
+    "channel": "web",
+    "now": "2026-11-11 12:00:00"
+  },
+  "rules": [
+    {
+      "id": 1,
+      "label": "tier 5",
+      "priority": 1,
+      "conditions": [],
+      "actions": [
+        {
+          "type": "cart_discount_percent",
+          "value": 5
+        }
+      ],
+      "apply_mode": "all",
+      "stack_mode": "all",
+      "exclusive": false,
+      "enabled": 1,
+      "channels": "web,brand,stores"
+    }
+  ],
+  "codes": [
+    {
+      "id": 9,
+      "code": "ALONE22",
+      "type": "percent",
+      "value": 22,
+      "enabled": 1,
+      "individual_use": true,
+      "channels": "web,brand,stores",
+      "vs_list": true
+    }
+  ],
+  "lines": [
+    {
+      "variant_id": 1,
+      "product_id": 1,
+      "category_ids": [
+        1
+      ],
+      "qty": 1,
+      "unit_price": 8000000,
+      "list_price": 10000000
+    }
+  ],
+  "expect": {
+    "discount": 400000,
+    "rules_applied": [
+      1
+    ],
+    "codes": [
+      {
+        "code": "ALONE22",
+        "valid": true,
+        "applied": false,
+        "amount": 200000
+      }
+    ]
+  }
+}
