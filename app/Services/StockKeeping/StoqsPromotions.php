@@ -257,6 +257,14 @@ class StoqsPromotions
         });
     }
 
+    /** Whether a StoqS product is in one of the brand's no-discount categories (settings.no_discount_category_ids). */
+    public static function noDiscount(int $stoqsProductId): bool
+    {
+        $none = array_map('intval', (array) (self::settings()['no_discount_category_ids'] ?? []));
+
+        return $none && array_intersect(self::categoriesOf()[$stoqsProductId] ?? [], $none);
+    }
+
     private static function ts($iso): ?int
     {
         if ($iso === null || $iso === '') {
@@ -285,9 +293,16 @@ class StoqsPromotions
         $wins = self::windows();
         $best = null;
         $win = null;
+        $none = self::noDiscount((int) ($row['product_id'] ?? 0));
+        $outletToo = ! empty(self::settings()['outlet_respects_no_discount']);
         foreach ((array) ($row['prices'] ?? []) as $e) {
             $w = $wins[(string) ($e[0] ?? '')] ?? null;
             if (! $w || ! self::covers($w, $ts)) {
+                continue;
+            }
+            // «بدون تخفیف»: a product in a no-discount category takes no campaign window (nor an
+            // outlet window when the outlet respects it), even from a plan applied earlier.
+            if ($none && (($w['source'] ?? '') !== 'outlet' || $outletToo)) {
                 continue;
             }
             $p = ($e[1] ?? null) !== null ? (int) $e[1]

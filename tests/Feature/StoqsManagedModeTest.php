@@ -194,6 +194,33 @@ class StoqsManagedModeTest extends TestCase
         $this->assertSame(800_000, $this->product->fresh()->price, 'the product shows the sizes that follow it');
     }
 
+    public function test_a_no_discount_category_takes_no_campaign_window_but_the_outlet(): void
+    {
+        $payload = $this->payload([
+            'categories' => ['9' => [1]],
+            'outlet' => ['o5'],
+            'windows' => array_merge($this->payload()['windows'], [[
+                'id' => 'o5', 'source' => 'outlet', 'campaign_id' => null, 'plan_id' => 8, 'version' => 1, 'pct' => 10,
+                'from' => null, 'to' => null, 'from_utc' => null, 'to_utc' => null,
+            ]]),
+        ]);
+        $payload['settings']['no_discount_category_ids'] = [9];
+        $payload['variants'][0]['prices'][] = ['o5', 900_000];
+        $this->manage($payload);
+        StoqsPromotions::apply();
+
+        // S: the 800,000 campaign window is skipped, the 900,000 outlet window holds; M: list price.
+        $this->assertSame(900_000, $this->product->fresh()->price);
+        $this->assertSame(900_000, $this->variant('S')->effectivePrice());
+        $this->assertSame(1_000_000, $this->variant('M')->effectivePrice());
+
+        $payload['settings']['outlet_respects_no_discount'] = true;
+        $this->manage($payload);
+        StoqsPromotions::apply();
+        $this->assertSame(1_000_000, $this->variant('S')->effectivePrice());
+        $this->assertNull($this->product->fresh()->compare_at_price);
+    }
+
     public function test_catalog_import_takes_list_prices_and_applies_windows(): void
     {
         $this->manage($this->payload());
