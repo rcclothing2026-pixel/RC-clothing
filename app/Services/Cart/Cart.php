@@ -22,6 +22,9 @@ class Cart
 
     private const GIFT = 'cart_gift';
 
+    /** StoqS-managed: StoqS's own answer adopted at checkout, for the cart it was given for. */
+    private const STOQS_SEEN = 'cart_stoqs_seen';
+
     private ?array $ruleResultsCache = null;
 
     /** StoqS-managed promotions only: the engine's result for this cart (StoqsCart). */
@@ -148,20 +151,20 @@ class Cart
     public function removeCoupon(): void
     {
         $this->session->forget(self::COUPON);
-        $this->stoqsCache = null;
+        $this->forgetStoqs();
     }
 
     /** StoqS-managed: a code is one of StoqS's codes for this site, checked by its engine. */
     private function applyStoqsCode(string $code): array
     {
         $row = StoqsCart::findCode($code);
-        $ev = StoqsCart::evaluate($this->lines(), [$row['code'] ?? $code], $this->ruleContext);
+        $ev = StoqsCart::evaluate($this->lines(), [$row['code'] ?? $code], $this->ruleContext, Auth::user());
         $c = $ev['codes'][0] ?? null;
         if (! $row || ! $c || empty($c['valid'])) {
             return ['ok' => false, 'message' => (string) ($c['message'] ?? 'کد تخفیف نامعتبر است.')];
         }
         $this->session->put(self::COUPON, (string) $row['code']);
-        $this->stoqsCache = null;
+        $this->forgetStoqs();
 
         return ['ok' => true, 'message' => 'کد تخفیف اعمال شد.'];
     }
@@ -173,49 +176,82 @@ class Cart
     public function stoqs(): array
     {
         if ($this->stoqsCache === null) {
-            $code = $this->session->get(self::COUPON);
-            $this->stoqsCache = StoqsCart::evaluate($this->lines(), $code ? [(string) $code] : [], $this->ruleContext);
+            $codes = $this->stoqsCodes();
+            $lines = $this->lines();
+            $seen = $this->session->get(self::STOQS_SEEN);
+            $this->stoqsCache = is_array($seen) && ($seen['hash'] ?? null) === StoqsCart::fingerprint($lines, $codes)
+                ? $seen['ev']
+                : StoqsCart::evaluate($lines, $codes, $this->ruleContext, Auth::user());
         }
 
         return $this->stoqsCache;
     }
 
+    /** @return string[] the code the customer entered (StoqS-managed carts) */
+    private function stoqsCodes(): array
+    {
+        $code = $this->session->get(self::COUPON);
+
+        return $code ? [(string) $code] : [];
+    }
+
+    private function forgetStoqs(): void
+    {
+        $this->stoqsCache = null;
+        $this->ruleResultsCache = null;
+    }
+
     /**
      * At order placement, when StoqS manages this site: ask StoqS (POST /promotions/evaluate)
-     * and use its answer for the order. When StoqS cannot be reached the order is sold on the
-     * local evaluation and marked eval «local» (StoqS flags it). When StoqS prices a line
-     * differently (outside its 10-minute grace) the prices are pulled again; if that changes
-     * what this cart shows, refresh is true and the customer should see the cart again.
+     * and use its answer for the order.
+     *
+     * - StoqS unreachable or refusing: the order is sold on the local evaluation (what the
+     *   customer saw), marked eval «local».
+     * - StoqS prices a line differently (outside its grace): the payload is pulled again (once
+     *   per version) and only this cart's products are re-priced from it; when a cart price
+     *   changed the customer goes back to the cart.
+     * - StoqS's answer costs the customer more than what the cart showed (less discount, a
+     *   surcharge, shipping no longer free, a block, a code no longer valid): it is adopted
+     *   (kept in the session for this very cart, so the cart shows it) and refresh is true with
+     *   the reason, so the customer sees the amount before paying. A cheaper answer is used
+     *   as it is.
+     *
      * Null when StoqS does not manage this site (nothing changes then).
      *
-     * @return array{eval: string, version: ?int, refresh: bool}|null
+     * @return array{eval: string, version: ?int, refresh: bool, message?: string}|null
      */
     public function promotionsCheck(): ?array
     {
         if (! StoqsPromotions::managed()) {
             return null;
         }
-        $code = $this->session->get(self::COUPON);
-        $codes = $code ? [(string) $code] : [];
-        $remote = StoqsCart::remote($this->lines(), $codes, Auth::user());
+        $this->forgetStoqs();
+        $seen = $this->stoqs();
+        $codes = $this->stoqsCodes();
+        $remote = StoqsCart::remote($this->lines(), $codes, Auth::user(), $this->ruleContext);
         if ($remote === null) {
-            $this->stoqsCache = null;
-            $ev = $this->stoqs();
-
-            return ['eval' => 'local', 'version' => $ev['version'] ?? null, 'refresh' => false];
+            return ['eval' => 'local', 'version' => $seen['version'] ?? null, 'refresh' => false];
         }
         $off = array_filter($remote['mismatch'], fn ($m) => ($m['field'] ?? '') === 'unit_price' && empty($m['within_grace']));
-        if ($off) {
-            $before = $this->lines()->mapWithKeys(fn ($l) => [$l['variant']->id => $l['unit_price']])->all();
-            StoqsPromotions::pull();
-            StoqsPromotions::apply();
-            $this->stoqsCache = null;
-            $after = $this->lines()->mapWithKeys(fn ($l) => [$l['variant']->id => $l['unit_price']])->all();
-            if ($after !== $before) {
-                return ['eval' => 'stoqs', 'version' => $remote['version'], 'refresh' => true];
-            }
+        if ($off && StoqsPromotions::repriceCart($this->lines())) {
+            $this->forgetStoqs();
+
+            return ['eval' => 'stoqs', 'version' => $remote['version'], 'refresh' => true,
+                'message' => 'قیمت بعضی کالاها همین حالا تغییر کرد؛ لطفاً سبد خرید را دوباره ببینید.'];
         }
+        $worse = StoqsCart::worseFor($seen, $remote);
         $this->stoqsCache = $remote;
+        $this->ruleResultsCache = null;
+        if ($worse !== null) {
+            // Keep StoqS's answer for this cart, without a code StoqS refused, and show it.
+            $keep = array_values(array_diff($codes, $worse['codes']));
+            if ($keep !== $codes) {
+                $keep ? $this->session->put(self::COUPON, $keep[0]) : $this->session->forget(self::COUPON);
+            }
+            $this->session->put(self::STOQS_SEEN, ['hash' => StoqsCart::fingerprint($this->lines(), $keep), 'ev' => $remote]);
+
+            return ['eval' => 'stoqs', 'version' => $remote['version'], 'refresh' => true, 'message' => $worse['message']];
+        }
 
         return ['eval' => 'stoqs', 'version' => $remote['version'], 'refresh' => false];
     }

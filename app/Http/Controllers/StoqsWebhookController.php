@@ -228,7 +228,7 @@ class StoqsWebhookController extends Controller
             summary: 'تخفیف‌های StoqS — '.($pull['managed'] ? $applied['changed'].' محصول' : 'این سایت با خود فروشگاه'),
         );
 
-        return $applied['changed'] > 0;
+        return $applied['changed'] > 0 || $pull['flipped'];
     }
 
     /** Claim this event id (unique with subject ''); false when another delivery has it. */

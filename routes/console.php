@@ -58,9 +58,17 @@ Schedule::call(function () use ($due) {
 // Full re-sync (not incremental) so a product's active status (enable/disable in
 // StoqS) is reconciled even when only `active` changed — that toggle bumps no
 // web_published_at cursor and fires no webhook, so an incremental import misses it.
+// The lock is shared with the import a StoqS promotions switch queues (stoqs-promotions).
 Schedule::call(function () use ($due) {
     if ($due('catalog', 60)) {
-        Artisan::call('stockkeeping:catalog', ['--full' => true, '--source' => 'auto']);
+        $lock = \App\Services\StockKeeping\StoqsPromotions::catalogLock();
+        if ($lock->get()) {
+            try {
+                Artisan::call('stockkeeping:catalog', ['--full' => true, '--source' => 'auto']);
+            } finally {
+                $lock->release();
+            }
+        }
     }
 })->everyMinute()->name('sk-catalog')->withoutOverlapping();
 

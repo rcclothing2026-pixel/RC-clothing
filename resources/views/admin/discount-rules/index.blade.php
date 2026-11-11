@@ -9,6 +9,11 @@
        class="rounded-lg bg-brand-900 px-4 py-2 text-sm font-semibold text-white">+ قانون جدید</a>
 </div>
 
+    @if (\App\Services\StockKeeping\StoqsPromotions::managed())
+        {{-- StoqS manages this site's promotions: these are kept as they are and do not count. --}}
+        <div class="mb-4 rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-800">{{ \App\Support\CampaignPlan::STOQS_LOCKED }}</div>
+    @endif
+
 <div class="rounded-card bg-white ring-1 ring-brand-100 overflow-hidden">
     <table class="w-full text-sm">
         <thead class="bg-brand-50 text-brand-500 text-xs">

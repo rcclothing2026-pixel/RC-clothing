@@ -144,6 +144,11 @@ class StoqsUnmanagedParityTest extends TestCase
         $this->assertSame([], CampaignPlan::createCoupon(['code' => 'NEW10', 'type' => 'percent', 'value' => 10]));
         $this->assertSame([], CampaignPlan::editorPayload()['locked']);
         $this->assertSame(StoqsSites::CAPABILITIES, StoqsSites::capabilities());
+
+        $admin = \App\Models\User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin)->get(route('admin.coupons.create'))->assertOk();
+        $this->actingAs($admin)->get(route('admin.discount-rules.create'))->assertOk();
+        $this->actingAs($admin)->get(route('admin.coupons.index'))->assertOk()->assertDontSee(CampaignPlan::STOQS_LOCKED);
     }
 
     public function test_the_catalog_import_sets_the_same_prices(): void

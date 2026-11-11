@@ -108,7 +108,8 @@ class StoqsApi
         );
     }
 
-    private static function scopeOk(string $scope): void
+    /** The scope works again: drop it from the missing list (and the admin banner). */
+    public static function scopeOk(string $scope): void
     {
         $missing = self::missingScopes();
         if (isset($missing[$scope])) {

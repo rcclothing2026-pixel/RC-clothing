@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\Schema;
  * StoqS-managed promotions (campaign planner, Promotions API v2).
  *
  * - stoqs_promotions: one row (id 1), the last GET /promotions for this site: whether StoqS
- *   manages its promotions, the version and ETag, the payload, and when it was applied/acked.
+ *   manages its promotions, the version and ETag, the payload, and when it was applied/acked;
+ *   reimport_pending (a switch waiting for its catalog import) and saved_prices (struck prices
+ *   set by hand, kept while StoqS manages the site, restored when it gives them back).
  * - product_variants.promo_price: a size's current StoqS window price when it differs from
  *   the product's shown price; site_price_reported: the shop-set size price last sent with
- *   PUT /catalog/variants/{id}/site-price.
+ *   PUT /catalog/variants/{id}/site-price; site_price_retry_at: when a refused report may be retried.
  * - orders.promo_eval (stoqs|local) / promo_version: how a StoqS-managed order was priced;
  *   null for every order the shop prices itself.
  * - order_items.list_price: the list price a StoqS-managed line was priced from.
@@ -36,6 +38,8 @@ return new class extends Migration
                 $t->unsignedBigInteger('acked_version')->nullable();
                 $t->timestamp('acked_at')->nullable();
                 $t->string('error', 500)->nullable();
+                $t->boolean('reimport_pending')->default(false);
+                $t->longText('saved_prices')->nullable();
                 $t->timestamps();
             });
         }
@@ -45,6 +49,9 @@ return new class extends Migration
             }
             if (! Schema::hasColumn('product_variants', 'site_price_reported')) {
                 $t->unsignedBigInteger('site_price_reported')->nullable();
+            }
+            if (! Schema::hasColumn('product_variants', 'site_price_retry_at')) {
+                $t->timestamp('site_price_retry_at')->nullable();
             }
         });
         Schema::table('orders', function (Blueprint $t) {
@@ -64,7 +71,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        foreach (['order_items' => ['list_price'], 'orders' => ['promo_eval', 'promo_version'], 'product_variants' => ['promo_price', 'site_price_reported']] as $table => $cols) {
+        foreach (['order_items' => ['list_price'], 'orders' => ['promo_eval', 'promo_version'], 'product_variants' => ['promo_price', 'site_price_reported', 'site_price_retry_at']] as $table => $cols) {
             foreach ($cols as $c) {
                 if (Schema::hasColumn($table, $c)) {
                     Schema::table($table, fn (Blueprint $t) => $t->dropColumn($c));

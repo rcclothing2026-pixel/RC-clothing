@@ -111,13 +111,13 @@ class StoqsPromotions
 
     /**
      * GET /promotions with If-None-Match. A 304 changes nothing; a 200 stores the payload.
-     * When `managed` flips either way, every product is priced again from StoqS's catalog
-     * (stockkeeping:catalog --full), so list prices and the shop's own outlet come back
-     * exactly as the import would set them in that mode.
+     * When `managed` flips either way, promo_price is cleared and reimport_pending is set:
+     * the minute job (runPendingImport) then prices every product again from StoqS's catalog
+     * in the new mode. No import ever runs here, so a webhook or a checkout request stays short.
      *
      * @return array{ok: bool, status: int|string, changed: bool, managed: bool, flipped: bool, message?: string}
      */
-    public static function pull(bool $reimportOnFlip = true): array
+    public static function pull(): array
     {
         if (! config('stockkeeping.enabled')) {
             return ['ok' => false, 'status' => 'off', 'changed' => false, 'managed' => false, 'flipped' => false];
@@ -136,6 +136,7 @@ class StoqsPromotions
             return ['ok' => false, 'status' => 'error', 'changed' => false, 'managed' => self::managed(), 'flipped' => false, 'message' => $e->getMessage()];
         }
         if ($resp->status() === 304) {
+            StoqsApi::scopeOk('discounts:read');
             self::store(['pulled_at' => now(), 'error' => null]);
 
             return ['ok' => true, 'status' => 304, 'changed' => false, 'managed' => self::managed(), 'flipped' => false];
@@ -146,6 +147,7 @@ class StoqsPromotions
 
             return ['ok' => false, 'status' => $resp->status(), 'changed' => false, 'managed' => self::managed(), 'flipped' => false, 'message' => $e->getMessage()];
         }
+        StoqsApi::scopeOk('discounts:read');   // a 403 earlier put up the banner; the scope is back
         $j = (array) $resp->json();
         $managed = ! empty($j['managed']);
         self::store([
@@ -160,7 +162,7 @@ class StoqsPromotions
         ]);
         $flipped = $was !== $managed;
         if ($flipped) {
-            self::flipped($managed, $reimportOnFlip);
+            self::flipped($managed);
         }
 
         return ['ok' => true, 'status' => 200, 'changed' => true, 'managed' => $managed, 'flipped' => $flipped];
@@ -185,23 +187,102 @@ class StoqsPromotions
     }
 
     /**
-     * StoqS took the promotions over, or gave them back. promo_price is cleared and the
-     * whole catalog imported again in the new mode (list prices only when managed; the
-     * StoqS sale price and the shop's own outlet when not), then the windows applied.
+     * StoqS took the promotions over, or gave them back. promo_price is cleared and the whole
+     * catalog is to be imported again in the new mode (reimport_pending, run by the minute job).
+     * Taking over keeps the struck prices set by hand in the shop (saved_prices); giving back
+     * restores them once that import has run.
      */
-    private static function flipped(bool $managed, bool $reimport): void
+    private static function flipped(bool $managed): void
     {
         ProductVariant::whereNotNull('promo_price')->update(['promo_price' => null]);
+        $values = ['reimport_pending' => true];
+        if ($managed) {
+            $values['saved_prices'] = json_encode(self::handSetStruckPrices());
+        }
+        self::store($values);
         StockkeeepingLog::record(StockkeeepingLog::TYPE_SITES, 'in', 'promotions', null, ['managed' => $managed],
             source: StockkeeepingLog::SOURCE_AUTO,
             summary: $managed ? 'تخفیف‌های این سایت از این پس در StoqS مدیریت می‌شود' : 'تخفیف‌های این سایت دوباره با خود فروشگاه است');
-        if ($reimport) {
-            try {
-                \Illuminate\Support\Facades\Artisan::call('stockkeeping:catalog', ['--full' => true, '--source' => 'auto']);
-            } catch (\Throwable $e) {
-                Log::warning('[stoqs-promotions] catalog re-import after the switch failed', ['error' => $e->getMessage()]);
+    }
+
+    /** The lock the catalog imports share (the hourly sk-catalog job and runPendingImport). */
+    public static function catalogLock(int $seconds = 3600): \Illuminate\Contracts\Cache\Lock
+    {
+        return \Illuminate\Support\Facades\Cache::lock('stoqs:catalog-import', $seconds);
+    }
+
+    /**
+     * After a flip: the full catalog import in the new mode, under the shared catalog lock.
+     * reimport_pending is cleared only when the import finished; switching back to the shop
+     * then restores the struck prices kept at the switch. Returns whether an import ran.
+     */
+    public static function runPendingImport(): bool
+    {
+        $row = self::row();
+        if (! $row || empty($row->reimport_pending)) {
+            return false;
+        }
+        $lock = self::catalogLock();
+        if (! $lock->get()) {
+            return false;   // the hourly import is running; next minute
+        }
+        try {
+            $code = \Illuminate\Support\Facades\Artisan::call('stockkeeping:catalog', ['--full' => true, '--source' => 'auto']);
+            if ($code !== 0) {
+                Log::warning('[stoqs-promotions] catalog re-import after the switch failed', ['exit' => $code]);
+
+                return false;
+            }
+            if (! self::managed()) {
+                self::restoreSavedPrices();
+            }
+            self::store(['reimport_pending' => false]);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('[stoqs-promotions] catalog re-import after the switch failed', ['error' => $e->getMessage()]);
+
+            return false;
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Struck prices set by hand in the shop: compare_at on a product that is not a StoqS sale
+     * (stoqs_discount, where the column exists) and not in the shop's outlet. Managed mode
+     * would clear them. [product id => [price, compare_at]]
+     */
+    public static function handSetStruckPrices(): array
+    {
+        $outlet = Schema::hasTable('outlet_items') ? \App\Models\OutletItem::where('is_active', true)->pluck('product_id')->all() : [];
+        $q = Product::whereNotNull('compare_at_price')->whereColumn('compare_at_price', '>', 'price')->whereNotIn('id', $outlet);
+        if (self::hasStoqsDiscount()) {
+            $q->where(fn ($w) => $w->where('stoqs_discount', false)->orWhereNull('stoqs_discount'));
+        }
+
+        return $q->get(['id', 'price', 'compare_at_price'])
+            ->mapWithKeys(fn ($p) => [(int) $p->id => [(int) $p->price, (int) $p->compare_at_price]])->all();
+    }
+
+    /** Put the kept struck prices back, where the product's list price is still the struck one. */
+    private static function restoreSavedPrices(): void
+    {
+        $saved = json_decode((string) (self::row()->saved_prices ?? ''), true);
+        foreach ((array) $saved as $id => [$price, $compare]) {
+            $p = Product::find((int) $id);
+            if (! $p) {
+                continue;
+            }
+            if ((int) $p->price === (int) $compare && ($p->compare_at_price === null || (int) $p->compare_at_price <= (int) $p->price)) {
+                $p->price = (int) $price;
+                $p->compare_at_price = (int) $compare;
+                $p->save();
+            } else {
+                Log::info('[stoqs-promotions] struck price not restored (the list price changed)', ['product' => $id]);
             }
         }
+        self::store(['saved_prices' => null]);
     }
 
     // ── the payload, indexed ───────────────────────────────────────────────
@@ -300,9 +381,11 @@ class StoqsPromotions
             if (! $w || ! self::covers($w, $ts)) {
                 continue;
             }
-            // «بدون تخفیف»: a product in a no-discount category takes no campaign window (nor an
-            // outlet window when the outlet respects it), even from a plan applied earlier.
-            if ($none && (($w['source'] ?? '') !== 'outlet' || $outletToo)) {
+            // «بدون تخفیف» (the owner's rule): a product in a no-discount category takes no
+            // campaign window, even from a plan applied earlier; price sheets stay, and outlet
+            // windows stay unless the outlet respects no-discount.
+            $src = (string) ($w['source'] ?? '');
+            if ($none && ($src === 'campaign' || ($src === 'outlet' && $outletToo))) {
                 continue;
             }
             $p = ($e[1] ?? null) !== null ? (int) $e[1]
@@ -497,6 +580,31 @@ class StoqsPromotions
         return $changed;
     }
 
+    /**
+     * Checkout found a price StoqS no longer agrees with: pull the payload again (at most once
+     * per payload version) and re-price only this cart's products from it. Returns whether a
+     * cart line's price changed.
+     *
+     * @param  \Illuminate\Support\Collection<int, array{variant: ProductVariant, unit_price: int}>  $lines
+     */
+    public static function repriceCart(\Illuminate\Support\Collection $lines): bool
+    {
+        if (\Illuminate\Support\Facades\Cache::add('stoqs:promotions:repull:'.(self::version() ?? 0), 1, now()->addDay())) {
+            self::pull();
+        }
+        $ids = $lines->map(fn ($l) => (int) $l['variant']->product_id)->unique()->all();
+        Product::with('variants')->whereIn('id', $ids)->get()->each(fn ($p) => self::applyProduct($p));
+        $now = ProductVariant::with('product')->whereIn('id', $lines->map(fn ($l) => (int) $l['variant']->id)->all())->get()->keyBy('id');
+        foreach ($lines as $l) {
+            $v = $now[(int) $l['variant']->id] ?? null;
+            if ($v && $v->effectivePrice() !== (int) $l['unit_price']) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function hasStoqsDiscount(): bool
     {
         static $has = null;
@@ -579,18 +687,29 @@ class StoqsPromotions
 
     /**
      * Tell StoqS each shop-set size price once, and again when it changes; a size that is no
-     * longer shop-set is handed back ({shop_set: false}). Managed only. At most $limit calls.
+     * longer shop-set is handed back ({shop_set: false}). Managed only. At most $limit calls a
+     * run; the run stops at the first 403 / 409 / 429, and a size that failed waits until its
+     * site_price_retry_at. While the key lacks catalog:write nothing is sent, except one probe an
+     * hour (a success clears the scope banner).
      *
-     * @return array{sent: int, failed: int}
+     * @return array{sent: int, failed: int, stopped?: int}
      */
-    public static function reportSitePrices(int $limit = 200): array
+    public static function reportSitePrices(int $limit = 20): array
     {
         $out = ['sent' => 0, 'failed' => 0];
         if (! self::managed() || ! Schema::hasColumn('product_variants', 'site_price_reported')) {
             return $out;
         }
+        if (isset(StoqsApi::missingScopes()['catalog:write'])) {
+            if (! \Illuminate\Support\Facades\Cache::add('stoqs:site-price:probe', 1, now()->addHour())) {
+                return $out;
+            }
+            $limit = 1;
+        }
+        $retry = Schema::hasColumn('product_variants', 'site_price_retry_at');
         $rows = ProductVariant::whereNotNull('stockkeeping_variant_id')
             ->where(fn ($q) => $q->whereNotNull('price')->orWhereNotNull('site_price_reported'))
+            ->when($retry, fn ($q) => $q->where(fn ($w) => $w->whereNull('site_price_retry_at')->orWhere('site_price_retry_at', '<=', now())))
             ->orderBy('id')->get();
         foreach ($rows as $v) {
             if ($out['sent'] + $out['failed'] >= $limit) {
@@ -605,11 +724,23 @@ class StoqsPromotions
                 StoqsApi::call('PUT', 'catalog/variants/'.(int) $v->stockkeeping_variant_id.'/site-price',
                     $want === null ? ['shop_set' => false, 'site_url' => self::siteUrl()] : ['list_price' => $want, 'site_url' => self::siteUrl()]);
                 $v->site_price_reported = $want;
+                if ($retry) {
+                    $v->site_price_retry_at = null;
+                }
                 $v->saveQuietly();
                 $out['sent']++;
             } catch (\Throwable $e) {
                 $out['failed']++;
-                Log::warning('[stoqs-promotions] site price not sent', ['variant' => $v->id, 'error' => $e->getMessage()]);
+                $status = $e instanceof StoqsApiError ? $e->status : 0;
+                if ($retry) {
+                    $v->site_price_retry_at = now()->addMinutes(match ($status) { 429 => 10, 403, 409 => 60, default => 15 });
+                    $v->saveQuietly();
+                }
+                Log::warning('[stoqs-promotions] site price not sent', ['variant' => $v->id, 'status' => $status, 'error' => $e->getMessage()]);
+                if (in_array($status, [403, 409, 429], true)) {
+                    $out['stopped'] = $status;
+                    break;
+                }
             }
         }
 

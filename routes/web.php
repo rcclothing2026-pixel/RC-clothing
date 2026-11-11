@@ -205,8 +205,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('collections', AdminCollectionController::class)->except('show');
     Route::resource('size-guides', AdminSizeGuideController::class)->except('show')->parameters(['size-guides' => 'sizeGuide']);
     Route::get('/discounts', [DiscountController::class, 'index'])->name('discounts.index');
-    Route::resource('coupons', AdminCouponController::class)->except('show');
-    Route::resource('discount-rules', DiscountRuleController::class)->except('show');
+    Route::resource('coupons', AdminCouponController::class)->except('show')->middleware(\App\Http\Middleware\StoqsPromotionsReadOnly::class);
+    Route::resource('discount-rules', DiscountRuleController::class)->except('show')->middleware(\App\Http\Middleware\StoqsPromotionsReadOnly::class);
     Route::get('/outlet', [\App\Http\Controllers\Admin\OutletController::class, 'index'])->name('outlet.index');
     Route::post('/outlet', [\App\Http\Controllers\Admin\OutletController::class, 'store'])->name('outlet.store');
     Route::put('/outlet/{outlet}', [\App\Http\Controllers\Admin\OutletController::class, 'update'])->name('outlet.update');

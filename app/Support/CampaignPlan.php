@@ -121,13 +121,19 @@ class CampaignPlan
         return [];
     }
 
-    public static function reset(): void
+    /** Back to config/campaigns.php. Refused while StoqS manages the discounts (returns the problems). */
+    public static function reset(): array
     {
+        if (self::stoqsManaged()) {
+            return [self::STOQS_LOCKED];
+        }
         $old = config('campaigns', []);
         DB::table('campaign_plans')->where('id', 1)->delete();
         config(['campaigns' => config('campaigns_file')]);
         self::retire($old, config('campaigns'));
         Artisan::call('campaigns:sync');
+
+        return [];
     }
 
     /** Coupons and bundle products dropped from the plan are switched off, never deleted. */

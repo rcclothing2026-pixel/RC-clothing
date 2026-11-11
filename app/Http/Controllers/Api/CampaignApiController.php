@@ -97,6 +97,10 @@ class CampaignApiController extends Controller
     /** PUT /api/campaigns/editor — store the edited plan; 422 with the problems in Persian. */
     public function save(Request $request): JsonResponse
     {
+        // While StoqS manages the promotions the outlet is StoqS's: refuse before saving anything.
+        if ($request->has('outlet') && \App\Services\StockKeeping\StoqsPromotions::managed()) {
+            return response()->json(['ok' => false, 'errors' => [Outlet::MANAGED]], 422);
+        }
         // Costs first: the plan's margin checks read them. Then the plan, then the outlet.
         $errors = $request->has('costs') ? Margin::saveCosts((array) $request->input('costs', [])) : [];
         if (! $errors) {
@@ -132,7 +136,9 @@ class CampaignApiController extends Controller
     /** POST /api/campaigns/editor/reset — back to config/campaigns.php. */
     public function reset(): JsonResponse
     {
-        CampaignPlan::reset();
+        if ($errors = CampaignPlan::reset()) {
+            return response()->json(['ok' => false, 'errors' => $errors], 422);
+        }
 
         return response()->json(['ok' => true] + CampaignPlan::editorPayload());
     }

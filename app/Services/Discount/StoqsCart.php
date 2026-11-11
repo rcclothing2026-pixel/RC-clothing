@@ -114,17 +114,26 @@ class StoqsCart
 
     /**
      * The local evaluation: StoqS's engine on the payload. $codes: what the customer typed.
-     * The customer is a guest to the engine, as in StoqS's own evaluate.
+     * As in StoqS's own evaluate, the customer counts only when a code is entered and the
+     * customer has a phone: their uses of the code and their paid orders, as far as this shop
+     * knows them (orders paid here), so per_customer_limit and first_order_only agree with
+     * StoqS for this shop's own history. StoqS's answer at checkout covers the rest.
      */
-    public static function evaluate(Collection $lines, array $codes = [], array $context = []): array
+    public static function evaluate(Collection $lines, array $codes = [], array $context = [], ?User $user = null): array
     {
         [$eng, $meta] = self::lines($lines);
         $rows = [];
+        $cust = null;
         foreach ($codes as $text) {
-            $rows[] = self::findCode((string) $text) ?? ['code' => (string) $text, '_reason' => 'not_found', 'enabled' => false];
+            $row = self::findCode((string) $text);
+            if ($row && ($c = self::customer($user, (string) $row['code'])) !== null) {
+                $cust ??= $c;
+                $row['customer_uses'] = $c['code_uses'];
+            }
+            $rows[] = $row ?? ['code' => (string) $text, '_reason' => 'not_found', 'enabled' => false];
         }
         $ev = StoqsEngine::evaluate(self::rules(), $rows, $eng, [
-            'channel' => 'web', 'customer' => null, 'now' => now('Asia/Tehran')->format('Y-m-d H:i:s'),
+            'channel' => 'web', 'customer' => $cust, 'now' => now('Asia/Tehran')->format('Y-m-d H:i:s'),
             'max_discount_percent' => (float) (StoqsPromotions::settings()['max_discount_percent'] ?? 100),
             'context' => array_intersect_key($context, array_flip(['payment_method_key', 'shipping_method_id', 'shipping_city'])),
         ]);
@@ -135,12 +144,78 @@ class StoqsCart
         return $ev;
     }
 
+    /** The customer as StoqS's evaluate sees them for $code (de_code_customer), from this shop's paid orders; null for a guest. */
+    private static function customer(?User $user, string $code): ?array
+    {
+        $phone = StoqsEngine::phone_norm((string) ($user?->phone ?? ''));
+        if ($phone === '') {
+            return null;
+        }
+        $paid = \App\Models\Order::where('user_id', $user->id)->whereNotNull('paid_at');
+
+        return ['phone' => $phone, 'paid_orders' => (clone $paid)->count(),
+            'code_uses' => (clone $paid)->whereRaw('UPPER(coupon_code) = ?', [mb_strtoupper($code)])->count()];
+    }
+
+    /** This cart as priced (lines, quantities, prices, codes, payload version, customer): whether an adopted answer still fits. */
+    public static function fingerprint(Collection $lines, array $codes): string
+    {
+        return sha1(json_encode([
+            $lines->map(fn ($l) => [(int) $l['variant']->id, (int) $l['quantity'], (int) $l['unit_price']])->values()->all(),
+            array_map(fn ($c) => StoqsEngine::code_norm((string) $c), $codes),
+            StoqsPromotions::version(), \Illuminate\Support\Facades\Auth::id(),
+        ]));
+    }
+
+    /**
+     * Whether StoqS's answer ($remote) costs the customer more than what the cart showed
+     * ($seen): less discount, more surcharge, shipping no longer free, a new block, or a code
+     * StoqS does not accept. Null when not; else the reason in Persian and the codes to drop.
+     *
+     * @return array{message: string, codes: string[]}|null
+     */
+    public static function worseFor(array $seen, array $remote): ?array
+    {
+        $bad = [];
+        $msg = [];
+        $theirs = [];
+        foreach ((array) ($remote['codes'] ?? []) as $c) {
+            $theirs[StoqsEngine::code_norm((string) ($c['code'] ?? ''))] = $c;
+        }
+        foreach ((array) ($seen['codes'] ?? []) as $c) {
+            if (empty($c['valid'])) {
+                continue;
+            }
+            $r = $theirs[StoqsEngine::code_norm((string) ($c['code'] ?? ''))] ?? null;
+            if (! $r || empty($r['valid'])) {
+                $bad[] = (string) $c['code'];
+                $why = trim((string) ($r['message'] ?? ''));
+                $msg[] = 'کد «'.$c['code'].'» برای شما معتبر نیست'.($why !== '' ? ': '.$why : '.');
+            }
+        }
+        $newBlocks = array_values(array_diff(array_map('strval', (array) ($remote['blocks'] ?? [])), array_map('strval', (array) ($seen['blocks'] ?? []))));
+        foreach ($newBlocks as $b) {
+            $msg[] = $b;
+        }
+        $more = (int) ($remote['discount'] ?? 0) < (int) ($seen['discount'] ?? 0)
+            || (int) ($remote['surcharge'] ?? 0) > (int) ($seen['surcharge'] ?? 0)
+            || (! empty($seen['shipping_free']) && empty($remote['shipping_free']));
+        if (! $bad && ! $newBlocks && ! $more) {
+            return null;
+        }
+        if (! $msg) {
+            $msg[] = 'مبلغ سبد به‌روز شد؛ لطفاً پیش از پرداخت سبد خرید را دوباره ببینید.';
+        }
+
+        return ['message' => implode(' ', $msg), 'codes' => $bad];
+    }
+
     /**
      * POST /promotions/evaluate: StoqS's official discounts for this cart, in the same shape
      * as evaluate() (its lines in our order). Null when StoqS cannot be reached or refuses;
      * the caller then sells on the local evaluation (eval: local).
      */
-    public static function remote(Collection $lines, array $codes = [], ?User $user = null): ?array
+    public static function remote(Collection $lines, array $codes = [], ?User $user = null, array $context = []): ?array
     {
         [$eng, $meta] = self::lines($lines);
         if (! $eng) {
@@ -154,6 +229,12 @@ class StoqsCart
             'codes' => array_values(array_map('strval', $codes)),
             'site_url' => StoqsPromotions::siteUrl(),
         ];
+        // Optional: the checkout choices the shop's rules may depend on (StoqS may ignore them).
+        $ctx = array_filter(array_intersect_key($context, array_flip(['payment_method_key', 'shipping_method_id', 'shipping_city'])),
+            fn ($v) => $v !== null && $v !== '');
+        if ($ctx) {
+            $body['context'] = $ctx;
+        }
         if ($user?->phone) {
             $body['customer_phone'] = (string) $user->phone;
         }
@@ -197,6 +278,22 @@ class StoqsCart
             'lines' => array_values($out), 'meta' => $meta, 'mismatch' => (array) ($j['mismatch'] ?? []),
             'eval' => 'stoqs', 'version' => isset($j['version']) ? (int) $j['version'] : StoqsPromotions::version(),
         ];
+    }
+
+    /**
+     * The local coupon behind a StoqS code, when the code is this shop's own: StoqS lists it as
+     * made by a key (owner key:<id>) with external_id = the local coupon id, and that coupon is
+     * registered under the same StoqS id (coupons.stoqs_code_id). Null otherwise.
+     */
+    public static function ownCouponId(string $text): ?int
+    {
+        $row = self::findCode($text);
+        if (! $row || ! str_starts_with((string) ($row['owner'] ?? ''), 'key:') || ($row['external_id'] ?? null) === null) {
+            return null;
+        }
+        $c = Coupon::whereKey((int) $row['external_id'])->first(['id', 'stoqs_code_id']);
+
+        return $c && (int) $c->stoqs_code_id === (int) ($row['id'] ?? 0) ? (int) $c->id : null;
     }
 
     /** The code that counts, as an unsaved Coupon (for the views and the order's coupon_code). Never saved. */

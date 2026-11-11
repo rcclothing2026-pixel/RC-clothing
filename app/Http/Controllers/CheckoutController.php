@@ -187,7 +187,12 @@ class CheckoutController extends Controller
         // own promotions: nothing below changes then.
         $promo = $this->cart->promotionsCheck();
         if ($promo && $promo['refresh']) {
-            return redirect()->route('cart.index')->with('error', 'قیمت بعضی کالاها همین حالا تغییر کرد؛ لطفاً سبد خرید را دوباره ببینید.');
+            // StoqS's answer costs more than the cart showed (or a price changed): the customer
+            // sees the new amount on the cart before paying.
+            return redirect()->route('cart.index')->with('error', $promo['message'] ?? 'مبلغ سبد به‌روز شد؛ لطفاً سبد خرید را دوباره ببینید.');
+        }
+        if ($promo && $this->cart->hasRuleBlocks()) {   // StoqS's answer may block what the local check let through
+            return redirect()->route('cart.index')->with('error', implode(' ', $this->cart->ruleBlockMessages()));
         }
 
         // Combined discount: coupon + promotion + discount rules.
@@ -426,9 +431,13 @@ class CheckoutController extends Controller
             $order->update(['status' => Order::STATUS_PAID, 'paid_at' => now()]);
 
             // Count the coupon redemption now that payment succeeded. A StoqS-priced order
-            // (promo_eval set) used StoqS's code and rules: StoqS counts them from the sale.
+            // (promo_eval set) used StoqS's code and rules: StoqS counts them from the sale, and
+            // the local copy is counted too when the code is this shop's own coupon (registered
+            // by this key, external_id = its id).
             if ($order->coupon_code && $order->promo_eval === null) {
                 \App\Models\Coupon::where('code', $order->coupon_code)->increment('used_count');
+            } elseif ($order->coupon_code && ($own = \App\Services\Discount\StoqsCart::ownCouponId((string) $order->coupon_code)) !== null) {
+                \App\Models\Coupon::whereKey($own)->increment('used_count');
             }
 
             // Count discount rule usage.

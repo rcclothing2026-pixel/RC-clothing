@@ -22,6 +22,7 @@ class ProductVariant extends Model
             'stoqs_size_price' => 'integer',
             'promo_price' => 'integer',
             'site_price_reported' => 'integer',
+            'site_price_retry_at' => 'datetime',
             'stock_qty' => 'integer',
             'weight' => 'integer',
             'is_active' => 'boolean',

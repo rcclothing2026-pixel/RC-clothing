@@ -194,31 +194,36 @@ class StoqsManagedModeTest extends TestCase
         $this->assertSame(800_000, $this->product->fresh()->price, 'the product shows the sizes that follow it');
     }
 
-    public function test_a_no_discount_category_takes_no_campaign_window_but_the_outlet(): void
+    public function test_a_no_discount_category_takes_no_campaign_window_but_price_sheets_and_the_outlet_stay(): void
     {
         $payload = $this->payload([
             'categories' => ['9' => [1]],
             'outlet' => ['o5'],
-            'windows' => array_merge($this->payload()['windows'], [[
-                'id' => 'o5', 'source' => 'outlet', 'campaign_id' => null, 'plan_id' => 8, 'version' => 1, 'pct' => 10,
-                'from' => null, 'to' => null, 'from_utc' => null, 'to_utc' => null,
-            ]]),
+            'windows' => array_merge($this->payload()['windows'], [
+                ['id' => 'o5', 'source' => 'outlet', 'campaign_id' => null, 'plan_id' => 8, 'version' => 1, 'pct' => 10,
+                    'from' => null, 'to' => null, 'from_utc' => null, 'to_utc' => null],
+                ['id' => 'sp5', 'source' => 'price_sheet', 'campaign_id' => null, 'plan_id' => null, 'version' => null, 'pct' => 5,
+                    'from' => null, 'to' => null, 'from_utc' => null, 'to_utc' => null],
+            ]),
         ]);
         $payload['settings']['no_discount_category_ids'] = [9];
         $payload['variants'][0]['prices'][] = ['o5', 900_000];
+        $payload['variants'][1]['prices'][] = ['sp5', 950_000];
         $this->manage($payload);
         StoqsPromotions::apply();
 
-        // S: the 800,000 campaign window is skipped, the 900,000 outlet window holds; M: list price.
+        // S: the 800,000 campaign window is skipped, the 900,000 outlet window holds;
+        // M: the 750,000 campaign window is skipped, the 950,000 price sheet holds.
         $this->assertSame(900_000, $this->product->fresh()->price);
         $this->assertSame(900_000, $this->variant('S')->effectivePrice());
-        $this->assertSame(1_000_000, $this->variant('M')->effectivePrice());
+        $this->assertSame(950_000, $this->variant('M')->effectivePrice());
 
         $payload['settings']['outlet_respects_no_discount'] = true;
         $this->manage($payload);
         StoqsPromotions::apply();
         $this->assertSame(1_000_000, $this->variant('S')->effectivePrice());
-        $this->assertNull($this->product->fresh()->compare_at_price);
+        $this->assertSame(950_000, $this->variant('M')->effectivePrice(), 'a price sheet is not a campaign');
+        $this->assertSame(1_000_000, $this->product->fresh()->compare_at_price);
     }
 
     public function test_catalog_import_takes_list_prices_and_applies_windows(): void
@@ -378,7 +383,8 @@ class StoqsManagedModeTest extends TestCase
         Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'promotions/evaluate')
             && $r['lines'][0]['variant_id'] === 11 && $r['lines'][0]['unit_price'] === 800_000
             && $r['lines'][0]['list_price'] === 1_000_000 && $r['lines'][0]['plan_id'] === 7 && $r['lines'][0]['plan_version'] === 4
-            && $r['site_url'] === 'https://shop.test' && $r['customer_phone'] === '09120001122');
+            && $r['site_url'] === 'https://shop.test' && $r['customer_phone'] === '09120001122'
+            && $r['context']['payment_method_key'] === 'zarinpal' && isset($r['context']['shipping_method_id']));
 
         $order = Order::latest('id')->first();
         $this->assertSame('stoqs', $order->promo_eval);
@@ -498,5 +504,247 @@ class StoqsManagedModeTest extends TestCase
         $this->assertStringEndsWith('/catalog/variants/12/site-price', $puts[0][0]->url());
         $this->assertSame(['list_price' => 900_000, 'site_url' => 'https://shop.test'], $puts[0][0]->data());
         $this->assertCount(1, Http::recorded(fn (Request $r) => str_ends_with($r->url(), 'promotions/ack')), 'one ack per version');
+    }
+
+    // ── what the customer saw (review 2026-11-11) ──────────────────────────
+
+    /** STQ5 limited to one use per customer, already used by this customer elsewhere (StoqS knows, the shop does not). */
+    private function limitedCode(): array
+    {
+        $payload = $this->payload();
+        $payload['codes'][0]['per_customer_limit'] = 1;
+
+        return $payload;
+    }
+
+    public function test_a_code_stoqs_refuses_for_this_customer_sends_them_back_to_the_cart(): void
+    {
+        $this->manage($this->limitedCode());
+        StoqsPromotions::apply();
+        Http::fake([
+            'stoqs.test/api/v1/promotions/evaluate' => Http::sequence()->push($this->evaluateResponse([
+                'codes' => [['code' => 'STQ5', 'valid' => false, 'applied' => false, 'reason' => 'customer_limit',
+                    'message' => 'سقف استفادهٔ شما از این کد تکمیل شده است.', 'amount' => 0]],
+            ]))->push($this->evaluateResponse()),
+            '*' => Http::response(['ok' => true, 'id' => 'x', 'data' => ['id' => 'x']]),
+        ]);
+        $this->seed();
+        $user = User::factory()->create(['phone' => '09120001122']);
+        $address = Address::create(['user_id' => $user->id, 'recipient_name' => 'تست', 'phone' => '09120001122',
+            'province' => 'تهران', 'city' => 'تهران', 'line' => 'خیابان نمونه']);
+        $this->actingAs($user);
+        $this->post(route('cart.add'), ['variant_id' => $this->variant('S')->id, 'quantity' => 1]);
+        $this->post(route('cart.coupon.apply'), ['code' => 'STQ5']);
+        $this->assertSame(130_000, $this->cart()->combinedDiscount(), 'the shop knows no use of STQ5 by this customer');
+        $place = fn () => $this->post(route('checkout.place'), [
+            'address_id' => (string) $address->id, 'shipping_method_id' => ShippingMethod::first()->id, 'payment_method' => 'zarinpal',
+        ]);
+
+        $place()->assertRedirect(route('cart.index'))->assertSessionHas('error', fn ($m) => str_contains($m, 'STQ5') && str_contains($m, 'معتبر نیست'));
+        $this->assertSame(0, Order::count(), 'nothing is charged before the customer sees the new amount');
+        $cart = $this->cart();
+        $this->assertNull($cart->appliedCoupon());
+        $this->assertSame(80_000, $cart->combinedDiscount(), 'the cart now shows StoqS\'s answer');
+
+        // Placing again: StoqS gives what the cart showed, so the order goes through at that amount.
+        $place()->assertRedirect();
+        $order = Order::latest('id')->first();
+        $this->assertNotNull($order);
+        $this->assertSame(80_000, (int) $order->discount);
+        $this->assertNull($order->coupon_code);
+    }
+
+    public function test_the_local_engine_counts_the_customers_own_uses_of_a_code(): void
+    {
+        $this->manage($this->limitedCode());
+        StoqsPromotions::apply();
+        $this->seed();
+        $user = User::factory()->create(['phone' => '09120001122']);
+        Order::forceCreate(array_intersect_key([
+            'number' => 'OLD-1', 'user_id' => $user->id, 'status' => Order::STATUS_PAID, 'subtotal' => 1, 'shipping_cost' => 0,
+            'discount' => 0, 'total' => 1, 'shipping_address' => [], 'coupon_code' => 'STQ5', 'paid_at' => now()->subDay(),
+            'placed_at' => now()->subDay(), 'payment_method' => 'zarinpal',
+        ], array_flip(Schema::getColumnListing('orders'))));
+        $this->actingAs($user);
+        $this->post(route('cart.add'), ['variant_id' => $this->variant('S')->id, 'quantity' => 1]);
+
+        $r = $this->cart()->applyCoupon('STQ5');
+        $this->assertFalse($r['ok']);
+        $this->assertStringContainsString('سقف استفاده', $r['message']);
+    }
+
+    public function test_a_cheaper_stoqs_answer_is_used_quietly_and_a_block_is_not(): void
+    {
+        $this->manage($this->payload());
+        StoqsPromotions::apply();
+        Http::fake([
+            'stoqs.test/api/v1/promotions/evaluate' => Http::sequence()->push($this->evaluateResponse(['discount' => 100_000,
+                'lines' => [array_replace($this->evaluateResponse()['lines'][0], ['discount' => 100_000, 'parts' => [['type' => 'rule', 'id' => 31, 'amount' => 100_000]]])]]))
+                ->push($this->evaluateResponse(['blocks' => ['این سبد امروز فروخته نمی‌شود.']])),
+            '*' => Http::response(['ok' => true, 'id' => 'x', 'data' => ['id' => 'x']]),
+        ]);
+        $this->placeOrder()->assertRedirect();
+        $this->assertSame(100_000, (int) Order::latest('id')->first()->discount);
+
+        Order::query()->delete();
+        $this->post(route('cart.add'), ['variant_id' => $this->variant('S')->id, 'quantity' => 1]);
+        $this->post(route('checkout.place'), [
+            'address_id' => (string) Address::first()->id, 'shipping_method_id' => ShippingMethod::first()->id, 'payment_method' => 'zarinpal',
+        ])->assertRedirect(route('cart.index'))->assertSessionHas('error', 'این سبد امروز فروخته نمی‌شود.');
+        $this->assertSame(0, Order::count());
+    }
+
+    // ── own coupons, locks ─────────────────────────────────────────────────
+
+    public function test_the_shops_own_coupon_sold_through_stoqs_is_counted_locally_too(): void
+    {
+        $local = Coupon::create(['code' => 'OWN10', 'type' => 'percent', 'value' => 10, 'is_active' => true]);
+        $local->forceFill(['stoqs_code_id' => 55])->saveQuietly();
+        $payload = $this->payload();
+        $payload['codes'][] = ['id' => 55, 'code' => 'OWN10', 'type' => 'percent', 'value' => 10, 'enabled' => 1, 'channels' => 'web',
+            'owner' => 'key:3', 'external_id' => (string) $local->id];
+        $payload['codes'][] = ['id' => 56, 'code' => 'THEIRS', 'type' => 'percent', 'value' => 10, 'enabled' => 1, 'channels' => 'web',
+            'owner' => 'key:9', 'external_id' => '999'];
+        $this->manage($payload);
+
+        $this->assertSame($local->id, \App\Services\Discount\StoqsCart::ownCouponId('own10'));
+        $this->assertNull(\App\Services\Discount\StoqsCart::ownCouponId('STQ5'), 'a StoqS code');
+        $this->assertNull(\App\Services\Discount\StoqsCart::ownCouponId('THEIRS'), 'another key\'s code');
+    }
+
+    public function test_reset_editor_outlet_and_the_admin_discount_pages_are_locked(): void
+    {
+        $this->manage($this->payload());
+        $this->assertSame([CampaignPlan::STOQS_LOCKED], CampaignPlan::reset());
+
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin)->get(route('admin.coupons.index'))->assertOk()->assertSee(CampaignPlan::STOQS_LOCKED);
+        $this->actingAs($admin)->get(route('admin.discount-rules.index'))->assertOk()->assertSee(CampaignPlan::STOQS_LOCKED);
+        $this->actingAs($admin)->get(route('admin.coupons.create'))->assertRedirect(route('admin.coupons.index'));
+        $this->actingAs($admin)->post(route('admin.coupons.store'), ['code' => 'NEWX', 'type' => 'percent', 'value' => 5])
+            ->assertRedirect(route('admin.coupons.index'))->assertSessionHas('error', CampaignPlan::STOQS_LOCKED);
+        $this->assertSame(0, Coupon::where('code', 'NEWX')->count());
+        $this->actingAs($admin)->get(route('admin.discount-rules.create'))->assertRedirect(route('admin.discount-rules.index'));
+    }
+
+    // ── site prices, scopes, the switch ────────────────────────────────────
+
+    public function test_site_prices_stop_at_a_rate_limit_and_retry_later(): void
+    {
+        $this->manage($this->payload());
+        foreach (['S' => 910_000, 'M' => 920_000] as $size => $price) {
+            $v = $this->variant($size);
+            $v->price = $price;
+            $v->save();
+        }
+        Http::fake(['stoqs.test/api/v1/catalog/variants/*' => Http::response(['ok' => false, 'error' => ['code' => 'rate_limited']], 429)]);
+
+        $this->assertSame(['sent' => 0, 'failed' => 1, 'stopped' => 429], StoqsPromotions::reportSitePrices());
+        $this->assertCount(1, Http::recorded());
+        $this->assertTrue($this->variant('S')->site_price_retry_at->isFuture());
+        StoqsPromotions::reportSitePrices();
+        $this->assertStringEndsWith('/catalog/variants/12/site-price', Http::recorded()->values()[1][0]->url(), 'S waits; M is next');
+        StoqsPromotions::reportSitePrices();
+        $this->assertCount(2, Http::recorded(), 'both wait for their retry time');
+    }
+
+    public function test_site_prices_wait_for_catalog_write_and_the_promotions_scope_banner_clears(): void
+    {
+        $this->manage($this->payload());
+        $m = $this->variant('M');
+        $m->price = 900_000;
+        $m->save();
+        \App\Models\Setting::put('stockkeeping.missing_scopes', ['catalog:write' => now()->toIso8601String(), 'discounts:read' => now()->toIso8601String()]);
+        Http::fake([
+            'stoqs.test/api/v1/catalog/variants/*' => Http::response(['ok' => false, 'error' => ['code' => 'forbidden_scope']], 403),
+            'stoqs.test/api/v1/promotions*' => Http::response('', 304),
+        ]);
+
+        StoqsPromotions::reportSitePrices();
+        StoqsPromotions::reportSitePrices();
+        $this->assertCount(1, Http::recorded(), 'one probe an hour while catalog:write is missing');
+
+        StoqsPromotions::pull();
+        $this->assertArrayNotHasKey('discounts:read', \App\Services\StockKeeping\StoqsApi::missingScopes());
+        $this->assertArrayHasKey('catalog:write', \App\Services\StockKeeping\StoqsApi::missingScopes());
+    }
+
+    public function test_a_switch_imports_from_the_minute_job_and_keeps_hand_set_struck_prices(): void
+    {
+        DB::table('stoqs_promotions')->delete();
+        StoqsPromotions::forget();
+        $hand = Product::create(['name' => 'شلوار', 'slug' => 'shalvar', 'price' => 900_000, 'compare_at_price' => 1_200_000,
+            'stockkeeping_id' => '2', 'is_active' => true]);
+        ProductVariant::create(['product_id' => $hand->id, 'sku' => '2001', 'size' => 'L', 'stock_qty' => 2, 'is_active' => true, 'stockkeeping_variant_id' => 21]);
+        $catalog = ['products' => [
+            ['product_id' => 1, 'name' => 'مانتو', 'base_price' => 1_000_000, 'price' => 1_000_000, 'active' => true, 'web_published' => true,
+                'variants' => [['variant_id' => 11, 'barcode' => '1001', 'size' => 'S', 'active' => true, 'price' => 1_000_000],
+                    ['variant_id' => 12, 'barcode' => '1002', 'size' => 'M', 'active' => true, 'price' => 1_000_000]]],
+            ['product_id' => 2, 'name' => 'شلوار', 'base_price' => 1_200_000, 'price' => 1_200_000, 'active' => true, 'web_published' => true,
+                'variants' => [['variant_id' => 21, 'barcode' => '2001', 'size' => 'L', 'active' => true, 'price' => 1_200_000]]],
+        ], 'has_more' => false];
+        // A StoqS that answers by ETag: 304 for the version the shop has, else the payload.
+        $live = $this->payload();
+        Http::fake([
+            'stoqs.test/api/v1/promotions/ack' => Http::response(['ok' => true]),
+            'stoqs.test/api/v1/promotions*' => function (Request $r) use (&$live) {
+                $etag = '"v'.$live['version'].'"';
+
+                return $r->header('If-None-Match') === [$etag] ? Http::response('', 304) : Http::response($live, 200, ['ETag' => $etag]);
+            },
+            'stoqs.test/api/v1/catalog?*' => Http::response($catalog),
+            '*' => Http::response(['ok' => true, 'products' => [], 'data' => [], 'has_more' => false]),
+        ]);
+
+        // The webhook only notes the switch: no catalog import inside it.
+        $this->webhook('promotions.changed', ['promo_version' => 4, 'reason' => 'site_source'])->assertOk();
+        $this->assertTrue(StoqsPromotions::managed());
+        $this->assertTrue((bool) StoqsPromotions::row()->reimport_pending);
+        Http::assertNotSent(fn (Request $r) => str_contains($r->url(), '/api/v1/catalog?'));
+        $this->assertArrayHasKey((string) $hand->id, json_decode(StoqsPromotions::row()->saved_prices, true));
+
+        // The minute job: the import runs under the shared lock, then the windows.
+        $this->artisan('stoqs:promotions-sync')->assertSuccessful();
+        Http::assertSent(fn (Request $r) => str_contains($r->url(), '/api/v1/catalog?'));
+        $this->assertFalse((bool) StoqsPromotions::row()->reimport_pending);
+        $this->assertSame(750_000, $this->product->fresh()->price);
+        $this->assertSame(1_200_000, $hand->fresh()->price, 'managed: the list price, the hand-set struck price set aside');
+
+        // Back to the shop: the struck price set by hand comes back after the import.
+        $live = array_replace($this->payload(), ['managed' => false, 'version' => 5]);
+        $this->webhook('promotions.changed', ['promo_version' => 5, 'reason' => 'site_source'])->assertOk();
+        $this->assertFalse(StoqsPromotions::managed());
+        $this->artisan('stoqs:promotions-sync')->assertSuccessful();
+        $this->assertFalse((bool) StoqsPromotions::row()->reimport_pending);
+        $h = $hand->fresh();
+        $this->assertSame(900_000, $h->price);
+        $this->assertSame(1_200_000, $h->compare_at_price);
+    }
+
+    public function test_a_switch_waits_while_the_hourly_import_holds_the_lock(): void
+    {
+        $this->manage($this->payload(), ['reimport_pending' => true]);
+        $lock = StoqsPromotions::catalogLock();
+        $this->assertTrue($lock->get());
+
+        $this->assertFalse(StoqsPromotions::runPendingImport());
+        $this->assertTrue((bool) StoqsPromotions::row()->reimport_pending);
+        $lock->release();
+    }
+
+    public function test_pre_switch_check_lists_shop_sizes_struck_prices_and_scopes(): void
+    {
+        $m = $this->variant('M');
+        $m->price = 900_000;
+        $m->save();
+        $this->product->forceFill(['compare_at_price' => 1_300_000])->save();
+        \App\Models\Setting::put('stockkeeping.missing_scopes', ['catalog:write' => now()->toIso8601String()]);
+        Http::fake(['stoqs.test/api/v1/promotions*' => Http::response(array_replace($this->payload(), ['managed' => false]), 200)]);
+
+        $this->artisan('stoqs:pre-switch-check')
+            ->expectsOutputToContain('Sizes priced in the shop (reported to StoqS as shop-set): 1')
+            ->expectsOutputToContain('Struck prices set by hand (cleared while managed, restored after): 1')
+            ->expectsOutputToContain('The key lacks: catalog:write')
+            ->assertFailed();
     }
 }
