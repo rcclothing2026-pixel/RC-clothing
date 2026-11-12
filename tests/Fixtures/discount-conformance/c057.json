@@ -1,0 +1,84 @@
+{
+    "id": "c057",
+    "schema": 3,
+    "opts": {
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "title": "A 25% code on one product whose floor holds it to 100,000: the rest does not spill onto a cap-exempt line the code is not on, so the cart gets 100,000",
+    "rules": [],
+    "codes": [
+        {
+            "id": 1,
+            "code": "XONLY",
+            "type": "percent",
+            "value": 25,
+            "min_subtotal": 0,
+            "max_subtotal": null,
+            "max_discount": null,
+            "starts_at": null,
+            "ends_at": null,
+            "usage_limit": null,
+            "uses": 0,
+            "per_customer_limit": null,
+            "first_order_only": 0,
+            "individual_use": 0,
+            "include_product_ids": [
+                1
+            ],
+            "include_category_ids": [],
+            "exclude_product_ids": [],
+            "exclude_category_ids": [],
+            "channels": "web,brand,stores",
+            "enabled": 1
+        }
+    ],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000,
+            "list_price": 1000000,
+            "floor_price": 900000
+        },
+        {
+            "variant_id": 20,
+            "product_id": 2,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000,
+            "list_price": 2000000,
+            "cap_exempt": true
+        }
+    ],
+    "expect": {
+        "discount": 100000,
+        "cap": 1100000,
+        "cap_basis": "list",
+        "codes": [
+            {
+                "valid": true,
+                "amount": 250000,
+                "applied": true
+            }
+        ],
+        "lines": [
+            {
+                "discount": 100000,
+                "room": 100000
+            },
+            {
+                "discount": 0,
+                "room": 1000000
+            }
+        ]
+    }
+}

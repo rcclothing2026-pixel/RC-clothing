@@ -202,8 +202,10 @@ final class StoqsEngine
      * the shops' bundles / winter / outlet are not); floor_price, or cost + min_margin;
      * list_price (schema 2: the price before the campaign; null/absent = the cap is on
      * unit_price exactly as before; below unit_price it counts as unit_price).
-     * Schema 3: cap_exempt (default false: the line's room is its whole total, no % cap and no
-     * floor, the item's «اجازهٔ عبور از سقف»); count_in_tiers (default true; false = its pieces
+     * Schema 3: cap_exempt (default false; sent only for an item «اجازهٔ عبور از سقف» priced by a
+     * campaign stacked on the outlet, «روی هم»: the line's room for the discounts aimed at it is
+     * its whole total, no % cap and no floor, but what other lines cannot take never spills onto
+     * it past its normal room); count_in_tiers (default true; false = its pieces
      * are not counted by any count condition: an outlet item set to «فقط اوتلت»).
      */
     public static function line_normalize(array $l, int $i, float $min_margin = 10.0): array {
@@ -633,7 +635,9 @@ final class StoqsEngine
         foreach ($L as $l) if ($l['discountable'] && $l['list_price'] !== null) { $list_mode = true; break; }
         $room = [];
         // schema 3: a cap-exempt line's room is its whole total (no % cap, no floor); its total
-        // is added whole to the cart's cap instead of its percent
+        // is added whole to the cart's cap instead of its percent. Only for what is aimed at it:
+        // $sroom keeps its normal room, the most another line's spill may put on it
+        $sroom = [];
         $exempt = 0;
         foreach ($L as $l) if ($l['discountable'] && $l['cap_exempt']) $exempt += (int) $l['line_total'];
         if (!$list_mode) {
@@ -641,18 +645,24 @@ final class StoqsEngine
             foreach ($L as $i => $l) {
                 if (!$l['discountable']) { $room[$i] = 0.0; continue; }
                 $line = (int) $l['line_total'];
-                if ($l['cap_exempt']) { $room[$i] = (float) $line; continue; }
                 $room[$i] = $has_costs
                     ? (float) min((int) floor($line * $max / 100), $l['floor_price'] === null ? $line : max(0, $line - (int) $l['floor_price'] * $l['qty']))
                     : $line * $max / 100;
+                if ($l['cap_exempt']) { $sroom[$i] = (float) $room[$i]; $room[$i] = (float) $line; }
             }
         } else {
             $plain = 0; $percent_cap = 0;
             foreach ($L as $i => $l) {
                 if (!$l['discountable']) { $room[$i] = 0.0; continue; }
                 $line = (int) $l['line_total'];
-                if ($l['cap_exempt']) { $room[$i] = (float) $line; $percent_cap += $line; continue; }
                 $by_floor = $l['floor_price'] === null ? $line : max(0, $line - (int) $l['floor_price'] * $l['qty']);
+                if ($l['cap_exempt']) {
+                    $sroom[$i] = (float) ($l['list_price'] === null
+                        ? ($has_costs ? min((int) floor($line * $max / 100), $by_floor) : $line * $max / 100)
+                        : ($has_costs ? min(max(0, (int) floor(round($l['list_price'] * $l['qty'] * $max / 100, 6)) - self::line_pre($l)), $by_floor)
+                                      : max(0, (int) floor(round($l['list_price'] * $l['qty'] * $max / 100, 6)) - self::line_pre($l))));
+                    $room[$i] = (float) $line; $percent_cap += $line; continue;
+                }
                 if ($l['list_price'] === null) {   // a line without a list price: today's room
                     $plain += $line;
                     $room[$i] = $has_costs ? (float) min((int) floor($line * $max / 100), $by_floor) : $line * $max / 100;
@@ -730,7 +740,9 @@ final class StoqsEngine
         foreach ($res['discounts'] as $d) if ($d['amount'] < 0) $surcharge += -$d['amount'];
 
         // ── where the total sits: each line up to its room, the rest on lines with room left ──
-        $alloc = self::allocate($L, $sources, $room, $total);
+        $alloc = self::allocate($L, $sources, $room, $total, $sroom);
+        // an exempt line's own room cannot take another line's spill: the total is what sat
+        if ($sroom) $total = (int) array_sum(array_column($alloc, 'amount'));
 
         $out_lines = [];
         foreach ($L as $i => $l) {
@@ -783,12 +795,13 @@ final class StoqsEngine
      * Split $total over the lines. Each source's amount sits where its actions put it
      * (weights); a line takes at most its room; what a full line cannot take goes to the
      * lines with room left (first those the discount was aimed at, then any discountable
-     * line), so the lines always add up to exactly what the shops charge. Whole toman,
+     * line), so the lines always add up to exactly what the shops charge. A cap-exempt line
+     * ($sroom: its normal room) takes spill only up to that; what fits nowhere is not given. Whole toman,
      * largest remainder, never over a line's room.
      *
      * @return array<int, array{amount:int, parts:list<array>}>
      */
-    public static function allocate(array $L, array $sources, array $room, int $total): array {
+    public static function allocate(array $L, array $sources, array $room, int $total, array $sroom = []): array {
         $n = count($L);
         $out = [];
         for ($i = 0; $i < $n; $i++) $out[$i] = ['amount' => 0, 'parts' => []];
@@ -821,7 +834,7 @@ final class StoqsEngine
                 $free = [];
                 for ($i = 0; $i < $n; $i++) {
                     if ($aimed_only && $dem[$i] <= 0) continue;
-                    $f = $room[$i] - $a[$i];
+                    $f = (isset($sroom[$i]) ? min($room[$i], $sroom[$i]) : $room[$i]) - $a[$i];
                     if ($f > 1e-9) $free[$i] = $f;
                 }
                 $fs = array_sum($free);
@@ -829,6 +842,8 @@ final class StoqsEngine
                 foreach ($free as $i => $f) { $add = min($f, $rest * $f / $fs); $a[$i] += $add; $spill[$i] += $add; }
             }
         }
+        // what could sit nowhere (only ever beside a cap-exempt line) is not given
+        if ($sroom && $total - array_sum($a) > 0.5) $total = (int) floor(array_sum($a) + 1e-6);
         // whole toman per line: floor, then the largest remainders (never past the room)
         $int = []; $fr = [];
         for ($i = 0; $i < $n; $i++) { $int[$i] = (int) floor($a[$i] + 1e-9); $fr[$i] = $a[$i] - $int[$i]; }

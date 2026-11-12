@@ -64,7 +64,10 @@ class StoqsCart
                     $discountable = false;
                 }
             }
-            $exempt = $row !== null && $win !== null && in_array((string) ($win['id'] ?? ''), array_map('strval', (array) ($row['cap_exempt'] ?? [])), true);
+            // cap_exempt only for a campaign stacked on the outlet («.s», «روی هم»): elsewhere
+            // «اجازهٔ عبور از سقف» frees only the window's own price, never the cart layer
+            $exempt = $row !== null && $win !== null && substr((string) ($win['id'] ?? ''), -2) === '.s'
+                && in_array((string) ($win['id'] ?? ''), array_map('strval', (array) ($row['cap_exempt'] ?? [])), true);
             $eng[] = [
                 'variant_id' => $svid, 'product_id' => $spid, 'category_ids' => $cids,
                 'qty' => (int) $l['quantity'], 'unit_price' => $unit, 'list_price' => $list,

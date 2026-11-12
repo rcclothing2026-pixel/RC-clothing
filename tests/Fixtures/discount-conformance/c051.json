@@ -1,6 +1,6 @@
 {
     "id": "c051",
-    "title": "«اجازهٔ عبور از سقف»: a cap-exempt line at 50% off its list (under its floor) still takes a basket 10%; its room is its whole total",
+    "title": "«اجازهٔ عبور از سقف» stacked on the outlet («روی هم», the only case a line is sent cap_exempt): the line at 50% off its list (under its floor) takes its own share of a basket 10%; its room for what is aimed at it is its whole total",
     "schema": 3,
     "opts": {
         "max_discount_percent": 25,

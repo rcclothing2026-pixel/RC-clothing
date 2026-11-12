@@ -1,6 +1,6 @@
 {
     "id": "c054",
-    "title": "Outlet «کمترین قیمت» (today): the outlet line at 30% off has no room under the 25% list cap; its share of the tier, basket and code spills onto the others (the cap-exempt line takes most)",
+    "title": "Outlet «کمترین قیمت» (today): an item «اجازهٔ عبور از سقف» is not cap_exempt at the cart layer here, so the outlet line at 30% off and the exempt line at 50% off have no room under the 25% list cap; the tier, basket and code sit on the plain line up to its 250,000",
     "schema": 3,
     "opts": {
         "max_discount_percent": 25,
@@ -109,12 +109,12 @@
             "qty": 1,
             "unit_price": 1000000,
             "list_price": 2000000,
-            "cap_exempt": true
+            "cap_exempt": false
         }
     ],
     "expect": {
-        "discount": 540000,
-        "cap": 1250000,
+        "discount": 250000,
+        "cap": 250000,
         "rules_applied": [
             1,
             2
@@ -125,12 +125,12 @@
                 "room": 0
             },
             {
-                "discount": 208235,
+                "discount": 250000,
                 "room": 250000
             },
             {
-                "discount": 331765,
-                "room": 1000000
+                "discount": 0,
+                "room": 0
             }
         ]
     }

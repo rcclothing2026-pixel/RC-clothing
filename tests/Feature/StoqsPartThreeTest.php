@@ -139,7 +139,7 @@ class StoqsPartThreeTest extends TestCase
         $this->assertSame(450_000, $this->variant('M')->effectivePrice(), 'exempt: 50% of 900,000, below the cap and the floor');
     }
 
-    public function test_an_exempt_window_sells_at_its_percent_and_its_cart_line_is_uncapped(): void
+    public function test_an_exempt_window_sells_at_its_percent_and_only_stacked_its_cart_line_is_uncapped(): void
     {
         $rule = [['id' => 31, 'plan_id' => 7, 'label' => 'چهل درصد', 'priority' => 1, 'conditions' => [],
             'actions' => [['type' => 'cart_discount_percent', 'value' => 40]], 'apply_mode' => 'all', 'stack_mode' => 'all',
@@ -153,10 +153,24 @@ class StoqsPartThreeTest extends TestCase
         $this->assertSame(500_000, $cart->subtotal());
         $this->assertSame(0, $cart->combinedDiscount());
 
-        // Exempt: the line's room is its whole total; 40% of 500,000 comes off.
+        // Exempt but not stacked on the outlet: the exemption is in the price only, the cart
+        // layer holds the line like any other, so the rule still gives nothing.
         $row = $this->payload()['variants'][0] + ['cap_exempt' => ['c3']];
         $this->manage($this->payload(['rules' => $rule, 'variants' => [$row, $this->payload()['variants'][1]]]));
         $cart = $this->cart();
+        [$eng] = StoqsCart::lines($cart->lines());
+        $this->assertArrayNotHasKey('cap_exempt', $eng[0]);
+        $this->assertSame(0, $cart->combinedDiscount());
+
+        // Exempt and stacked on the outlet («.s», «روی هم»): the line's room is its whole total;
+        // 40% of 500,000 comes off.
+        $p = $this->payload(['rules' => $rule, 'windows' => [$this->win('c3.s', 'campaign', 50), $this->win('c4', 'campaign', 20)]]);
+        $p['variants'][0]['prices'] = [['c3.s', 500_000]];
+        $p['variants'][0]['cap_exempt'] = ['c3.s'];
+        $this->manage($p);
+        StoqsPromotions::apply();
+        $cart = $this->cart();
+        $this->assertSame(500_000, $cart->subtotal());
         [$eng] = StoqsCart::lines($cart->lines());
         $this->assertTrue($eng[0]['cap_exempt']);
         $this->assertSame(200_000, $cart->combinedDiscount());
