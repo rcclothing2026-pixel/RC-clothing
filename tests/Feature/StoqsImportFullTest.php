@@ -15,6 +15,7 @@ use App\Support\Campaigns;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -42,15 +43,17 @@ class StoqsImportFullTest extends TestCase
             'app.url' => 'https://shop.test', 'scout.driver' => 'collection',
         ]);
         Http::preventStrayRequests();
-        \Illuminate\Support\Facades\Cache::lock('scheduler:web-kick', 600)->get();
+        Cache::lock('scheduler:web-kick', 600)->get();
         StoqsPromotions::forget();
     }
 
-    private function signed(string $path, ?int $ts = null, string $secret = self::SECRET, array $extra = [])
+    private function signed(string $path, ?int $ts = null, string $secret = self::SECRET, array $extra = [], string $host = 'shop.test', string $query = '', ?string $nonce = null)
     {
         $ts ??= time();
+        $nonce ??= bin2hex(random_bytes(16));
 
-        return $this->withHeaders(['X-Stoqs-Timestamp' => (string) $ts, 'X-Stoqs-Signature' => VerifyCampaignReadAccess::sign($path, $ts, $secret)] + $extra);
+        return $this->withHeaders(['X-Stoqs-Timestamp' => (string) $ts, 'X-Stoqs-Nonce' => $nonce,
+            'X-Stoqs-Signature' => VerifyCampaignReadAccess::sign('GET', $host, $path, $query, $ts, $nonce, $secret)] + $extra);
     }
 
     private function manage(array $plans, bool $managed = true): void
@@ -105,6 +108,21 @@ class StoqsImportFullTest extends TestCase
         $this->signed('/api/campaigns/plan', null, 'other-secret')->getJson('/api/campaigns/plan')->assertStatus(401);
         $this->signed('/api/campaigns/editor')->getJson('/api/campaigns/plan')->assertStatus(401);   // signed for another path
         $this->withHeaders(['X-Stoqs-Timestamp' => 'abc', 'X-Stoqs-Signature' => 'sha256=00'])->getJson('/api/campaigns/plan')->assertStatus(401);
+    }
+
+    public function test_a_replayed_nonce_the_old_format_and_another_host_are_401(): void
+    {
+        $nonce = bin2hex(random_bytes(16));
+        $this->signed('/api/campaigns/plan', null, self::SECRET, [], 'shop.test', '', $nonce)->getJson('/api/campaigns/plan')->assertOk();
+        $this->signed('/api/campaigns/plan', null, self::SECRET, [], 'shop.test', '', $nonce)->getJson('/api/campaigns/plan')->assertStatus(401);   // the same request again
+        $ts = time();
+        $this->flushHeaders()->withHeaders(['X-Stoqs-Timestamp' => (string) $ts, 'X-Stoqs-Signature' => 'sha256='.hash_hmac('sha256', "GET\n/api/campaigns/plan\n".$ts, self::SECRET)])
+            ->getJson('/api/campaigns/plan')->assertStatus(401);   // the 5.2.120 format: no host, no query, no nonce
+        $this->flushHeaders()->signed('/api/campaigns/plan', null, self::SECRET, [], 'other-shop.test')->getJson('/api/campaigns/plan')->assertStatus(401);   // made for another site
+        $this->flushHeaders()->signed('/api/campaigns/plan', null, self::SECRET, [], 'WWW.Shop.Test')->getJson('/api/campaigns/plan')->assertOk();   // www and case do not matter
+        $this->flushHeaders()->signed('/api/campaigns/plan', null, self::SECRET, [], 'shop.test', 'x=1')->getJson('/api/campaigns/plan')->assertStatus(401);   // signed for another query
+        $this->flushHeaders()->signed('/api/campaigns/plan', null, self::SECRET, [], 'shop.test', 'x=1')->getJson('/api/campaigns/plan?x=1')->assertOk();
+        $this->flushHeaders()->signed('/api/campaigns/plan', null, self::SECRET, [], 'shop.test', '', 'short')->getJson('/api/campaigns/plan')->assertStatus(401);   // not a nonce
     }
 
     public function test_the_signature_opens_only_the_two_reads(): void
@@ -220,7 +238,11 @@ class StoqsImportFullTest extends TestCase
         $v = ProductVariant::create(['product_id' => $p->id, 'sku' => 's2', 'size' => 'L', 'price' => 1_000_000, 'stock_qty' => 3, 'is_active' => true, 'stockkeeping_variant_id' => 12]);
         $this->manage([]);
         $sent = null;
-        Http::fake(['*promotions/evaluate*' => function (Request $r) use (&$sent) { $sent = $r->data(); return Http::response(['ok' => false], 500); }]);
+        Http::fake(['*promotions/evaluate*' => function (Request $r) use (&$sent) {
+            $sent = $r->data();
+
+            return Http::response(['ok' => false], 500);
+        }]);
         $lines = collect([['variant' => $v->fresh(), 'quantity' => 1, 'unit_price' => 1_000_000, 'line_total' => 1_000_000]]);
         try {
             StoqsCart::remote($lines, [], $u->fresh());

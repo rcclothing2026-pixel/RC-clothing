@@ -2,10 +2,15 @@
 
 namespace App\Services\StockKeeping;
 
+use App\Models\OutletItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\StockkeeepingLog;
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -213,9 +218,9 @@ class StoqsPromotions
     }
 
     /** The lock the catalog imports share (the hourly sk-catalog job and runPendingImport). */
-    public static function catalogLock(int $seconds = 3600): \Illuminate\Contracts\Cache\Lock
+    public static function catalogLock(int $seconds = 3600): Lock
     {
-        return \Illuminate\Support\Facades\Cache::lock('stoqs:catalog-import', $seconds);
+        return Cache::lock('stoqs:catalog-import', $seconds);
     }
 
     /**
@@ -234,7 +239,7 @@ class StoqsPromotions
             return false;   // the hourly import is running; next minute
         }
         try {
-            $code = \Illuminate\Support\Facades\Artisan::call('stockkeeping:catalog', ['--full' => true, '--source' => 'auto']);
+            $code = Artisan::call('stockkeeping:catalog', ['--full' => true, '--source' => 'auto']);
             if ($code !== 0) {
                 Log::warning('[stoqs-promotions] catalog re-import after the switch failed', ['exit' => $code]);
 
@@ -262,7 +267,7 @@ class StoqsPromotions
      */
     public static function handSetStruckPrices(): array
     {
-        $outlet = Schema::hasTable('outlet_items') ? \App\Models\OutletItem::where('is_active', true)->pluck('product_id')->all() : [];
+        $outlet = Schema::hasTable('outlet_items') ? OutletItem::where('is_active', true)->pluck('product_id')->all() : [];
         $q = Product::whereNotNull('compare_at_price')->whereColumn('compare_at_price', '>', 'price')->whereNotIn('id', $outlet);
         if (self::hasStoqsDiscount()) {
             $q->where(fn ($w) => $w->where('stoqs_discount', false)->orWhereNull('stoqs_discount'));
@@ -657,11 +662,11 @@ class StoqsPromotions
      * per payload version) and re-price only this cart's products from it. Returns whether a
      * cart line's price changed.
      *
-     * @param  \Illuminate\Support\Collection<int, array{variant: ProductVariant, unit_price: int}>  $lines
+     * @param  Collection<int, array{variant: ProductVariant, unit_price: int}>  $lines
      */
-    public static function repriceCart(\Illuminate\Support\Collection $lines): bool
+    public static function repriceCart(Collection $lines): bool
     {
-        if (\Illuminate\Support\Facades\Cache::add('stoqs:promotions:repull:'.(self::version() ?? 0), 1, now()->addDay())) {
+        if (Cache::add('stoqs:promotions:repull:'.(self::version() ?? 0), 1, now()->addDay())) {
             self::pull();
         }
         $ids = $lines->map(fn ($l) => (int) $l['variant']->product_id)->unique()->all();
@@ -734,12 +739,14 @@ class StoqsPromotions
             return false;
         }
         $plans = array_values(array_unique(array_map(fn ($pl) => (int) ($pl['id'] ?? 0), (array) (self::payload()['plans'] ?? []))));
+        $own = StoqsPromoSource::ownDiscounts();
         try {
-            StoqsApi::call('POST', 'promotions/ack', array_filter([
+            StoqsApi::signedCall('POST', 'promotions/ack', array_filter([
                 'version' => $v, 'etag' => $row->etag ?: null, 'site_url' => self::siteUrl(),
                 'applied' => array_values(array_filter($plans)), 'failed' => [],
-                'own_discounts' => StoqsPromoSource::ownDiscounts(),
+                'own_discounts' => $own,
             ], fn ($x) => $x !== null));
+            StoqsPromoSource::rememberOwn($own);
         } catch (\Throwable $e) {
             Log::warning('[stoqs-promotions] ack failed', ['version' => $v, 'error' => $e->getMessage()]);
 
@@ -774,7 +781,7 @@ class StoqsPromotions
             return $out;
         }
         if (isset(StoqsApi::missingScopes()['catalog:write'])) {
-            if (! \Illuminate\Support\Facades\Cache::add('stoqs:site-price:probe', 1, now()->addHour())) {
+            if (! Cache::add('stoqs:site-price:probe', 1, now()->addHour())) {
                 return $out;
             }
             $limit = 1;
@@ -785,7 +792,7 @@ class StoqsPromotions
             ->when($retry, fn ($q) => $q->where(fn ($w) => $w->whereNull('site_price_retry_at')->orWhere('site_price_retry_at', '<=', now())))
             ->orderBy('id')->get();
         foreach ($rows as $v) {
-            if ($out['sent'] + $out['failed'] >= $limit) {
+            if ($limit <= $out['sent'] + $out['failed']) {
                 break;
             }
             $want = self::shopSet($v) ? (int) $v->price : null;
@@ -806,7 +813,9 @@ class StoqsPromotions
                 $out['failed']++;
                 $status = $e instanceof StoqsApiError ? $e->status : 0;
                 if ($retry) {
-                    $v->site_price_retry_at = now()->addMinutes(match ($status) { 429 => 10, 403, 409 => 60, default => 15 });
+                    $v->site_price_retry_at = now()->addMinutes(match ($status) {
+                        429 => 10, 403, 409 => 60, default => 15
+                    });
                     $v->saveQuietly();
                 }
                 Log::warning('[stoqs-promotions] site price not sent', ['variant' => $v->id, 'status' => $status, 'error' => $e->getMessage()]);

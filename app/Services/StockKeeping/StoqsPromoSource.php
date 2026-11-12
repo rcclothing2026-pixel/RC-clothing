@@ -6,6 +6,7 @@ use App\Models\Coupon;
 use App\Models\DiscountRule;
 use App\Models\StockkeeepingLog;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -24,11 +25,19 @@ use Illuminate\Support\Facades\Schema;
  * Applying a seq flips `managed` through the same path a pull-driven flip takes
  * (StoqsPromotions::pull / flipped), so prices and content come back exactly as before. Each
  * applied seq is acknowledged (POST /promotions/ack {source_seq, own_discounts}); until it is,
- * promo_source_ack_pending shows it and the minute job retries.
+ * promo_source_ack_pending shows it and the minute job retries. Every ack is signed with the
+ * webhook secret (StoqsApi::signedCall), and the minute job also reports the shop's own live
+ * discounts when they changed or the last report is ten minutes old (reportOwn), so StoqS's
+ * switch guard is never working from a stale list.
  */
 class StoqsPromoSource
 {
     public const STOP_ALL = 'همهٔ تخفیف‌های فعلی سایت متوقف می‌شود';
+
+    /** The own-discounts report is due again after this many seconds even when nothing changed. */
+    public const OWN_REPORT_EVERY = 600;
+
+    private const OWN_REPORT_KEY = 'stoqs-own-report';
 
     private const ORIGINS = ['panel' => 'stoqs_panel', 'api' => 'stoqs_api', 'shop' => 'shop_admin'];
 
@@ -121,15 +130,24 @@ class StoqsPromoSource
         $want = $source === 'stoqs';
         $was = (bool) (StoqsPromotions::row()->managed ?? false);
         self::remember($seq, $by, $note, $changedAt, $ack);
+        self::log($seq, $was ? 'stoqs' : 'shop', $source, $origin, $by, $note);
         if ($was !== $want) {
             StoqsPromotions::saveState(['etag' => null]);   // a full answer, not a 304
             StoqsPromotions::pull();   // the existing pull-driven flip
+            if (self::state()['seq'] > $seq) {
+                // the pull brought a newer switch and applied it (fromPull): never force this
+                // older one over it. The newer seq is acked; it decided `managed`, once.
+                if ($ack && self::state()['pending']) {
+                    self::ackSource();
+                }
+
+                return true;
+            }
             if ((bool) (StoqsPromotions::row()->managed ?? false) !== $want) {   // StoqS unreachable: flip on the word of the switch
                 StoqsPromotions::saveState(['managed' => $want, 'promo_source' => $source]);
                 StoqsPromotions::flipped($want);
             }
         }
-        self::log($seq, $was ? 'stoqs' : 'shop', $source, $origin, $by, $note);
         if ($ack) {
             self::ackSource();
         }
@@ -156,10 +174,12 @@ class StoqsPromoSource
             return false;
         }
         $seq = self::state()['seq'];
+        $own = self::ownDiscounts();
         try {
-            StoqsApi::call('POST', 'promotions/ack', [
-                'source_seq' => $seq, 'site_url' => StoqsPromotions::siteUrl(), 'own_discounts' => self::ownDiscounts(),
+            StoqsApi::signedCall('POST', 'promotions/ack', [
+                'source_seq' => $seq, 'site_url' => StoqsPromotions::siteUrl(), 'own_discounts' => $own,
             ]);
+            self::rememberOwn($own);
         } catch (\Throwable $e) {
             Log::warning('[stoqs-promotions] source ack failed', ['seq' => $seq, 'error' => $e->getMessage()]);
 
@@ -168,6 +188,47 @@ class StoqsPromoSource
         StoqsPromotions::saveState(['promo_source_ack_pending' => false]);
 
         return true;
+    }
+
+    /**
+     * The minute job: report the shop's own live discounts (a signed ack with own_discounts only)
+     * when they changed since the last report or that one is OWN_REPORT_EVERY old. Needs the
+     * webhook secret (StoqS takes the list only signed) and a pull done (row()).
+     */
+    public static function reportOwn(?int $now = null): bool
+    {
+        $now ??= time();
+        if (! self::ready() || (string) config('stockkeeping.webhook_secret', '') === '' || StoqsPromotions::row() === null) {
+            return false;
+        }
+        $own = self::ownDiscounts();
+        $last = (array) Cache::get(self::OWN_REPORT_KEY, []);
+        if (($last['hash'] ?? '') === self::ownHash($own) && $now - (int) ($last['at'] ?? 0) < self::OWN_REPORT_EVERY) {
+            return false;
+        }
+        try {
+            StoqsApi::signedCall('POST', 'promotions/ack', ['site_url' => StoqsPromotions::siteUrl(), 'own_discounts' => $own]);
+        } catch (\Throwable $e) {
+            Log::warning('[stoqs-promotions] own discounts report failed', ['error' => $e->getMessage()]);
+
+            return false;
+        }
+        self::rememberOwn($own, $now);
+
+        return true;
+    }
+
+    /** A report of these own discounts reached StoqS (signed): the next is due when they change or in ten minutes. */
+    public static function rememberOwn(array $own, ?int $now = null): void
+    {
+        if ((string) config('stockkeeping.webhook_secret', '') !== '') {
+            Cache::forever(self::OWN_REPORT_KEY, ['hash' => self::ownHash($own), 'at' => $now ?? time()]);
+        }
+    }
+
+    private static function ownHash(array $own): string
+    {
+        return md5((string) json_encode($own, JSON_UNESCAPED_UNICODE));
     }
 
     /** The minute job: tell StoqS about a seq it has not been told yet. */

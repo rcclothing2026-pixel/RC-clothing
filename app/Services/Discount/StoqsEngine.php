@@ -703,8 +703,31 @@ final class StoqsEngine
                 $options[] = ['codes' => [$k], 'rules' => [], 'amount' => $C[$k]['amount'], 'alone' => 'کد «' . $C[$k]['code']['code'] . '»'];
             }
         }
+        // the sources an option gives (Cart::combinedDiscount): its codes, then its rules
+        $sources_of = function (array $o) use ($C, $positive): array {
+            $s = [];
+            foreach ($o['codes'] as $k) if ($C[$k]['amount'] > 0) {
+                $s[] = ['kind' => 'code', 'id' => $C[$k]['code']['id'], 'code' => $C[$k]['code']['code'],
+                        'label' => $C[$k]['code']['label'], 'amount' => $C[$k]['amount'], 'weights' => $C[$k]['weights'], 'campaign_id' => null];
+            }
+            foreach ($positive as $d) if (in_array($d['rule_id'], $o['rules'], true)) {
+                $s[] = ['kind' => 'rule', 'id' => $d['rule_id'], 'code' => null, 'label' => $d['label'],
+                        'amount' => $d['amount'], 'weights' => $d['weights'], 'campaign_id' => $d['campaign_id']];
+            }
+            return $s;
+        };
+        // each option by what it really places. Beside a cap-exempt line an option can claim
+        // more than sits (the exempt line takes only what is aimed at it, the cap counts its
+        // whole total), so a dry allocation decides there; elsewhere that is min(amount, cap)
+        $placed = function (array $o) use ($sources_of, $L, $room, $cap, $sroom) {
+            if (!$sroom) return min($o['amount'], $cap);
+            $src = $sources_of($o);
+            $t = (int) min(array_sum(array_column($src, 'amount')), $cap);
+            return (int) array_sum(array_column(self::allocate($L, $src, $room, $t, $sroom), 'amount'));
+        };
         $best = $options[0];
-        foreach ($options as $o) if (min($o['amount'], $cap) > min($best['amount'], $cap)) $best = $o;
+        $best_placed = $placed($best);
+        foreach ($options as $o) { $p = $placed($o); if ($p > $best_placed) { $best = $o; $best_placed = $p; } }
 
         $dropped = [];
         foreach ($positive as $d) if (!in_array($d['rule_id'], $best['rules'], true)) $dropped[] = '«' . $d['label'] . '»';
@@ -725,15 +748,7 @@ final class StoqsEngine
         }
 
         // ── the total (Cart::combinedDiscount) ──
-        $sources = [];
-        foreach ($best['codes'] as $k) if ($C[$k]['amount'] > 0) {
-            $sources[] = ['kind' => 'code', 'id' => $C[$k]['code']['id'], 'code' => $C[$k]['code']['code'],
-                          'label' => $C[$k]['code']['label'], 'amount' => $C[$k]['amount'], 'weights' => $C[$k]['weights'], 'campaign_id' => null];
-        }
-        foreach ($positive as $d) if (in_array($d['rule_id'], $best['rules'], true)) {
-            $sources[] = ['kind' => 'rule', 'id' => $d['rule_id'], 'code' => null, 'label' => $d['label'],
-                          'amount' => $d['amount'], 'weights' => $d['weights'], 'campaign_id' => $d['campaign_id']];
-        }
+        $sources = $sources_of($best);
         $want = array_sum(array_column($sources, 'amount'));
         $total = (int) min($want, $cap);
         $surcharge = 0;

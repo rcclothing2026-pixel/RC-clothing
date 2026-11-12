@@ -1,0 +1,103 @@
+{
+    "id": "c060",
+    "schema": 3,
+    "opts": {
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "title": "Two «alone» options beside a cap-exempt line: 50% on the plain line claims 500,000 but only its 250,000 room sits (nothing spills onto the exempt line), so the 20% basket (300,000, all of it sits) wins",
+    "rules": [
+        {
+            "id": 1,
+            "label": "Plan · کالای ۲ ۵۰٪",
+            "priority": 10,
+            "conditions": [
+                {
+                    "type": "item_products",
+                    "product_ids": [
+                        2
+                    ]
+                }
+            ],
+            "actions": [
+                {
+                    "type": "item_discount_percent",
+                    "value": 50
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": true,
+            "group": null,
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        },
+        {
+            "id": 2,
+            "label": "Plan · سبد ۲۰٪",
+            "priority": 10,
+            "conditions": [],
+            "actions": [
+                {
+                    "type": "cart_discount_percent",
+                    "value": 20
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": true,
+            "group": null,
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        }
+    ],
+    "codes": [],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 500000,
+            "list_price": 1000000,
+            "cap_exempt": true
+        },
+        {
+            "variant_id": 20,
+            "product_id": 2,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000,
+            "list_price": 1000000
+        }
+    ],
+    "expect": {
+        "discount": 300000,
+        "cap": 750000,
+        "cap_basis": "list",
+        "total": 1200000,
+        "rules_applied": [
+            2
+        ],
+        "lines": [
+            {
+                "discount": 100000,
+                "room": 500000
+            },
+            {
+                "discount": 200000,
+                "room": 250000
+            }
+        ]
+    }
+}

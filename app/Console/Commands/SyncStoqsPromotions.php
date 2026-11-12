@@ -4,13 +4,15 @@ namespace App\Console\Commands;
 
 use App\Services\StockKeeping\StoqsPromoSource;
 use App\Services\StockKeeping\StoqsPromotions;
+use App\Support\LiteSpeedCache;
 use Illuminate\Console\Command;
 
 /**
  * Every minute: GET /promotions (If-None-Match, so usually a 304); after a switch between
  * «StoqS» and «the shop», the full catalog import in the new mode (under the lock it shares
  * with the hourly import); then, while managed, the window prices that hold right now (window
- * starts and ends land within a minute even when a webhook is lost), the size prices set in
+ * starts and ends land within a minute even when a webhook is lost), the shop's own discounts
+ * when they changed or every ten minutes (for StoqS's switch guard), the size prices set in
  * the shop, and the ack of the version applied. The storefront page cache is dropped when
  * prices changed (LiteSpeed, where the shop has it).
  */
@@ -38,6 +40,9 @@ class SyncStoqsPromotions extends Command
         }
         if (! StoqsPromotions::managed()) {
             $this->line('Promotions are the shop\'s own (not managed by StoqS).');
+            if ($pull['ok']) {
+                StoqsPromoSource::reportOwn();   // the shop's own discounts, when changed or ten minutes old
+            }
             $this->purge($imported || $pull['flipped']);
 
             return self::SUCCESS;
@@ -45,6 +50,9 @@ class SyncStoqsPromotions extends Command
         $applied = StoqsPromotions::apply();
         $sites = StoqsPromotions::reportSitePrices();
         $acked = StoqsPromotions::ack();
+        if ($pull['ok']) {
+            StoqsPromoSource::reportOwn();   // after the ack, which carries the same list: sent only when still due
+        }
         $this->purge($imported || $pull['flipped'] || $applied['changed'] > 0);
         $this->info(sprintf('v%s: %d products, %d changed; site prices sent %d, failed %d%s%s',
             StoqsPromotions::version() ?? '-', $applied['products'], $applied['changed'], $sites['sent'], $sites['failed'],
@@ -55,8 +63,8 @@ class SyncStoqsPromotions extends Command
 
     private function purge(bool $changed): void
     {
-        if ($changed && class_exists(\App\Support\LiteSpeedCache::class)) {
-            \App\Support\LiteSpeedCache::purge();
+        if ($changed && class_exists(LiteSpeedCache::class)) {
+            LiteSpeedCache::purge();
         }
     }
 }

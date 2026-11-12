@@ -47,6 +47,46 @@ class StoqsApi
     }
 
     /**
+     * A report only this site can make (POST promotions/ack): the JSON body sent raw and signed
+     * with the webhook secret StoqS shares with this site, so a copy of the API key alone cannot
+     * confirm a switch or report the shop's own discounts. X-Stoqs-Site-Timestamp and
+     * X-Stoqs-Site-Signature: sha256=hmac_sha256(METHOD\nop\ntimestamp\nraw body, secret), op =
+     * the path ("promotions/ack"). Without a secret it goes unsigned (StoqS ignores those fields).
+     *
+     * @return array<string, mixed> decoded JSON body
+     */
+    public static function signedCall(string $method, string $path, array $body): array
+    {
+        $path = ltrim($path, '/');
+        $raw = (string) json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $resp = self::siteSigned(self::client(), $method, $path, $raw)->withBody($raw, 'application/json')->send(strtoupper($method), $path);
+        $scope = self::scopeOf($method, $path);
+        if ($resp->successful()) {
+            self::scopeOk($scope);
+
+            return (array) $resp->json();
+        }
+
+        throw self::error($resp, $scope);
+    }
+
+    public static function siteSignature(string $method, string $op, int $ts, string $raw, string $secret): string
+    {
+        return 'sha256='.hash_hmac('sha256', strtoupper($method)."\n".$op."\n".$ts."\n".$raw, $secret);
+    }
+
+    private static function siteSigned(PendingRequest $req, string $method, string $op, string $raw): PendingRequest
+    {
+        $secret = (string) config('stockkeeping.webhook_secret', '');
+        if ($secret === '') {
+            return $req;
+        }
+        $ts = time();
+
+        return $req->withHeaders(['X-Stoqs-Site-Timestamp' => (string) $ts, 'X-Stoqs-Site-Signature' => self::siteSignature($method, $op, $ts, $raw, $secret)]);
+    }
+
+    /**
      * PUT /promotions/source (scope discounts:write): the site asks StoqS to switch who manages
      * its promotions. Unlike call(), a 409 (stale) and a 422 (guard) are answers, not errors:
      * [status, decoded body]. A 403 remembers the missing scope.
@@ -55,7 +95,8 @@ class StoqsApi
      */
     public static function putSource(array $body): array
     {
-        $resp = self::client()->put('promotions/source', $body);
+        $raw = (string) json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);   // signed, like the ack
+        $resp = self::siteSigned(self::client(), 'PUT', 'promotions/source', $raw)->withBody($raw, 'application/json')->send('PUT', 'promotions/source');
         if ($resp->successful()) {
             self::scopeOk('discounts:write');
         } elseif ($resp->status() === 403) {

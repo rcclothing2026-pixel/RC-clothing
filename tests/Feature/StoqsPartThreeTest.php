@@ -9,10 +9,12 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\Cart\Cart;
 use App\Services\Discount\StoqsCart;
+use App\Services\StockKeeping\StoqsApi;
 use App\Services\StockKeeping\StoqsPromoSource;
 use App\Services\StockKeeping\StoqsPromotions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -40,7 +42,7 @@ class StoqsPartThreeTest extends TestCase
             'app.url' => 'https://shop.test', 'scout.driver' => null,
         ]);
         Http::preventStrayRequests();
-        \Illuminate\Support\Facades\Cache::lock('scheduler:web-kick', 600)->get();
+        Cache::lock('scheduler:web-kick', 600)->get();
         StoqsPromotions::forget();
         $this->product = Product::create([
             'name' => 'مانتو', 'slug' => 'manto-1', 'price' => 1_000_000, 'stockkeeping_id' => '1', 'is_active' => true,
@@ -434,6 +436,73 @@ class StoqsPartThreeTest extends TestCase
         StoqsPromotions::forget();
         $this->assertFalse(StoqsPromotions::managed());
         $this->assertSame(1, DB::table('stoqs_promo_source_log')->count());
+    }
+
+    private static function siteSigned(Request $r, string $op): bool
+    {
+        $ts = (int) ($r->header('X-Stoqs-Site-Timestamp')[0] ?? 0);
+
+        return abs(time() - $ts) <= 5 && hash_equals(StoqsApi::siteSignature($r->method(), $op, $ts, $r->body(), self::SECRET), (string) ($r->header('X-Stoqs-Site-Signature')[0] ?? ''));
+    }
+
+    public function test_every_ack_and_the_switch_are_signed_with_the_webhook_secret(): void
+    {
+        $this->manage($this->payload(['managed' => true]), ['promo_source_seq' => 2]);
+        Http::fake(['stoqs.test/api/v1/promotions/ack' => Http::response(['ok' => true]), 'stoqs.test/api/v1/promotions/source' => Http::response(['ok' => true, 'dry_run' => true])]);
+
+        $this->webhook('promotions.source_changed', ['source' => 'stoqs', 'seq' => 3, 'origin' => 'api'])->assertOk();
+        StoqsApi::putSource(['source' => 'shop', 'seq' => 3, 'dry_run' => true, 'own_discounts' => ['rules' => ['قانون'], 'coupons' => []]]);
+
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'promotions/ack') && ($r->data()['source_seq'] ?? null) === 3 && self::siteSigned($r, 'promotions/ack'));
+        Http::assertSent(fn (Request $r) => $r->method() === 'PUT' && $r['own_discounts']['rules'] === ['قانون'] && self::siteSigned($r, 'promotions/source'));
+        Http::assertNotSent(fn (Request $r) => preg_match('~/api/v1/(promotions/(ack|source))$~', $r->url(), $m) === 1 && ! self::siteSigned($r, $m[1]));   // none unsigned
+    }
+
+    public function test_the_minute_job_reports_own_discounts_when_changed_or_every_ten_minutes(): void
+    {
+        $this->manage($this->payload(['managed' => false, 'promo_source' => 'shop']), ['promo_source_seq' => 1]);
+        Coupon::create(['code' => 'OWN10', 'type' => 'percent', 'value' => 10, 'is_active' => true]);
+        Http::fake(['stoqs.test/api/v1/promotions/ack' => Http::response(['ok' => true, 'own_discounts' => 'stored']), 'stoqs.test/api/v1/promotions*' => Http::response('', 304)]);
+        $own = fn () => Http::recorded(fn (Request $r) => str_ends_with($r->url(), 'promotions/ack') && ! isset($r['source_seq']) && ! isset($r['version']))->count();
+
+        $this->artisan('stoqs:promotions-sync')->assertSuccessful();
+        $this->assertSame(1, $own(), 'first run: reported');
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'promotions/ack') && $r['own_discounts'] === ['rules' => [], 'coupons' => ['OWN10']]
+            && array_keys($r->data()) === ['site_url', 'own_discounts'] && self::siteSigned($r, 'promotions/ack'));
+
+        $this->artisan('stoqs:promotions-sync')->assertSuccessful();
+        $this->assertSame(1, $own(), 'unchanged a minute later: not sent');
+
+        Coupon::create(['code' => 'NEW20', 'type' => 'percent', 'value' => 20, 'is_active' => true]);
+        $this->artisan('stoqs:promotions-sync')->assertSuccessful();
+        $this->assertSame(2, $own(), 'a coupon added: sent at once');
+
+        $this->assertFalse(StoqsPromoSource::reportOwn(time() + 540), 'nine minutes on, unchanged: not due');
+        $this->assertTrue(StoqsPromoSource::reportOwn(time() + 600), 'ten minutes on: sent again');
+
+        Cache::flush();
+        config(['stockkeeping.webhook_secret' => '']);
+        $this->assertFalse(StoqsPromoSource::reportOwn(), 'no webhook secret: StoqS would not take it, nothing sent');
+    }
+
+    public function test_a_newer_switch_arriving_with_the_pull_is_never_overridden_by_the_older_one(): void
+    {
+        // The webhook for seq 3 (to «shop») arrives; StoqS has meanwhile switched back (seq 4, «stoqs»).
+        $this->manage($this->payload(['managed' => true]), ['promo_source_seq' => 2]);
+        Http::fake([
+            'stoqs.test/api/v1/promotions/ack' => Http::response(['ok' => true]),
+            'stoqs.test/api/v1/promotions*' => Http::response($this->payload(['managed' => true, 'promo_source' => 'stoqs', 'promo_source_seq' => 4, 'version' => 12]), 200, ['ETag' => '"v12"']),
+        ]);
+
+        $this->webhook('promotions.source_changed', ['source' => 'shop', 'seq' => 3, 'origin' => 'panel'])->assertOk();
+
+        StoqsPromotions::forget();
+        $this->assertTrue(StoqsPromotions::managed(), 'seq 4 says StoqS: the older seq 3 is not forced over it');
+        $this->assertSame([4, false], [StoqsPromoSource::state()['seq'], StoqsPromoSource::state()['pending']]);
+        $this->assertFalse((bool) StoqsPromotions::row()->reimport_pending, 'no flip happened');
+        $this->assertSame([[3, 'shop'], [4, 'stoqs']], DB::table('stoqs_promo_source_log')->orderBy('id')->get()->map(fn ($l) => [(int) $l->seq, $l->to_source])->all());
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), 'promotions/ack') && ($r->data()['source_seq'] ?? null) === 4);
+        Http::assertNotSent(fn (Request $r) => str_ends_with($r->url(), 'promotions/ack') && ($r->data()['source_seq'] ?? null) === 3);
     }
 
     public function test_a_newer_seq_with_the_same_source_is_stored_without_a_flip(): void

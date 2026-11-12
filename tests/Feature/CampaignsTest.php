@@ -2,13 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Models\CampaignApproval;
 use App\Models\Category;
 use App\Models\DiscountRule;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\User;
 use App\Services\Cart\Cart;
+use App\Services\StockKeeping\StoqsPromotions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class CampaignsTest extends TestCase
@@ -28,7 +32,7 @@ class CampaignsTest extends TestCase
     private function approveAll(): void
     {
         foreach (config('campaigns.campaigns', []) as $key => $c) {
-            \App\Models\CampaignApproval::updateOrCreate(['key' => $key], ['starts_on' => $c['from'], 'ends_on' => $c['to'], 'approved' => true]);
+            CampaignApproval::updateOrCreate(['key' => $key], ['starts_on' => $c['from'], 'ends_on' => $c['to'], 'approved' => true]);
         }
         request()->attributes->remove('campaigns.approvals');
     }
@@ -40,6 +44,42 @@ class CampaignsTest extends TestCase
         $p->categories()->syncWithoutDetaching([$this->cats[$cat]->id]);
 
         return ProductVariant::create(['product_id' => $p->id, 'size' => 'FREE SIZE', 'color' => $color, 'price' => $price, 'stock_qty' => $stock, 'is_active' => true]);
+    }
+
+    public function test_the_plan_answer_lists_the_kits_struck_prices_as_fixed_prices_for_stoqs(): void
+    {
+        $this->item('aadd-aorgryp-rakt-klab-super-tacky-1480', 'loazm-ganby', 680_000, 900, 'مشکی');
+        $this->item('aadd-aorgryp-rakt-klab-super-dry-1482', 'loazm-ganby', 680_000, 900, 'آبی');
+        $this->item('klah-rakt-klab-9', 'klah', 2_100_000, 20, 'ذغالی');
+        $this->item('gorab-rakt-klab-122', 'mtfrkh', 680_000, 30, 'مشکی');
+        $this->item('tot-bg-rakt-klab-121', 'mtfrkh', 3_600_000);
+        $this->item('holh-mykro-faybr-rakt-klab-764', 'holh', 5_300_000);
+        $this->artisan('campaigns:sync')->assertSuccessful();
+        Product::where('slug', 'kit-player-bag')->update(['stockkeeping_id' => 77]);   // a kit StoqS knows by id
+        Product::where('slug', 'tot-bg-rakt-klab-121')->update(['stockkeeping_id' => 501]);
+        config(['services.ig_catalog.key' => 'k']);
+
+        $fp = $this->withHeaders(['X-Catalog-Key' => 'k'])->getJson('/api/campaigns/plan')->assertOk()->json('fixed_prices');
+
+        $this->assertCount(1, $fp);
+        $this->assertSame('kits', $fp[0]['key']);
+        $items = collect($fp[0]['items'])->keyBy('key');
+        $this->assertSame(array_keys(config('campaigns.bundles')), $items->keys()->all(), 'all six kits, in the config order');
+        $this->assertSame([4_280_000, 4_820_000, true], [$items['kit-padel-starter']['price'], $items['kit-padel-starter']['compare_at'], $items['kit-padel-starter']['active']]);
+        foreach ($items as $k => $i) {
+            $this->assertGreaterThan($i['price'], $i['compare_at'], $k.': a struck price');
+        }
+        $this->assertSame([77], $items['kit-player-bag']['stoqs_product_ids']);
+        $this->assertSame([], $items['kit-padel-starter']['stoqs_product_ids'], 'no StoqS id: StoqS maps it by its own link, or lists it as not taken');
+        $this->assertContains(501, array_column($items['kit-player-bag']['components'], 'stoqs_product_id'));
+
+        // StoqS manages the site: the list price is back, the struck price kept at the switch is sent
+        $kit = Product::where('slug', 'kit-padel-starter')->first();
+        DB::table('stoqs_promotions')->updateOrInsert(['id' => 1], ['saved_prices' => json_encode([$kit->id => [4_280_000, 4_820_000]])]);
+        $kit->update(['price' => 4_820_000, 'compare_at_price' => null]);
+        StoqsPromotions::forget();
+        $items = collect($this->withHeaders(['X-Catalog-Key' => 'k'])->getJson('/api/campaigns/plan')->json('fixed_prices.0.items'))->keyBy('key');
+        $this->assertSame([4_280_000, 4_820_000], [$items['kit-padel-starter']['price'], $items['kit-padel-starter']['compare_at']]);
     }
 
     public function test_bundles_are_priced_off_their_parts_and_not_discounted_again(): void
@@ -121,7 +161,7 @@ class CampaignsTest extends TestCase
         $this->postJson('/cart/add', ['variant_id' => $tacky->id, 'quantity' => 1])->assertOk();
         $this->get('/shop?shelf=kits')->assertOk()->assertSee('شامل کالای سبد شما، ارزان‌تر');
 
-        $this->actingAs(\App\Models\User::factory()->create(['is_admin' => true]));
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
         $this->post('/admin/outlet', ['product_id' => $tee->product_id, 'percent' => 25])->assertRedirect();
         $this->assertSame(4_350_000, (int) $tee->product->fresh()->price);
         $this->get('/shop?shelf=outlet')->assertOk()->assertSee('tyshrt-imperial-1479');

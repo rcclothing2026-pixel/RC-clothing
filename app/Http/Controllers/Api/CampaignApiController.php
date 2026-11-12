@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\CampaignApproval;
 use App\Models\Coupon;
 use App\Models\DiscountRule;
+use App\Models\Product;
+use App\Services\StockKeeping\StoqsPromotions;
 use App\Support\CampaignPlan;
 use App\Support\Margin;
 use App\Support\Outlet;
@@ -16,7 +18,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * NJ Focus ↔ shop campaign link (X-Catalog-Key, like /api/ig/*).
- * GET  /api/campaigns/plan       the plan in config/campaigns.php, per campaign
+ * GET  /api/campaigns/plan       the plan in config/campaigns.php, per campaign, and the kits'
+ *                                struck prices as fixed prices (fixed_prices, for StoqS's import)
  * POST /api/campaigns/approvals  the full approval state from NJ Focus; then
  *                                campaigns:sync switches rules and coupons
  */
@@ -58,7 +61,48 @@ class CampaignApiController extends Controller
             ];
         }
 
-        return response()->json(['shop' => $request->getHost(), 'timezone' => 'Asia/Tehran', 'campaigns' => $out]);
+        return response()->json(['shop' => $request->getHost(), 'timezone' => 'Asia/Tehran', 'campaigns' => $out, 'fixed_prices' => self::fixedPrices()]);
+    }
+
+    /**
+     * The kits (config campaigns.bundles) at their struck price, as one group of fixed prices for
+     * StoqS's «وارد کردن از سایت»: {key, name, items: [{key: slug, name, price, compare_at, active,
+     * stoqs_product_ids, components}]}. While StoqS manages the site the catalog import has put
+     * the list price back, so the struck price kept at the switch (saved_prices) is the one sent.
+     * StoqS maps a kit by its own link (site product = the slug, or the StoqS id the kit carries);
+     * the components are listed for the reader only. No kits: an empty list.
+     */
+    public static function fixedPrices(): array
+    {
+        $slugs = array_keys((array) config('campaigns.bundles', []));
+        if (! $slugs) {
+            return [];
+        }
+        $saved = [];
+        try {
+            $saved = (array) json_decode((string) (StoqsPromotions::row()->saved_prices ?? ''), true);
+        } catch (\Throwable) {
+        }
+        $kits = Product::whereIn('slug', $slugs)->where('is_bundle', true)->with('bundleItems.variant.product')->get()->keyBy('slug');
+        $items = [];
+        foreach ($slugs as $slug) {
+            $cfg = (array) config('campaigns.bundles.'.$slug);
+            $p = $kits->get($slug);
+            if (! $p) {
+                $items[] = ['key' => $slug, 'name' => (string) ($cfg['name'] ?? $slug), 'price' => null, 'compare_at' => null, 'active' => false, 'stoqs_product_ids' => [], 'components' => []];
+
+                continue;
+            }
+            [$price, $compare] = isset($saved[$p->id]) && is_array($saved[$p->id]) ? array_map('intval', $saved[$p->id]) : [(int) $p->price, (int) $p->compare_at_price];
+            $items[] = [
+                'key' => $slug, 'name' => (string) $p->name, 'price' => $price ?: null, 'compare_at' => $compare ?: null, 'active' => (bool) $p->is_active,
+                'stoqs_product_ids' => $p->stockkeeping_id ? [(int) $p->stockkeeping_id] : [],
+                'components' => $p->bundleItems->map(fn ($i) => ['name' => (string) ($i->variant?->product?->name ?? ''), 'qty' => (int) $i->quantity,
+                    'stoqs_product_id' => $i->variant?->product?->stockkeeping_id ? (int) $i->variant->product->stockkeeping_id : null])->values()->all(),
+            ];
+        }
+
+        return [['key' => 'kits', 'name' => 'قیمت ویژهٔ کیت‌ها', 'items' => $items]];
     }
 
     public function approvals(Request $request): JsonResponse
@@ -98,7 +142,7 @@ class CampaignApiController extends Controller
     public function save(Request $request): JsonResponse
     {
         // While StoqS manages the promotions the outlet is StoqS's: refuse before saving anything.
-        if ($request->has('outlet') && \App\Services\StockKeeping\StoqsPromotions::managed()) {
+        if ($request->has('outlet') && StoqsPromotions::managed()) {
             return response()->json(['ok' => false, 'errors' => [Outlet::MANAGED]], 422);
         }
         // Costs first: the plan's margin checks read them. Then the plan, then the outlet.
@@ -119,7 +163,7 @@ class CampaignApiController extends Controller
     /** GET /api/campaigns/costs — finished cost per product slug (StoqS and NJ Focus). */
     public function costs(): JsonResponse
     {
-        $slugs = \App\Models\Product::pluck('slug', 'id');
+        $slugs = Product::pluck('slug', 'id');
 
         return response()->json(['min_margin' => Margin::min(), 'costs' => collect(Margin::costs())
             ->mapWithKeys(fn ($cost, $id) => isset($slugs[$id]) ? [$slugs[$id] => $cost] : [])->all()]);

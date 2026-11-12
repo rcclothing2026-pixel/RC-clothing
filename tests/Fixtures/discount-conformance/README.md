@@ -48,8 +48,11 @@ domain or real price list.
   before the campaign), `floor_price` (precomputed; sites are sent floors, never costs),
   `cost` (StoqS-side only: the floor is computed from it with `min_margin_percent`),
   `discountable` (false = a no-discount category; it still counts toward piece tiers),
-  `cap_exempt` (schema 3, default false: the item's «اجازهٔ عبور از سقف»; the line's room is its
-  whole total, no % cap and no floor, and its total is added whole to the cart's cap),
+  `cap_exempt` (schema 3, default false: an item «اجازهٔ عبور از سقف» priced by a campaign stacked
+  on the outlet, «روی هم», the only case a line is sent with it; the line's room for the discounts
+  aimed at it is its whole total, no % cap and no floor, and its total is added whole to the
+  cart's cap; what another line cannot take spills onto it only up to its normal room, and what
+  fits nowhere is not given),
   `count_in_tiers` (schema 3, default true; false = its pieces are not counted by any count
   condition, as for an outlet item set to «فقط اوتلت»; money conditions still see it).
 
@@ -66,6 +69,11 @@ toman.
 | `rules_applied` | the ids of the rules that counted, in any order |
 | `codes[]` | per entered code, in order: `code`, `valid`, `applied`, `reason`, `amount` |
 | `lines[]` | per line, in order: `discount`, `room`, `floor_price`, `list_price`, `margin_ok` |
+
+When several options cannot stack (an exclusive rule group, an «alone» code), the engine
+takes the one that places the most toman. Beside a cap-exempt line that is what a dry
+allocation of the option actually sits, not min(amount, cap): the exempt line counts whole
+in the cap but takes only what is aimed at it (c060, c061). Ties go to the earlier option.
 
 A fixture may also carry `equals_sum_of: [ids]` at the top level: its `discount` must equal
 the sum of those fixtures' discounts (split-cart invariance: A+B against A alone and B
