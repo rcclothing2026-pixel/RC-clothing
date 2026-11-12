@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\StockKeeping\StoqsPromoSource;
 use App\Services\StockKeeping\StoqsPromotions;
 use Illuminate\Console\Command;
 
@@ -30,6 +31,7 @@ class SyncStoqsPromotions extends Command
         if (! $pull['ok']) {
             $this->warn('Pull failed: '.($pull['message'] ?? $pull['status']));
         }
+        StoqsPromoSource::ackIfPending();   // a switch applied but not yet confirmed to StoqS
         $imported = StoqsPromotions::runPendingImport();
         if ($imported) {
             $this->line('Catalog imported again after the switch.');

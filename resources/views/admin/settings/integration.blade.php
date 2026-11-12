@@ -53,6 +53,10 @@
         @endunless
     </div>
 
+    @if ($cfg['enabled'])
+        @include('admin.settings._promo_source')
+    @endif
+
     {{-- Status cards --}}
     <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-card bg-white p-4 ring-1 ring-brand-100">

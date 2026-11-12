@@ -30,8 +30,9 @@ domain or real price list.
 ```
 
 - **schema**: the lowest engine schema that gives the expected result. 1 = today's engine
-  (the cap on the sale price). 2 = lines may carry `list_price` and codes `vs_list`. An
-  engine runs every fixture with `schema` up to its own.
+  (the cap on the sale price). 2 = lines may carry `list_price` and codes `vs_list`. 3 = lines
+  may carry `cap_exempt` and `count_in_tiers`. An engine runs every fixture with `schema` up to
+  its own.
 - **opts**: what the engine is called with: `max_discount_percent`, `min_margin_percent`,
   `channel` (`web`, `brand`, `stores`, `concept`), `now` (Tehran time; fixtures never
   depend on the clock), and optionally `customer` (null = guest) and `has_costs`.
@@ -46,7 +47,11 @@ domain or real price list.
   sells at, after any campaign price), and optionally `list_price` (schema 2: the price
   before the campaign), `floor_price` (precomputed; sites are sent floors, never costs),
   `cost` (StoqS-side only: the floor is computed from it with `min_margin_percent`),
-  `discountable` (false = a no-discount category; it still counts toward piece tiers).
+  `discountable` (false = a no-discount category; it still counts toward piece tiers),
+  `cap_exempt` (schema 3, default false: the item's «اجازهٔ عبور از سقف»; the line's room is its
+  whole total, no % cap and no floor, and its total is added whole to the cart's cap),
+  `count_in_tiers` (schema 3, default true; false = its pieces are not counted by any count
+  condition, as for an outlet item set to «فقط اوتلت»; money conditions still see it).
 
 ## Expectations
 

@@ -215,6 +215,8 @@
                     @endif
                 </div>
 
+                <x-stoqs-promo-note :product="$product" class="mt-2 text-xs" />
+
                 @if (! empty($badges))
                     <ul class="mt-4 space-y-2">
                         @foreach ($badges as $badge)

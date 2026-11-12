@@ -46,6 +46,7 @@
             <div class="mt-3 px-1">
                 <p class="line-clamp-1 text-xs font-medium uppercase tracking-wide text-brand-900 sm:text-sm">{{ $product->name }}</p>
                 <p class="mt-1 text-xs text-brand-700 fa-num sm:text-sm">{{ $product->formattedPrice() }}</p>
+                <x-stoqs-promo-note :product="$product" />
             </div>
         </a>
 
@@ -192,6 +193,7 @@
                 @if ($product->hasDiscount())
                     <div class="text-[11px] text-brand-400 line-through fa-num">{{ $product->formattedCompareAtPrice() }}</div>
                 @endif
+                <x-stoqs-promo-note :product="$product" />
             </div>
 
             {{-- Desktop: arrow hint (hidden on touch) --}}

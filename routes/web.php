@@ -342,6 +342,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/settings/integration/import-collections', [AdminIntegrationController::class, 'importCollections'])->name('settings.integration.collections');
     Route::post('/settings/integration/retry-outbox', [AdminIntegrationController::class, 'retryOutbox'])->name('settings.integration.retry-outbox');
     Route::post('/settings/integration/outbox/{event}/dismiss', [AdminIntegrationController::class, 'dismissOutbox'])->name('settings.integration.dismiss');
+    Route::post('/settings/integration/promo-source', [\App\Http\Controllers\Admin\PromoSourceController::class, 'prepare'])->name('settings.promo-source.prepare');
+    Route::post('/settings/integration/promo-source/confirm', [\App\Http\Controllers\Admin\PromoSourceController::class, 'confirm'])->name('settings.promo-source.confirm');
+    Route::get('/settings/integration/promo-source/history', [\App\Http\Controllers\Admin\PromoSourceController::class, 'history'])->name('settings.promo-source.history');
 
     // Media library
     Route::prefix('media')->name('media.')->group(function () {

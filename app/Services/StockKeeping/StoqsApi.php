@@ -46,6 +46,25 @@ class StoqsApi
         throw self::error($resp, $scope);
     }
 
+    /**
+     * PUT /promotions/source (scope discounts:write): the site asks StoqS to switch who manages
+     * its promotions. Unlike call(), a 409 (stale) and a 422 (guard) are answers, not errors:
+     * [status, decoded body]. A 403 remembers the missing scope.
+     *
+     * @return array{status: int, json: array}
+     */
+    public static function putSource(array $body): array
+    {
+        $resp = self::client()->put('promotions/source', $body);
+        if ($resp->successful()) {
+            self::scopeOk('discounts:write');
+        } elseif ($resp->status() === 403) {
+            self::error($resp, 'discounts:write');
+        }
+
+        return ['status' => $resp->status(), 'json' => (array) $resp->json()];
+    }
+
     /** The authenticated /api/v1 client every call starts from. */
     public static function client(): PendingRequest
     {
@@ -76,6 +95,9 @@ class StoqsApi
 
     public static function scopeOf(string $method, string $path): string
     {
+        if ($path === 'promotions/source' && strtoupper($method) !== 'GET') {
+            return 'discounts:write';
+        }
         if (str_starts_with($path, 'promotions')) {
             return 'discounts:read';   // GET /promotions and POST /promotions/evaluate, /ack
         }

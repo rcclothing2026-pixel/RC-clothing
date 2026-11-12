@@ -52,12 +52,25 @@ class StoqsCart
             $cids = $cats[$spid] ?? [];
             $floor = $row !== null && array_key_exists('floor_price', $row) ? $row['floor_price']
                 : ($p->stoqs_floor_price ?? null);
+            // schema 3: the outlet mode of a row that is in the outlet now, and a cap-exempt window
+            $discountable = ! array_intersect($cids, $none);
+            $count = true;
+            if ($row !== null && StoqsPromotions::inOutletNow($row, $ts)) {
+                $mode = (string) ($row['outlet_stack'] ?? '');
+                if ($mode === 'outlet_only') {
+                    $discountable = false;
+                    $count = false;
+                } elseif ($mode === 'count_in_tiers') {
+                    $discountable = false;
+                }
+            }
+            $exempt = $row !== null && $win !== null && in_array((string) ($win['id'] ?? ''), array_map('strval', (array) ($row['cap_exempt'] ?? [])), true);
             $eng[] = [
                 'variant_id' => $svid, 'product_id' => $spid, 'category_ids' => $cids,
                 'qty' => (int) $l['quantity'], 'unit_price' => $unit, 'list_price' => $list,
                 'floor_price' => $floor === null ? null : (float) $floor,
-                'discountable' => ! array_intersect($cids, $none), 'on_sale' => $unit < $list,
-            ];
+                'discountable' => $discountable, 'on_sale' => $unit < $list,
+            ] + ($count ? [] : ['count_in_tiers' => false]) + ($exempt ? ['cap_exempt' => true] : []);
             $meta[] = ['local_id' => (int) $v->id, 'list' => $list, 'unit' => $unit, 'qty' => (int) $l['quantity'],
                 'window' => $win === null ? null : array_intersect_key($win, array_flip(['id', 'source', 'campaign_id', 'plan_id', 'version']))];
         }
@@ -421,10 +434,11 @@ class StoqsCart
             $c = $n['conditions'][0];
             $min = (int) ($c['min'] ?? 0);
             $ids = array_map('intval', (array) ($c['category_ids'] ?? []));
+            $pieces = fn ($l) => ($l['count_in_tiers'] ?? true) ? $l['qty'] : 0;   // an outlet-only line is not counted
             $have = match ($c['type'] ?? '') {
-                'cart_item_count' => array_sum(array_column($eng, 'qty')),
+                'cart_item_count' => array_sum(array_map($pieces, $eng)),
                 'cart_subtotal' => array_sum(array_map(fn ($l) => $l['unit_price'] * $l['qty'], $eng)),
-                'item_count_from_categories' => array_sum(array_map(fn ($l) => array_intersect($l['category_ids'], $ids) ? $l['qty'] : 0, $eng)),
+                'item_count_from_categories' => array_sum(array_map(fn ($l) => array_intersect($l['category_ids'], $ids) ? $pieces($l) : 0, $eng)),
                 default => null,
             };
             if ($have === null || $have >= $min) {

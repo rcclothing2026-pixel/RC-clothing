@@ -32,7 +32,7 @@ class StoqsConformanceTest extends TestCase
     {
         $all = self::fixtures();
         $this->assertGreaterThanOrEqual(35, count($all));
-        $this->assertSame(2, StoqsEngine::SCHEMA);
+        $this->assertSame(3, StoqsEngine::SCHEMA);
         foreach ($all as $id => [$j]) {
             $this->assertIsArray($j, "$id is valid JSON");
             $this->assertSame($id, $j['id']);

@@ -164,8 +164,15 @@ class StoqsPromotions
         if ($flipped) {
             self::flipped($managed);
         }
+        StoqsPromoSource::fromPull($j, $was, $managed);   // promo_source_seq rides on every answer
 
         return ['ok' => true, 'status' => 200, 'changed' => true, 'managed' => $managed, 'flipped' => $flipped];
+    }
+
+    /** Write columns of the row (for StoqsPromoSource). */
+    public static function saveState(array $values): void
+    {
+        self::store($values);
     }
 
     /** Write the row (id 1) and drop the memo. */
@@ -192,7 +199,7 @@ class StoqsPromotions
      * Taking over keeps the struck prices set by hand in the shop (saved_prices); giving back
      * restores them once that import has run.
      */
-    private static function flipped(bool $managed): void
+    public static function flipped(bool $managed): void
     {
         ProductVariant::whereNotNull('promo_price')->update(['promo_price' => null]);
         $values = ['reimport_pending' => true];
@@ -346,6 +353,66 @@ class StoqsPromotions
         return $none && array_intersect(self::categoriesOf()[$stoqsProductId] ?? [], $none);
     }
 
+    /** Whether an outlet-source window on this row covers $ts: the row is «in the outlet now». */
+    public static function inOutletNow(array $row, int $ts): bool
+    {
+        $wins = self::windows();
+        foreach ((array) ($row['prices'] ?? []) as $e) {
+            $w = $wins[(string) ($e[0] ?? '')] ?? null;
+            if ($w && (string) ($w['source'] ?? '') === 'outlet' && self::covers($w, $ts)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * What to show next to a price (managed only): the public label of the window pricing the
+     * item now (windows[].label) and, when its row is in the outlet now, the ready note
+     * (row.outlet_note). For a product the size with the lowest price now speaks; empty
+     * strings when there is nothing to show.
+     *
+     * @return array{label: string, note: string}
+     */
+    public static function promoText(Product|ProductVariant|null $subject): array
+    {
+        $none = ['label' => '', 'note' => ''];
+        if (! $subject || ! self::managed()) {
+            return $none;
+        }
+        $ts = now()->getTimestamp();
+        if ($subject instanceof ProductVariant) {
+            $product = $subject->product;
+            $variants = collect([$subject]);
+        } else {
+            $product = $subject;
+            $variants = $subject->variants;
+        }
+        if (! $product || $product->is_bundle) {
+            return $none;
+        }
+        $best = null;
+        foreach ($variants as $v) {
+            $row = $v->stockkeeping_variant_id ? (self::index()[(int) $v->stockkeeping_variant_id] ?? null) : null;
+            if (! $row) {
+                continue;
+            }
+            $v->setRelation('product', $product);
+            [, $price, $win] = self::sizeNow($v, null, $ts);
+            $outlet = self::inOutletNow($row, $ts);
+            if ($win === null && ! $outlet) {
+                continue;
+            }
+            if ($best === null || $price < $best['price']) {
+                $best = ['price' => $price, 'label' => trim((string) ($win['label'] ?? '')),
+                    'note' => $outlet ? trim((string) ($row['outlet_note'] ?? '')) : ''];
+            }
+        }
+
+        return $best ? ['label' => $best['label'], 'note' => $best['note']] : $none;
+    }
+
     private static function ts($iso): ?int
     {
         if ($iso === null || $iso === '') {
@@ -388,8 +455,9 @@ class StoqsPromotions
             if ($none && ($src === 'campaign' || ($src === 'outlet' && $outletToo))) {
                 continue;
             }
+            $exempt = in_array((string) $w['id'], array_map('strval', (array) ($row['cap_exempt'] ?? [])), true);
             $p = ($e[1] ?? null) !== null ? (int) $e[1]
-                : self::formulaPrice($list, (float) ($e[2] ?? $w['pct'] ?? 0), isset($row['floor_price']) ? (float) $row['floor_price'] : null);
+                : self::formulaPrice($list, (float) ($e[2] ?? $w['pct'] ?? 0), isset($row['floor_price']) ? (float) $row['floor_price'] : null, null, $exempt);
             if ($p === null) {
                 continue;
             }
@@ -405,9 +473,10 @@ class StoqsPromotions
      * StoqS's published sale-price formula (cp_sale_at with the site's floor), for a size the
      * site prices itself before StoqS has its price: $pct off $L rounded the brand's way, no
      * lower than the cap (max_discount_percent, rounded up) or the floor (rounded up). Null
-     * when nothing comes off.
+     * when nothing comes off. $exempt (schema 3, a window listed in the row's cap_exempt): the
+     * size's own percent as typed, with no cap and no floor.
      */
-    public static function formulaPrice(int $L, float $pct, ?float $floor, ?array $s = null): ?int
+    public static function formulaPrice(int $L, float $pct, ?float $floor, ?array $s = null, bool $exempt = false): ?int
     {
         $s ??= self::settings();
         if ($L <= 0) {
@@ -420,6 +489,9 @@ class StoqsPromotions
         $mh = max(0, min(10000, (int) self::half((float) ($s['max_discount_percent'] ?? 100) * 100)));
         $target = self::roundPrice($L * (10000 - $dh) / 10000, $s);
         $cap = self::roundPrice($L * (10000 - $mh) / 10000, $s, 'up');
+        if ($exempt) {
+            return $target >= $L ? null : (int) $target;
+        }
         $S = max($target, $cap);
         if ($floor !== null && $floor > 0) {
             $r = self::roundPrice($floor, $s, 'up');
@@ -666,6 +738,7 @@ class StoqsPromotions
             StoqsApi::call('POST', 'promotions/ack', array_filter([
                 'version' => $v, 'etag' => $row->etag ?: null, 'site_url' => self::siteUrl(),
                 'applied' => array_values(array_filter($plans)), 'failed' => [],
+                'own_discounts' => StoqsPromoSource::ownDiscounts(),
             ], fn ($x) => $x !== null));
         } catch (\Throwable $e) {
             Log::warning('[stoqs-promotions] ack failed', ['version' => $v, 'error' => $e->getMessage()]);

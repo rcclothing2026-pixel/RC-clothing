@@ -18,7 +18,7 @@ namespace App\Services\Discount;
  */
 final class StoqsEngine
 {
-    public const SCHEMA = 2;
+    public const SCHEMA = 3;
 
     /** Every condition the engine knows, with its Persian label (the shops' own labels). */
     public static function condition_types(): array {
@@ -202,6 +202,9 @@ final class StoqsEngine
      * the shops' bundles / winter / outlet are not); floor_price, or cost + min_margin;
      * list_price (schema 2: the price before the campaign; null/absent = the cap is on
      * unit_price exactly as before; below unit_price it counts as unit_price).
+     * Schema 3: cap_exempt (default false: the line's room is its whole total, no % cap and no
+     * floor, the item's «اجازهٔ عبور از سقف»); count_in_tiers (default true; false = its pieces
+     * are not counted by any count condition: an outlet item set to «فقط اوتلت»).
      */
     public static function line_normalize(array $l, int $i, float $min_margin = 10.0): array {
         $qty  = (int) ($l['qty'] ?? ($l['quantity'] ?? 0));
@@ -230,6 +233,8 @@ final class StoqsEngine
             'discountable'  => !array_key_exists('discountable', $l) || !empty($l['discountable']),
             'floor_price'   => $floor,
             'list_price'    => $list,
+            'cap_exempt'    => !empty($l['cap_exempt']),
+            'pieces'        => !array_key_exists('count_in_tiers', $l) || !empty($l['count_in_tiers']) ? $qty : 0,
         ];
     }
 
@@ -275,7 +280,7 @@ final class StoqsEngine
         switch ((string) ($c['type'] ?? '')) {
             case 'cart_subtotal': return self::range($subtotal, $c);
             case 'cart_subtotal_excluding_sale': return self::range(self::sum($lines, fn($l) => !$l['on_sale'], 'line_total'), $c);
-            case 'cart_item_count': return self::range(self::sum($lines, fn($l) => true, 'qty'), $c);
+            case 'cart_item_count': return self::range(self::sum($lines, fn($l) => true, 'pieces'), $c);
             case 'cart_weight':
                 $w = 0; foreach ($lines as $l) $w += $l['weight'] * $l['qty'];
                 return self::range((int) $w, $c);
@@ -291,16 +296,16 @@ final class StoqsEngine
             case 'has_sale_item':
             case 'has_discounted_item': return $any(fn($l) => $l['on_sale']);
             case 'has_full_price_item': return $any(fn($l) => !$l['on_sale']);
-            case 'item_count_from_products': return self::range($ints('product_ids') ? self::sum($lines, $byProducts, 'qty') : 0, $c);
+            case 'item_count_from_products': return self::range($ints('product_ids') ? self::sum($lines, $byProducts, 'pieces') : 0, $c);
             case 'item_total_from_products': return self::range($ints('product_ids') ? self::sum($lines, $byProducts, 'line_total') : 0, $c);
-            case 'item_count_from_brands': return self::range(($c['brands'] ?? []) ? self::sum($lines, $byBrands, 'qty') : 0, $c);
+            case 'item_count_from_brands': return self::range(($c['brands'] ?? []) ? self::sum($lines, $byBrands, 'pieces') : 0, $c);
             case 'item_total_from_brands': return self::range(($c['brands'] ?? []) ? self::sum($lines, $byBrands, 'line_total') : 0, $c);
-            case 'item_count_from_categories': return self::range($ints('category_ids') ? self::sum($lines, $byCats, 'qty') : 0, $c);
+            case 'item_count_from_categories': return self::range($ints('category_ids') ? self::sum($lines, $byCats, 'pieces') : 0, $c);
             case 'item_total_from_categories': return self::range($ints('category_ids') ? self::sum($lines, $byCats, 'line_total') : 0, $c);
             case 'item_count_from_shelf':
                 $shelf = (string) ($c['shelf'] ?? '');
-                return self::range(self::sum($lines, fn($l) => in_array($shelf, $l['shelves'], true), 'qty'), $c);
-            case 'item_count_from_collections': return self::range($ints('collection_ids') ? self::sum($lines, $byColls, 'qty') : 0, $c);
+                return self::range(self::sum($lines, fn($l) => in_array($shelf, $l['shelves'], true), 'pieces'), $c);
+            case 'item_count_from_collections': return self::range($ints('collection_ids') ? self::sum($lines, $byColls, 'pieces') : 0, $c);
             case 'item_total_from_collections': return self::range($ints('collection_ids') ? self::sum($lines, $byColls, 'line_total') : 0, $c);
             case 'user_status':
                 $st = (string) ($c['status'] ?? 'registered');
@@ -627,11 +632,16 @@ final class StoqsEngine
         $list_mode = false;   // schema 2: a discountable line carries its list price
         foreach ($L as $l) if ($l['discountable'] && $l['list_price'] !== null) { $list_mode = true; break; }
         $room = [];
+        // schema 3: a cap-exempt line's room is its whole total (no % cap, no floor); its total
+        // is added whole to the cart's cap instead of its percent
+        $exempt = 0;
+        foreach ($L as $l) if ($l['discountable'] && $l['cap_exempt']) $exempt += (int) $l['line_total'];
         if (!$list_mode) {
-            $percent_cap = (int) floor($base * $max / 100);
+            $percent_cap = (int) floor(($base - $exempt) * $max / 100) + $exempt;
             foreach ($L as $i => $l) {
                 if (!$l['discountable']) { $room[$i] = 0.0; continue; }
                 $line = (int) $l['line_total'];
+                if ($l['cap_exempt']) { $room[$i] = (float) $line; continue; }
                 $room[$i] = $has_costs
                     ? (float) min((int) floor($line * $max / 100), $l['floor_price'] === null ? $line : max(0, $line - (int) $l['floor_price'] * $l['qty']))
                     : $line * $max / 100;
@@ -641,6 +651,7 @@ final class StoqsEngine
             foreach ($L as $i => $l) {
                 if (!$l['discountable']) { $room[$i] = 0.0; continue; }
                 $line = (int) $l['line_total'];
+                if ($l['cap_exempt']) { $room[$i] = (float) $line; $percent_cap += $line; continue; }
                 $by_floor = $l['floor_price'] === null ? $line : max(0, $line - (int) $l['floor_price'] * $l['qty']);
                 if ($l['list_price'] === null) {   // a line without a list price: today's room
                     $plain += $line;

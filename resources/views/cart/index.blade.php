@@ -44,6 +44,7 @@
                                     @if ($variant->color && $variant->size)<span class="mx-1">·</span>@endif
                                     @if ($variant->size)<span>{{ __('Size') }}: {{ $variant->size }}</span>@endif
                                 </p>
+                                <x-stoqs-promo-note :variant="$variant" />
                                 <div class="mt-auto flex items-center justify-between gap-3 pt-3">
                                     {{-- +/- stepper --}}
                                     <form action="{{ route('cart.update') }}" method="POST" data-cart-stepper

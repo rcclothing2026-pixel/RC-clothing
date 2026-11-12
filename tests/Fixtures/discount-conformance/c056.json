@@ -1,0 +1,69 @@
+{
+    "id": "c056",
+    "title": "A product tier counts only pieces that count: an outlet «فقط اوتلت» piece of a named product does not make 2",
+    "schema": 3,
+    "opts": {
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "rules": [
+        {
+            "id": 1,
+            "label": "Plan · ۲ قطعه ۱۰٪",
+            "priority": 10,
+            "conditions": [
+                {
+                    "type": "item_count_from_products",
+                    "product_ids": [
+                        1,
+                        2
+                    ],
+                    "min": 2
+                }
+            ],
+            "actions": [
+                {
+                    "type": "item_discount_percent",
+                    "value": 10
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": "plan-1-t",
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        }
+    ],
+    "codes": [],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 800000,
+            "discountable": false,
+            "count_in_tiers": false
+        },
+        {
+            "variant_id": 20,
+            "product_id": 2,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000
+        }
+    ],
+    "expect": {
+        "discount": 0,
+        "rules_applied": []
+    }
+}

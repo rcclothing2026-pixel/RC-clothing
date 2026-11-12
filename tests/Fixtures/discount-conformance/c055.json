@@ -1,0 +1,137 @@
+{
+    "id": "c055",
+    "title": "Outlet «روی هم» with a cap-exempt outlet item: 30% outlet then 10% campaign (630,000), and the tier, basket and code on top with no cap on it",
+    "schema": 3,
+    "opts": {
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "rules": [
+        {
+            "id": 1,
+            "label": "Plan · ۳ قطعه ۱۰٪",
+            "priority": 10,
+            "conditions": [
+                {
+                    "type": "cart_item_count",
+                    "min": 3
+                }
+            ],
+            "actions": [
+                {
+                    "type": "cart_discount_percent",
+                    "value": 10
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": "plan-1-o0",
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        },
+        {
+            "id": 2,
+            "label": "Plan · سبد ۵٪",
+            "priority": 10,
+            "conditions": [],
+            "actions": [
+                {
+                    "type": "cart_discount_percent",
+                    "value": 5
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": "plan-1-o1",
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        }
+    ],
+    "codes": [
+        {
+            "id": 1,
+            "code": "FIVE",
+            "type": "percent",
+            "value": 5,
+            "min_subtotal": 0,
+            "max_subtotal": null,
+            "max_discount": null,
+            "starts_at": null,
+            "ends_at": null,
+            "usage_limit": null,
+            "uses": 0,
+            "per_customer_limit": null,
+            "first_order_only": 0,
+            "individual_use": 0,
+            "include_product_ids": [],
+            "include_category_ids": [],
+            "exclude_product_ids": [],
+            "exclude_category_ids": [],
+            "channels": "web,brand,stores",
+            "enabled": 1
+        }
+    ],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 630000,
+            "list_price": 1000000,
+            "cap_exempt": true
+        },
+        {
+            "variant_id": 20,
+            "product_id": 2,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000,
+            "list_price": 1000000
+        },
+        {
+            "variant_id": 30,
+            "product_id": 3,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000,
+            "list_price": 2000000,
+            "cap_exempt": true
+        }
+    ],
+    "expect": {
+        "discount": 526000,
+        "rules_applied": [
+            1,
+            2
+        ],
+        "lines": [
+            {
+                "discount": 126000,
+                "room": 630000
+            },
+            {
+                "discount": 200000,
+                "room": 250000
+            },
+            {
+                "discount": 200000,
+                "room": 1000000
+            }
+        ]
+    }
+}

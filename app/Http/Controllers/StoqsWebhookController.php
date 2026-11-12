@@ -8,6 +8,7 @@ use App\Models\ProductVariant;
 use App\Models\StockkeeepingLog;
 use App\Services\StockKeeping\CatalogImporter;
 use App\Services\StockKeeping\StockKeepingClient;
+use App\Services\StockKeeping\StoqsPromoSource;
 use App\Services\StockKeeping\StoqsPromotions;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -109,6 +110,9 @@ class StoqsWebhookController extends Controller
                 }
             } elseif ($event === 'product.content_changed') {
                 $this->applyContentChanged($data);
+            } elseif ($event === 'promotions.source_changed') {
+                // Two-way site manager switch: applied at once when its seq is newer, then acknowledged.
+                $this->applySourceChanged($data);
             } elseif (in_array($event, ['promotions.changed', 'outlet.changed'], true)
                 || (in_array($event, ['discounts.changed', 'campaign.changed'], true) && StoqsPromotions::managed())) {
                 // Promotions API v2: a thin «pull /promotions» signal (also how this site learns
@@ -229,6 +233,31 @@ class StoqsWebhookController extends Controller
         );
 
         return $applied['changed'] > 0 || $pull['flipped'];
+    }
+
+    /**
+     * promotions.source_changed {source, seq, changed_at, by, note, origin}: applied when seq is
+     * greater than the stored one (a stale or replayed seq is a 200 no-op), `managed` flips the
+     * way a pull-driven flip does, the change is logged, and StoqS is told
+     * (POST /promotions/ack {source_seq, own_discounts}). Returns whether the storefront changed.
+     */
+    private function applySourceChanged(array $data): bool
+    {
+        $source = (string) ($data['source'] ?? '');
+        $applied = StoqsPromoSource::apply(
+            $source, (int) ($data['seq'] ?? 0), StoqsPromoSource::origin($data['origin'] ?? null),
+            isset($data['by']) ? (string) $data['by'] : null, isset($data['note']) ? (string) $data['note'] : null,
+            isset($data['changed_at']) ? (string) $data['changed_at'] : null,
+        );
+        if (! $applied) {
+            return false;
+        }
+        if (StoqsPromotions::managed()) {
+            StoqsPromotions::apply();
+            StoqsPromotions::ack();
+        }
+
+        return true;
     }
 
     /** Claim this event id (unique with subject ''); false when another delivery has it. */

@@ -1,0 +1,74 @@
+{
+    "id": "c051",
+    "title": "«اجازهٔ عبور از سقف»: a cap-exempt line at 50% off its list (under its floor) still takes a basket 10%; its room is its whole total",
+    "schema": 3,
+    "opts": {
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "rules": [
+        {
+            "id": 1,
+            "label": "Plan · سبد ۱۰٪",
+            "priority": 10,
+            "conditions": [],
+            "actions": [
+                {
+                    "type": "cart_discount_percent",
+                    "value": 10
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": "plan-1-o0",
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        }
+    ],
+    "codes": [],
+    "lines": [
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000,
+            "list_price": 2000000,
+            "floor_price": 1200000,
+            "cap_exempt": true
+        },
+        {
+            "variant_id": 20,
+            "product_id": 2,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000,
+            "list_price": 1000000
+        }
+    ],
+    "expect": {
+        "discount": 200000,
+        "cap": 1250000,
+        "cap_basis": "list",
+        "lines": [
+            {
+                "discount": 100000,
+                "room": 1000000,
+                "margin_ok": false
+            },
+            {
+                "discount": 100000,
+                "room": 250000
+            }
+        ]
+    }
+}

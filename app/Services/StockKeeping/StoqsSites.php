@@ -41,7 +41,7 @@ class StoqsSites
             StoqsApi::call('POST', 'sites/hello', [
                 'kind' => 'laravel', 'url' => rtrim((string) config('app.url'), '/'),
                 'plugin_version' => (string) config('stockkeeping.site_version', '1.0.0'), 'capabilities' => self::capabilities(),
-            ] + (StoqsPromotions::managed() ? ['engine_schema' => 2] : []));
+            ] + (StoqsPromotions::managed() ? ['engine_schema' => 3] : []));
             $links = self::links();
             $count = 0;
             foreach (array_chunk($links, 5000) as $chunk) {
@@ -68,7 +68,7 @@ class StoqsSites
      */
     public static function capabilities(): array
     {
-        return StoqsPromotions::managed() ? [...self::CAPABILITIES, 'size_prices', 'engine_schema_2'] : self::CAPABILITIES;
+        return StoqsPromotions::managed() ? [...self::CAPABILITIES, 'size_prices', 'engine_schema_2', 'engine_schema_3'] : self::CAPABILITIES;
     }
 
     /** One link per StoqS product behind each linked shop product. */
