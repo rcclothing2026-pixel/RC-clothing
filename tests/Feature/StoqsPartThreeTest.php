@@ -505,6 +505,30 @@ class StoqsPartThreeTest extends TestCase
         Http::assertNotSent(fn (Request $r) => str_ends_with($r->url(), 'promotions/ack') && ($r->data()['source_seq'] ?? null) === 3);
     }
 
+    public function test_a_switch_and_the_minute_pull_share_one_lock(): void
+    {
+        $this->manage($this->payload(['managed' => true]), ['promo_source_seq' => 2]);
+        Http::fake(['stoqs.test/api/v1/promotions/ack' => Http::response(['ok' => true]),
+            'stoqs.test/api/v1/promotions*' => Http::response($this->payload(['managed' => false, 'promo_source' => 'shop', 'promo_source_seq' => 3]), 200, ['ETag' => '"v3"'])]);
+        config(['stockkeeping.flip_lock_wait' => 0]);
+        $held = Cache::lock(StoqsPromotions::FLIP_LOCK, 60);
+        $this->assertTrue($held->get(), 'another process holds the lock');
+
+        $this->assertSame('busy', StoqsPromotions::pull()['status'], 'the pull waits its turn');
+        $this->assertFalse(StoqsPromoSource::apply('shop', 3, 'stoqs_panel'), 'so does a switch');
+        Http::assertNothingSent();
+        StoqsPromotions::forget();
+        $this->assertSame(2, StoqsPromoSource::state()['seq']);
+        $this->assertTrue(StoqsPromotions::managed());
+
+        $held->release();
+        $this->assertTrue(StoqsPromoSource::apply('shop', 3, 'stoqs_panel'), 'free again: the switch runs, its own pull inside the same lock');
+        StoqsPromotions::forget();
+        $this->assertFalse(StoqsPromotions::managed());
+        $this->assertSame(3, StoqsPromoSource::state()['seq']);
+        $this->assertTrue(Cache::lock(StoqsPromotions::FLIP_LOCK, 1)->get(), 'and it let go of the lock');
+    }
+
     public function test_a_newer_seq_with_the_same_source_is_stored_without_a_flip(): void
     {
         $this->manage($this->payload(['managed' => true]), ['promo_source_seq' => 2]);

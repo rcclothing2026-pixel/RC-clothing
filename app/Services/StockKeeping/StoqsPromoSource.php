@@ -124,6 +124,12 @@ class StoqsPromoSource
     public static function apply(string $source, int $seq, string $origin, ?string $by = null, ?string $note = null,
         ?string $changedAt = null, bool $ack = true): bool
     {
+        // one at a time with the minute pull (StoqsPromotions::FLIP_LOCK): never two flipped()
+        return StoqsPromotions::exclusive(fn () => self::applyLocked($source, $seq, $origin, $by, $note, $changedAt, $ack), fn () => false);
+    }
+
+    private static function applyLocked(string $source, int $seq, string $origin, ?string $by, ?string $note, ?string $changedAt, bool $ack): bool
+    {
         if (! self::ready() || ! in_array($source, ['stoqs', 'shop'], true) || $seq <= self::state()['seq']) {
             return false;
         }

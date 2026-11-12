@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\StockkeeepingLog;
 use Illuminate\Contracts\Cache\Lock;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
@@ -122,7 +123,45 @@ class StoqsPromotions
      *
      * @return array{ok: bool, status: int|string, changed: bool, managed: bool, flipped: bool, message?: string}
      */
+    /** The lock a pull and a switch share, so a webhook switch and the minute pull never both flip. */
+    public const FLIP_LOCK = 'stoqs:promotions-flip';
+
+    private static int $flipDepth = 0;
+
+    /**
+     * Run $fn holding FLIP_LOCK (TTL 90 s, waiting up to stockkeeping.flip_lock_wait seconds,
+     * 25 by default). Re-entrant within one process: a switch's own pull runs inside its lock.
+     * The lock busy past the wait: $busy() is returned and nothing runs (the next minute retries).
+     */
+    public static function exclusive(callable $fn, callable $busy): mixed
+    {
+        if (self::$flipDepth > 0) {
+            return $fn();
+        }
+        $lock = Cache::lock(self::FLIP_LOCK, 90);
+        try {
+            $lock->block((int) config('stockkeeping.flip_lock_wait', 25));
+        } catch (LockTimeoutException) {
+            Log::info('[stoqs-promotions] another pull or switch is running; skipped');
+
+            return $busy();
+        }
+        self::$flipDepth++;
+        try {
+            return $fn();
+        } finally {
+            self::$flipDepth--;
+            $lock->release();
+        }
+    }
+
     public static function pull(): array
+    {
+        return self::exclusive(fn () => self::pullLocked(),
+            fn () => ['ok' => false, 'status' => 'busy', 'changed' => false, 'managed' => self::managed(), 'flipped' => false, 'message' => 'another pull or switch is running']);
+    }
+
+    private static function pullLocked(): array
     {
         if (! config('stockkeeping.enabled')) {
             return ['ok' => false, 'status' => 'off', 'changed' => false, 'managed' => false, 'flipped' => false];
