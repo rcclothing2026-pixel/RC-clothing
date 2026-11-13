@@ -161,7 +161,7 @@ class StoqsSites
     /** Links whose StoqS product no longer exists are dropped and the rest sent again. */
     private static function post(array $links, bool $replaceAll = false): int
     {
-        $extra = $replaceAll ? ['replace_all' => true] : [];
+        $extra = $replaceAll ? ['replace_all' => true, 'site_url' => StoqsPromotions::siteUrl()] : [];   // 5.2.130: StoqS refuses replace_all without site_url when the key has 2+ sites
         try {
             return (int) (StoqsApi::call('POST', 'sites/links', ['links' => $links] + $extra)['count'] ?? count($links));
         } catch (StoqsApiError $e) {

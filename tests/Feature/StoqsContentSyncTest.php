@@ -629,7 +629,7 @@ class StoqsContentSyncTest extends TestCase
 
         $this->assertSame('9', (string) $kit->fresh()->stockkeeping_id);
         $this->assertSame(91, (int) $ph->fresh()->stockkeeping_variant_id);
-        Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), 'sites/links') && $r['replace_all'] === true
+        Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), 'sites/links') && $r['replace_all'] === true && $r['site_url'] === \App\Services\StockKeeping\StoqsPromotions::siteUrl()   // 5.2.130
             && collect($r['links'])->pluck('product_id')->sort()->values()->all() === [1, 9]);
 
         Http::fake(['stoqs.test/api/v1/sites/*' => Http::response(['ok' => true, 'count' => 2])]);

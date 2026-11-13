@@ -97,9 +97,12 @@ class StoqsKits
      * variant (StoqS puts every component back); an unlinked kit, and a linked kit whose
      * placeholder StoqS has no id for, as its components. Plain lines as before.
      *
+     * 5.2.130: `$saleRef` = the external_ref the order's sale was reported with (its order number); a linked
+     * kit line carries it as `sale_ref` so StoqS puts back exactly what that sale took (substitutes included).
+     *
      * @return array{local: array<int, int>, stoqs: array<int, array>}
      */
-    public static function restock(?ProductVariant $variant, int $qty, ?int $skVariantId, ?string $sku): array
+    public static function restock(?ProductVariant $variant, int $qty, ?int $skVariantId, ?string $sku, ?string $saleRef = null): array
     {
         $product = $variant?->product;
         if (! $product?->is_bundle) {
@@ -122,7 +125,7 @@ class StoqsKits
         }
         $kitId = $skVariantId ?: ($variant->stockkeeping_variant_id ? (int) $variant->stockkeeping_variant_id : null);
         if (self::linked($product) && $kitId) {
-            return ['local' => $local, 'stoqs' => [['variant_id' => $kitId, 'delta' => $qty]]];
+            return ['local' => $local, 'stoqs' => [['variant_id' => $kitId, 'delta' => $qty] + ($saleRef !== null && $saleRef !== '' ? ['sale_ref' => $saleRef] : [])]];
         }
 
         return ['local' => $local, 'stoqs' => array_values(array_filter($children))];

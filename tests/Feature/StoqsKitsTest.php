@@ -326,6 +326,17 @@ class StoqsKitsTest extends TestCase
         });
     }
 
+    public function test_5_2_130_a_kit_with_a_component_StoqS_has_no_id_for_sends_no_components_key(): void
+    {
+        $this->b->variants()->update(['stockkeeping_variant_id' => null]);
+        $sale = app(StockKeepingReporter::class)->buildSalePayload($this->order($this->kit)->fresh(), ['name' => 'x', 'phone' => '0912']);
+        $this->assertCount(1, $sale['items']);
+        $this->assertArrayNotHasKey('components', $sale['items'][0], 'never an empty list: StoqS uses its own definition');
+        Http::fake(['stoqs.test/api/v1/sales' => Http::response(['ok' => true, 'batch_id' => 'B1'], 201)]);
+        $this->client()->reportSale($sale);
+        Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/sales') && $r['items'][0]['variant_id'] === 91 && ! array_key_exists('components', $r['items'][0]));
+    }
+
     public function test_an_unlinked_kit_is_still_reported_as_its_components(): void
     {
         $own = $this->makeKit('kit-own', 1_500_000, null, null);
@@ -363,9 +374,11 @@ class StoqsKitsTest extends TestCase
     public function test_a_return_of_a_linked_kit_sends_the_kit_variant(): void
     {
         Http::fake(['stoqs.test/api/v1/stock-adjust' => Http::response(['ok' => true])]);
-        $this->receive($this->order($this->kit)->fresh(), $this->placeholder($this->kit), 2);
+        $o = $this->order($this->kit)->fresh();
+        $this->receive($o, $this->placeholder($this->kit), 2);
 
-        $this->assertSame([[['variant_id' => 91, 'delta' => 2]]], $this->adjusts());
+        // 5.2.130: the kit line names its sale (the order number the sale was reported with)
+        $this->assertSame([[['variant_id' => 91, 'delta' => 2, 'sale_ref' => $o->number]]], $this->adjusts());
         $this->assertSame([12, 14], [(int) $this->a->variants()->first()->fresh()->stock_qty, (int) $this->b->variants()->first()->fresh()->stock_qty], 'the shop\'s own component stock goes up too');
     }
 
@@ -376,7 +389,8 @@ class StoqsKitsTest extends TestCase
         $own = $this->makeKit('kit-own', 1_500_000, null, null);
 
         $this->actingAs($admin)->patch(route('admin.orders.status', $this->order($own)), ['status' => 'canceled'])->assertRedirect();
-        $this->actingAs($admin)->patch(route('admin.orders.status', $this->order($this->kit, 1)), ['status' => 'canceled'])->assertRedirect();
+        $linkedOrder = $this->order($this->kit, 1);
+        $this->actingAs($admin)->patch(route('admin.orders.status', $linkedOrder), ['status' => 'canceled'])->assertRedirect();
         $plain = Order::create(['number' => 'T-plain', 'status' => 'paid', 'subtotal' => 1, 'shipping_cost' => 0, 'discount' => 0, 'total' => 1, 'customer_name' => 'x', 'customer_phone' => '09120000000']);
         $av = $this->a->variants()->first();
         OrderItem::create(['order_id' => $plain->id, 'product_id' => $this->a->id, 'product_variant_id' => $av->id, 'name' => 'الف', 'size' => 'M', 'sku' => '1001',
@@ -385,7 +399,7 @@ class StoqsKitsTest extends TestCase
 
         $this->assertSame([
             [['variant_id' => 11, 'delta' => 2], ['variant_id' => 21, 'delta' => 4]],   // unlinked kit: components
-            [['variant_id' => 91, 'delta' => 1]],                                          // linked kit: the kit variant
+            [['variant_id' => 91, 'delta' => 1, 'sale_ref' => $linkedOrder->number]],     // linked kit: the kit variant + its sale
             [['variant_id' => 11, 'delta' => 3]],                                          // plain line
         ], $this->adjusts());
     }

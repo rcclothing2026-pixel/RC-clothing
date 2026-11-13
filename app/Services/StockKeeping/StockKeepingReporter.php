@@ -150,8 +150,10 @@ class StockKeepingReporter
                 'quantity' => $orderItem->quantity,
                 'line_total' => $orderItem->line_total,
                 'discounts' => (array) ($orderItem->discounts ?? []),
-                'components' => $parts->isEmpty() || $parts->contains(null) ? [] : $parts->values()->all(),
-            ] + ($orderItem->list_price !== null ? ['list_price' => (int) $orderItem->list_price] : [])];
+            ] + ($orderItem->list_price !== null ? ['list_price' => (int) $orderItem->list_price] : [])
+              // 5.2.130: `components` only when EVERY component has a StoqS variant id; otherwise the key
+              // is left out and StoqS uses its own definition (an empty list used to be refused, 422)
+              + (! $parts->isEmpty() && ! $parts->contains(null) ? ['components' => $parts->values()->all()] : [])];
         }
 
         if (! $product?->is_bundle) {

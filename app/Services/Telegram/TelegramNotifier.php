@@ -1467,7 +1467,7 @@ class TelegramNotifier
             }
             // A kit puts its components back (a kit StoqS knows: its placeholder variant, StoqS expands it).
             $plan = \App\Services\StockKeeping\StoqsKits::restock($item->variant, $qty,
-                $item->stockkeeping_variant_id ? (int) $item->stockkeeping_variant_id : null, $item->sku ? (string) $item->sku : null);
+                $item->stockkeeping_variant_id ? (int) $item->stockkeeping_variant_id : null, $item->sku ? (string) $item->sku : null, (string) $order->number);
             foreach ($plan['local'] as $id => $n) {
                 \App\Models\ProductVariant::where('id', $id)->increment('stock_qty', $n);
             }
