@@ -1,0 +1,105 @@
+{
+    "id": "c065",
+    "schema": 2,
+    "opts": {
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "title": "Kit counts as one piece per kit in a piece tier: a kit and one item make two pieces",
+    "rules": [
+        {
+            "id": 1,
+            "label": "from 3 pieces 10%",
+            "priority": 1,
+            "conditions": [
+                {
+                    "type": "cart_item_count",
+                    "min": 3
+                }
+            ],
+            "actions": [
+                {
+                    "type": "cart_discount_percent",
+                    "value": 10
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": null,
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        },
+        {
+            "id": 2,
+            "label": "from 2 pieces 5%",
+            "priority": 1,
+            "conditions": [
+                {
+                    "type": "cart_item_count",
+                    "min": 2,
+                    "max": 2
+                }
+            ],
+            "actions": [
+                {
+                    "type": "cart_discount_percent",
+                    "value": 5
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": null,
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        }
+    ],
+    "codes": [],
+    "lines": [
+        {
+            "variant_id": 500,
+            "product_id": 50,
+            "category_ids": [
+                5
+            ],
+            "qty": 1,
+            "unit_price": 2000000,
+            "list_price": 2000000
+        },
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000,
+            "list_price": 1000000
+        }
+    ],
+    "expect": {
+        "discount": 150000,
+        "cap": 750000,
+        "total": 2850000,
+        "rules_applied": [
+            2
+        ],
+        "lines": [
+            {
+                "discount": 100000,
+                "room": 500000
+            },
+            {
+                "discount": 50000,
+                "room": 250000
+            }
+        ]
+    }
+}

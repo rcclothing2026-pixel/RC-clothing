@@ -1,0 +1,81 @@
+{
+    "id": "c064",
+    "schema": 2,
+    "opts": {
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "title": "Kit and its own component in one cart are separate lines: a rule naming the component never reaches the kit",
+    "rules": [
+        {
+            "id": 1,
+            "label": "component 20%",
+            "priority": 1,
+            "conditions": [
+                {
+                    "type": "item_products",
+                    "product_ids": [
+                        1
+                    ]
+                }
+            ],
+            "actions": [
+                {
+                    "type": "item_discount_percent",
+                    "value": 20
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": null,
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        }
+    ],
+    "codes": [],
+    "lines": [
+        {
+            "variant_id": 500,
+            "product_id": 50,
+            "category_ids": [
+                5
+            ],
+            "qty": 1,
+            "unit_price": 2000000,
+            "list_price": 2000000
+        },
+        {
+            "variant_id": 10,
+            "product_id": 1,
+            "category_ids": [
+                1
+            ],
+            "qty": 1,
+            "unit_price": 1000000,
+            "list_price": 1000000
+        }
+    ],
+    "expect": {
+        "discount": 200000,
+        "cap": 750000,
+        "total": 2800000,
+        "rules_applied": [
+            1
+        ],
+        "lines": [
+            {
+                "discount": 0,
+                "room": 500000
+            },
+            {
+                "discount": 200000,
+                "room": 250000
+            }
+        ]
+    }
+}

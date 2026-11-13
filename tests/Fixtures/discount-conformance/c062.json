@@ -1,0 +1,67 @@
+{
+    "id": "c062",
+    "schema": 2,
+    "opts": {
+        "max_discount_percent": 25,
+        "min_margin_percent": 10,
+        "channel": "web",
+        "now": "2026-11-20 12:00:00"
+    },
+    "title": "Kit: one line, a 40% rule naming the kit is held by the cap on the kit's own list price (25% of 2,000,000)",
+    "rules": [
+        {
+            "id": 1,
+            "label": "kit 40%",
+            "priority": 1,
+            "conditions": [
+                {
+                    "type": "item_products",
+                    "product_ids": [
+                        50
+                    ]
+                }
+            ],
+            "actions": [
+                {
+                    "type": "item_discount_percent",
+                    "value": 40
+                }
+            ],
+            "apply_mode": "all",
+            "stack_mode": "all",
+            "exclusive": false,
+            "group": null,
+            "channels": "web,brand,stores",
+            "starts_at": "2026-11-01 00:00:00",
+            "ends_at": "2026-12-01 00:00:00",
+            "enabled": 1
+        }
+    ],
+    "codes": [],
+    "lines": [
+        {
+            "variant_id": 500,
+            "product_id": 50,
+            "category_ids": [
+                5
+            ],
+            "qty": 1,
+            "unit_price": 2000000,
+            "list_price": 2000000
+        }
+    ],
+    "expect": {
+        "discount": 500000,
+        "cap": 500000,
+        "total": 1500000,
+        "rules_applied": [
+            1
+        ],
+        "lines": [
+            {
+                "discount": 500000,
+                "room": 500000
+            }
+        ]
+    }
+}
