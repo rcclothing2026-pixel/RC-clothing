@@ -695,10 +695,14 @@ class Cart
         return (int) $this->lines()->filter(fn ($l) => self::isDiscountable($l['variant']->product))->sum('line_total');
     }
 
-    /** Bundles are already priced down, and winter categories are never discounted. */
+    /**
+     * Bundles are already priced down, and winter categories are never discounted. A kit StoqS
+     * knows is the exception while StoqS manages the promotions: its engine decides.
+     */
     public static function isDiscountable($product): bool
     {
-        if (! $product || $product->is_bundle || \App\Support\Outlet::has((int) $product->id)) {
+        $stoqsKit = $product && $product->is_bundle && StoqsPromotions::managed() && \App\Services\StockKeeping\StoqsKits::linked($product);
+        if (! $product || ($product->is_bundle && ! $stoqsKit) || \App\Support\Outlet::has((int) $product->id)) {
             return false;
         }
         $skip = config('shop.no_discount_categories', []);

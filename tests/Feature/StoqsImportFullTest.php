@@ -251,4 +251,34 @@ class StoqsImportFullTest extends TestCase
         }
         $this->assertSame(['orders' => 1, 'orders_total' => 2_000_000], $sent['customer'] ?? null);
     }
+
+    public function test_the_plan_answer_lists_every_kit_as_bundles_and_fixed_prices_keeps_its_kits(): void
+    {
+        $mk = function (string $slug, string $name, int $price, ?int $skv) {
+            $p = Product::create(['name' => $name, 'slug' => $slug, 'price' => $price, 'is_active' => true]);
+
+            return [$p, ProductVariant::create(['product_id' => $p->id, 'sku' => $slug.'-1', 'size' => 'M', 'color' => 'سفید', 'stock_qty' => 4, 'is_active' => true, 'stockkeeping_variant_id' => $skv])];
+        };
+        [, $va] = $mk('p-a', 'الف', 1_000_000, 11);
+        [, $vb] = $mk('p-b', 'ب', 600_000, null);
+        $kit = Product::create(['name' => 'کیت شروع', 'slug' => 'kit-1', 'price' => 1_500_000, 'compare_at_price' => 2_200_000, 'is_bundle' => true, 'is_active' => true]);
+        ProductVariant::create(['product_id' => $kit->id, 'size' => '—', 'stock_qty' => 0, 'is_active' => true]);
+        \App\Models\BundleItem::create(['bundle_product_id' => $kit->id, 'product_variant_id' => $va->id, 'quantity' => 1, 'position' => 0]);
+        \App\Models\BundleItem::create(['bundle_product_id' => $kit->id, 'product_variant_id' => $vb->id, 'quantity' => 2, 'position' => 1]);
+        config(['campaigns.bundles' => ['kit-1' => ['name' => 'کیت شروع', 'off' => 10, 'items' => [['p-a', 1], ['p-b', 2]]]]]);
+
+        $j = $this->signed('/api/campaigns/plan')->getJson('/api/campaigns/plan')->assertOk()->json();
+
+        $this->assertCount(1, $j['bundles']);
+        $b = $j['bundles'][0];
+        $this->assertSame([(string) $kit->id, 'kit-1', 'کیت شروع', 1_500_000, 2_200_000, true, null],
+            [$b['site_product_id'], $b['key'], $b['name'], $b['price'], $b['compare_at'], $b['active'], $b['stoqs_product_id']]);
+        $this->assertSame([[(string) $va->id, 11, 1], [(string) $vb->id, null, 2]], array_map(fn ($c) => [$c['site_variant_id'], $c['stoqs_variant_id'], $c['qty']], $b['components']));
+        $this->assertStringContainsString('الف', $b['components'][0]['name']);
+        $this->assertSame('kit-1', $j['fixed_prices'][0]['items'][0]['key'], 'older StoqS still reads the kits from fixed_prices');
+        $this->assertSame(1_500_000, $j['fixed_prices'][0]['items'][0]['price']);
+
+        $kit->update(['stockkeeping_id' => '9']);
+        $this->assertSame(9, $this->signed('/api/campaigns/plan')->getJson('/api/campaigns/plan')->json('bundles.0.stoqs_product_id'));
+    }
 }

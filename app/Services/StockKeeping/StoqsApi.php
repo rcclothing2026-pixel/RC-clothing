@@ -50,8 +50,8 @@ class StoqsApi
      * A report only this site can make (POST promotions/ack): the JSON body sent raw and signed
      * with the webhook secret StoqS shares with this site, so a copy of the API key alone cannot
      * confirm a switch or report the shop's own discounts. X-Stoqs-Site-Timestamp and
-     * X-Stoqs-Site-Signature: sha256=hmac_sha256(METHOD\nop\ntimestamp\nraw body, secret), op =
-     * the path ("promotions/ack"). Without a secret it goes unsigned (StoqS ignores those fields).
+     * X-Stoqs-Site-Nonce (32 hex, new per call) and X-Stoqs-Site-Signature: sha256=hmac_sha256(METHOD\nop\ntimestamp\nnonce\nraw body,
+     * secret), op = the path ("promotions/ack"). Without a secret it goes unsigned (StoqS ignores those fields).
      *
      * @return array<string, mixed> decoded JSON body
      */
@@ -66,13 +66,28 @@ class StoqsApi
 
             return (array) $resp->json();
         }
+        self::noteSignatureRefusal($resp);
 
         throw self::error($resp, $scope);
     }
 
-    public static function siteSignature(string $method, string $op, int $ts, string $raw, string $secret): string
+    /**
+     * sha256=hmac(METHOD\nop\nts\nnonce\nraw, secret); without a nonce the older form
+     * METHOD\nop\nts\nraw (StoqS still reads it).
+     */
+    public static function siteSignature(string $method, string $op, int $ts, string $raw, string $secret, ?string $nonce = null): string
     {
-        return 'sha256='.hash_hmac('sha256', strtoupper($method)."\n".$op."\n".$ts."\n".$raw, $secret);
+        $mid = $nonce === null ? '' : $nonce."\n";
+
+        return 'sha256='.hash_hmac('sha256', strtoupper($method)."\n".$op."\n".$ts."\n".$mid.$raw, $secret);
+    }
+
+    /** A 401 «signature_*» from StoqS: this shop's secret no longer fits, so hello sends `connect` again. */
+    private static function noteSignatureRefusal(Response $resp): void
+    {
+        if (StoqsConnect::isSignatureRefusal($resp->status(), (array) $resp->json())) {
+            StoqsConnect::reconnectNeeded();
+        }
     }
 
     private static function siteSigned(PendingRequest $req, string $method, string $op, string $raw): PendingRequest
@@ -82,8 +97,12 @@ class StoqsApi
             return $req;
         }
         $ts = time();
+        $nonce = bin2hex(random_bytes(16));
 
-        return $req->withHeaders(['X-Stoqs-Site-Timestamp' => (string) $ts, 'X-Stoqs-Site-Signature' => self::siteSignature($method, $op, $ts, $raw, $secret)]);
+        return $req->withHeaders([
+            'X-Stoqs-Site-Timestamp' => (string) $ts, 'X-Stoqs-Site-Nonce' => $nonce,
+            'X-Stoqs-Site-Signature' => self::siteSignature($method, $op, $ts, $raw, $secret, $nonce),
+        ]);
     }
 
     /**
@@ -101,6 +120,8 @@ class StoqsApi
             self::scopeOk('discounts:write');
         } elseif ($resp->status() === 403) {
             self::error($resp, 'discounts:write');
+        } else {
+            self::noteSignatureRefusal($resp);
         }
 
         return ['status' => $resp->status(), 'json' => (array) $resp->json()];

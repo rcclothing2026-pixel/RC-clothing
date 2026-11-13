@@ -133,6 +133,27 @@ class StockKeepingReporter
         $variant = $orderItem->variant;
         $product = $variant?->product;
 
+        // A kit StoqS knows goes as ONE kit line (its placeholder variant); StoqS expands it from its own
+        // definition. `components` names what was shipped (per kit). A kit StoqS has no id for stays components.
+        if ($product && StoqsKits::linked($product) && ($orderItem->stockkeeping_variant_id || $variant->stockkeeping_variant_id || $orderItem->sku || $variant->sku)) {
+            $parts = $product->bundleItems->map(fn ($bi) => $bi->variant?->stockkeeping_variant_id
+                ? ['variant_id' => (int) $bi->variant->stockkeeping_variant_id, 'quantity' => (int) $bi->quantity] : null);
+
+            return [[
+                'stockkeeping_variant_id' => $orderItem->stockkeeping_variant_id ?: $variant->stockkeeping_variant_id,
+                'product_variant_id' => $orderItem->product_variant_id,
+                'sku' => $orderItem->sku ?: $variant->sku,
+                'name' => $orderItem->name,
+                'size' => $orderItem->size,
+                'color' => $orderItem->color,
+                'unit_price' => $orderItem->unit_price,
+                'quantity' => $orderItem->quantity,
+                'line_total' => $orderItem->line_total,
+                'discounts' => (array) ($orderItem->discounts ?? []),
+                'components' => $parts->isEmpty() || $parts->contains(null) ? [] : $parts->values()->all(),
+            ] + ($orderItem->list_price !== null ? ['list_price' => (int) $orderItem->list_price] : [])];
+        }
+
         if (! $product?->is_bundle) {
             // Prefer this line's own StoqS mapping (order snapshot, then the live
             // variant). If it's STILL unmapped — e.g. the product was split into

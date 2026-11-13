@@ -108,6 +108,14 @@ class IntegrationController extends Controller
         return back()->with('success', 'تنظیمات اتصال به StoqS ذخیره شد.');
     }
 
+    /** «اتصال دوباره»: hello with `connect`, so StoqS pushes a fresh secret (no copying). */
+    public function reconnect(): RedirectResponse
+    {
+        $r = \App\Services\StockKeeping\StoqsSites::reconnect();
+
+        return back()->with($r['ok'] ? 'success' : 'error', $r['message']);
+    }
+
     /** Refresh the warehouse/shop directory from StoqS for the picker. */
     public function locations(StockKeepingClient $client): RedirectResponse
     {
@@ -205,6 +213,7 @@ class IntegrationController extends Controller
             'base_url' => (string) config('stockkeeping.base_url'),
             'has_key' => (bool) config('stockkeeping.api_key'),
             'has_secret' => (bool) config('stockkeeping.webhook_secret'),
+            'connection' => \App\Services\StockKeeping\StoqsConnect::status(),
             'locations' => (array) config('stockkeeping.locations', []),
             'fulfillment_location' => (string) config('stockkeeping.fulfillment_location'),
         ];

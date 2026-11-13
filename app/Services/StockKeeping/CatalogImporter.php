@@ -39,8 +39,12 @@ class CatalogImporter
 
         // Find the target product: the same StoqS product (re-import), else an
         // existing imported product with the same name (merge colours), else new.
+        // A kit (payload `bundle`) is never merged by name. A local product named by site_product_id that
+        // has no StoqS id yet is adopted (no duplicate); one that has an id is never re-pointed.
+        $bundle = is_array($data['bundle'] ?? null) ? $data['bundle'] : (! empty($data['is_bundle']) ? [] : null);
         $product = Product::where('stockkeeping_id', $skId)->first()
-            ?? Product::whereNotNull('stockkeeping_id')->where('name', $name)->first()
+            ?? StoqsKits::adoptable($data)
+            ?? ($bundle !== null ? null : Product::whereNotNull('stockkeeping_id')->where('name', $name)->first())
             ?? new Product;
         $isNew = ! $product->exists;
         $mode = StoqsContent::mode($product);
@@ -73,6 +77,13 @@ class CatalogImporter
         }
         $product->is_active = (bool) ($data['active'] ?? true);
         $product->stock_synced_at = now();
+        if ($bundle !== null) {
+            $product->is_bundle = true;
+            [$rows, $missing] = StoqsKits::resolve($bundle);
+            if ($missing && ($isNew || ! $product->bundleItems()->exists())) {
+                $product->is_active = false;   // a component this shop does not have yet: hidden until it does
+            }
+        }
 
         // Multiple categories: prefer the `categories` list; fall back to the
         // single `category` string (older StoqS). The first is the PRIMARY,
@@ -94,8 +105,15 @@ class CatalogImporter
         $product->categories()->sync($cats->pluck('id')->all());
 
         $color = $data['color'] ?? null;
-        foreach ($data['variants'] ?? [] as $v) {
-            $this->importVariant($product, $v, $color);
+        if ($bundle !== null) {
+            StoqsKits::placeholder($product, $data);   // the one placeholder variant takes the kit's StoqS variant id
+            if ($rows && ! $missing) {
+                StoqsKits::setComponents($product, $rows);
+            }
+        } else {
+            foreach ($data['variants'] ?? [] as $v) {
+                $this->importVariant($product, $v, $color);
+            }
         }
         if ($prices) {
             $this->applyVariantPrices($product, $data);

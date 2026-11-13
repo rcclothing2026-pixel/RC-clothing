@@ -336,6 +336,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // StoqS integration
     Route::get('/settings/integration', [AdminIntegrationController::class, 'edit'])->name('settings.integration');
     Route::patch('/settings/integration', [AdminIntegrationController::class, 'update'])->name('settings.integration.update');
+    Route::post('/settings/integration/reconnect', [AdminIntegrationController::class, 'reconnect'])->name('settings.integration.reconnect');
     Route::post('/settings/integration/locations', [AdminIntegrationController::class, 'locations'])->name('settings.integration.locations');
     Route::post('/settings/integration/import-catalog', [AdminIntegrationController::class, 'importCatalog'])->name('settings.integration.import');
     Route::post('/settings/integration/pull-stock', [AdminIntegrationController::class, 'pullStock'])->name('settings.integration.pull');

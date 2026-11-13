@@ -607,4 +607,49 @@ class StoqsContentSyncTest extends TestCase
             ->assertRedirect()->assertSessionHas('success')->assertSessionHas('warning');
         $this->assertSame(1_000_000, (int) $p->fresh()->price);   // saved anyway
     }
+
+    public function test_the_daily_sync_adopts_links_stoqs_made_and_posts_the_full_list_with_replace_all(): void
+    {
+        $this->product();
+        $kit = Product::create(['name' => 'کیت', 'slug' => 'kit-x', 'price' => 900_000, 'is_bundle' => true, 'is_active' => true]);
+        $ph = ProductVariant::create(['product_id' => $kit->id, 'size' => '—', 'stock_qty' => 0, 'is_active' => true]);
+        Http::fake([
+            'stoqs.test/api/v1/sites/hello' => Http::response(['ok' => true]),
+            'stoqs.test/api/v1/sites/links*' => function (Request $r) use ($kit, $ph) {
+                return $r->method() === 'GET'
+                    ? Http::response(['ok' => true, 'links' => [
+                        ['product_id' => 9, 'variant_id' => 91, 'site_product_id' => (string) $kit->id, 'site_variant_id' => (string) $ph->id, 'url' => null, 'origin' => 'stoqs'],
+                        ['product_id' => 1, 'variant_id' => null, 'site_product_id' => '1', 'site_variant_id' => null, 'url' => 'x', 'origin' => 'site'],
+                    ]])
+                    : Http::response(['ok' => true, 'count' => 2]);
+            },
+        ]);
+
+        StoqsSites::sync();
+
+        $this->assertSame('9', (string) $kit->fresh()->stockkeeping_id);
+        $this->assertSame(91, (int) $ph->fresh()->stockkeeping_variant_id);
+        Http::assertSent(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), 'sites/links') && $r['replace_all'] === true
+            && collect($r['links'])->pluck('product_id')->sort()->values()->all() === [1, 9]);
+
+        Http::fake(['stoqs.test/api/v1/sites/*' => Http::response(['ok' => true, 'count' => 2])]);
+        StoqsSites::sync(false);   // the hourly run: no pull, never replace_all
+        $this->assertCount(1, Http::recorded(fn (Request $r) => $r->method() === 'POST' && str_ends_with($r->url(), 'sites/links') && ! isset($r['replace_all']))->all());
+    }
+
+    public function test_a_published_product_named_by_site_product_id_is_adopted_not_created_twice(): void
+    {
+        $local = Product::create(['name' => 'مانتو محلی', 'slug' => 'manto-local', 'price' => 900_000, 'is_active' => true]);
+        ProductVariant::create(['product_id' => $local->id, 'sku' => '5001', 'size' => 'S', 'stock_qty' => 3, 'is_active' => true]);
+        $before = Product::count();
+
+        app(\App\Services\StockKeeping\CatalogImporter::class)->importProduct($this->payload([
+            'product_id' => 50, 'name' => 'مانتو محلی', 'site_product_id' => (string) $local->id, 'images' => [],
+            'variants' => [['variant_id' => 501, 'barcode' => '5001', 'size' => 'S', 'active' => true, 'price' => 900_000, 'price_override' => false, 'sale_price' => null]],
+        ]));
+
+        $this->assertSame($before, Product::count());
+        $this->assertSame('50', (string) $local->fresh()->stockkeeping_id);
+        $this->assertSame(501, (int) ProductVariant::where('sku', '5001')->value('stockkeeping_variant_id'));
+    }
 }

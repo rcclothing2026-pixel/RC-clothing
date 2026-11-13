@@ -131,6 +131,34 @@
         </div>
     @endif
 
+    {{-- Connection (automatic secret) --}}
+    @php($conn = $cfg['connection'])
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card bg-white p-4 ring-1 ring-brand-100">
+        <div>
+            <div class="text-xs text-brand-400">اتصال امن به StoqS (کلید امضا)</div>
+            @if ($conn['state'] === 'connected')
+                <div class="mt-1 font-bold text-green-600">متصل</div>
+            @elseif ($conn['state'] === 'waiting')
+                <div class="mt-1 font-bold text-amber-600">منتظر تأیید در StoqS</div>
+                <div class="mt-1 text-xs text-brand-400">مدیر حساب باید در StoqS روی «تأیید این سایت» بزند؛ بعد از آن اتصال خودکار کامل می‌شود.</div>
+            @elseif ($conn['state'] === 'connecting')
+                <div class="mt-1 font-bold text-amber-600">در حال اتصال</div>
+            @elseif ($conn['state'] === 'refused')
+                <div class="mt-1 font-bold text-red-600">StoqS اتصال را نپذیرفت</div>
+            @else
+                <div class="mt-1 font-bold text-red-600">متصل نیست</div>
+            @endif
+            @if ($conn['state'] !== 'connected' && ($conn['reason'] ?? null))
+                <div class="mt-1 text-xs text-brand-400" dir="ltr">{{ $conn['reason'] }}</div>
+            @endif
+        </div>
+        <form method="POST" action="{{ route('admin.settings.integration.reconnect') }}"
+              onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='در حال اتصال…'">
+            @csrf
+            <button class="rounded-full bg-brand-900 px-4 py-2 text-xs font-bold text-white transition hover:bg-brand-800">اتصال دوباره</button>
+        </form>
+    </div>
+
     {{-- Outbox status --}}
     <div class="mb-6 grid gap-4 sm:grid-cols-3">
         <div class="rounded-card bg-white p-4 ring-1 ring-brand-100">

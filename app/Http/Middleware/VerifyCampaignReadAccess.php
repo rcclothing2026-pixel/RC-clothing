@@ -54,8 +54,8 @@ class VerifyCampaignReadAccess
 
     public static function signatureOk(Request $request, ?int $now = null): bool
     {
-        $secret = (string) config('stockkeeping.webhook_secret', '');
-        if ($secret === '' || ! in_array($request->method(), ['GET', 'HEAD'], true)) {
+        $secrets = \App\Services\StockKeeping\StoqsConnect::secrets();   // the current one, and the previous one for an hour after a rotation
+        if (! $secrets || ! in_array($request->method(), ['GET', 'HEAD'], true)) {
             return false;
         }
         if (! in_array(trim($request->path(), '/'), self::SIGNED_PATHS, true)) {
@@ -73,7 +73,12 @@ class VerifyCampaignReadAccess
         $uri = $request->getRequestUri();
         $path = (string) parse_url($uri, PHP_URL_PATH);
         $query = (string) parse_url($uri, PHP_URL_QUERY);
-        if (! hash_equals(self::sign('GET', $host, $path, $query, (int) $ts, $nonce, $secret), (string) $request->header('X-Stoqs-Signature', ''))) {
+        $given = (string) $request->header('X-Stoqs-Signature', '');
+        $ok = false;
+        foreach ($secrets as $secret) {
+            $ok = hash_equals(self::sign('GET', $host, $path, $query, (int) $ts, $nonce, $secret), $given) || $ok;
+        }
+        if (! $ok) {
             return false;
         }
 

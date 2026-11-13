@@ -1458,21 +1458,20 @@ class TelegramNotifier
     /** Return stock for a canceled paid order (mirrors Admin/OrderController). */
     private function restockCancelled(Order $order): void
     {
-        $order->loadMissing('items.variant');
+        $order->loadMissing('items.variant.product');
         $skItems = [];
         foreach ($order->items as $item) {
             $qty = (int) $item->quantity;
             if ($qty <= 0) {
                 continue;
             }
-            if ($item->variant) {
-                $item->variant->increment('stock_qty', $qty);
+            // A kit puts its components back (a kit StoqS knows: its placeholder variant, StoqS expands it).
+            $plan = \App\Services\StockKeeping\StoqsKits::restock($item->variant, $qty,
+                $item->stockkeeping_variant_id ? (int) $item->stockkeeping_variant_id : null, $item->sku ? (string) $item->sku : null);
+            foreach ($plan['local'] as $id => $n) {
+                \App\Models\ProductVariant::where('id', $id)->increment('stock_qty', $n);
             }
-            if ($item->stockkeeping_variant_id) {
-                $skItems[] = ['variant_id' => (int) $item->stockkeeping_variant_id, 'delta' => $qty];
-            } elseif ($item->sku) {
-                $skItems[] = ['barcode' => (string) $item->sku, 'delta' => $qty];
-            }
+            array_push($skItems, ...$plan['stoqs']);
         }
         if ($skItems) {
             $ref = 'CXL-'.$order->number;

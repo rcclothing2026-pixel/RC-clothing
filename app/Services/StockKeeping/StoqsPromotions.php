@@ -433,7 +433,7 @@ class StoqsPromotions
             $product = $subject;
             $variants = $subject->variants;
         }
-        if (! $product || $product->is_bundle) {
+        if (! $product || ($product->is_bundle && ! StoqsKits::linked($product))) {
             return $none;
         }
         $best = null;
@@ -625,7 +625,7 @@ class StoqsPromotions
             return $out;
         }
         $ts ??= now()->getTimestamp();
-        Product::whereNotNull('stockkeeping_id')->where('stockkeeping_id', '!=', '')->where('is_bundle', false)
+        Product::whereNotNull('stockkeeping_id')->where('stockkeeping_id', '!=', '')
             ->with('variants')->chunkById(200, function ($products) use (&$out, $ts) {
                 foreach ($products as $p) {
                     $out['products']++;
@@ -647,7 +647,7 @@ class StoqsPromotions
      */
     public static function applyProduct(Product $p, ?int $ts = null): bool
     {
-        if (! self::managed() || $p->is_bundle) {
+        if (! self::managed() || ($p->is_bundle && ! StoqsKits::linked($p))) {
             return false;
         }
         $ts ??= now()->getTimestamp();
@@ -676,10 +676,24 @@ class StoqsPromotions
         $shown = min($shown, $list);
         $p->price = $shown;
         $p->compare_at_price = $shown < $list ? $list : null;
+        if (StoqsKits::linked($p)) {
+            // A kit: when nothing prices it below its list, the struck price is what its parts cost today
+            // (display only: the list price stays `price`). stoqs_meta.kit_struck remembers that, so
+            // StoqsContent::basePrice does not take the struck sum for the list price.
+            $struck = $shown >= $list && ($parts = self::partsTotal($p)) > $shown ? $parts : null;
+            if ($struck !== null) {
+                $p->compare_at_price = $struck;
+            }
+            $meta = (array) ($p->stoqs_meta ?? []);
+            if (($meta['kit_struck'] ?? null) !== $struck) {
+                $struck === null ? $meta = array_diff_key($meta, ['kit_struck' => 1]) : $meta['kit_struck'] = $struck;
+                $p->stoqs_meta = $meta;
+            }
+        }
         if (self::hasStoqsDiscount()) {
             $p->stoqs_discount = $shown < $list;
         }
-        if ($p->isDirty(['price', 'compare_at_price', 'stoqs_discount'])) {
+        if ($p->isDirty(['price', 'compare_at_price', 'stoqs_discount', 'stoqs_meta'])) {
             $p->save();
             $changed = true;
         }
@@ -694,6 +708,14 @@ class StoqsPromotions
         }
 
         return $changed;
+    }
+
+    /** A kit: the sum of what its components cost today (component price x pieces per kit). */
+    private static function partsTotal(Product $kit): int
+    {
+        $kit->loadMissing('bundleItems.variant.product');
+
+        return (int) $kit->bundleItems->sum(fn ($i) => $i->variant ? $i->variant->effectivePrice() * (int) $i->quantity : 0);
     }
 
     /**

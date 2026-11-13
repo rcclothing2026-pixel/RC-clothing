@@ -65,14 +65,14 @@ class ReturnController extends Controller
             if ($qty <= 0) {
                 continue;
             }
-            if (! empty($it['product_variant_id'])) {
-                ProductVariant::where('id', $it['product_variant_id'])->increment('stock_qty', $qty);
+            // A kit puts its components back (a kit StoqS knows: its placeholder variant, StoqS expands it).
+            $variant = ! empty($it['product_variant_id']) ? ProductVariant::with('product')->find($it['product_variant_id']) : null;
+            $plan = \App\Services\StockKeeping\StoqsKits::restock($variant, $qty,
+                ! empty($it['stockkeeping_variant_id']) ? (int) $it['stockkeeping_variant_id'] : null, ! empty($it['sku']) ? (string) $it['sku'] : null);
+            foreach ($plan['local'] as $id => $n) {
+                ProductVariant::where('id', $id)->increment('stock_qty', $n);
             }
-            if (! empty($it['stockkeeping_variant_id'])) {
-                $skItems[] = ['variant_id' => (int) $it['stockkeeping_variant_id'], 'delta' => $qty];
-            } elseif (! empty($it['sku'])) {
-                $skItems[] = ['barcode' => (string) $it['sku'], 'delta' => $qty];
-            }
+            array_push($skItems, ...$plan['stoqs']);
         }
 
         if ($skItems) {

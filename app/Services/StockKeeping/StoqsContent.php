@@ -69,6 +69,9 @@ class StoqsContent
     /** The list price: the struck price when the product shows a discount. */
     public static function basePrice(Product $p): int
     {
+        if ($p->is_bundle && self::linked($p) && $p->compare_at_price !== null && (int) ($p->stoqs_meta['kit_struck'] ?? 0) === (int) $p->compare_at_price) {
+            return (int) $p->price;   // a kit's struck price may be the sum of its parts (display), not its list price
+        }
         return (int) ($p->hasDiscount() ? $p->compare_at_price : $p->price);
     }
 
@@ -577,7 +580,7 @@ class StoqsContent
             return ['ok' => false, 'message' => '«'.$p->name.'» از قبل به StoqS وصل است'];
         }
         if ($p->is_bundle) {
-            return ['ok' => false, 'message' => '«'.$p->name.'» پک هدیه است و در StoqS ساخته نمی‌شود'];
+            return self::createKitInStoqs($p);
         }
         $p->load(['variants', 'categories', 'category']);
         $rows = $p->variants->values();
@@ -622,6 +625,53 @@ class StoqsContent
         }
         StockkeeepingLog::record(StockkeeepingLog::TYPE_CONTENT_PUSH, 'out', (string) $spid, null, ['product_id' => $p->id, 'variants' => $r['variants'] ?? []],
             source: StockkeeepingLog::SOURCE_MANUAL, summary: $p->name.' در StoqS ساخته شد (محصول '.$spid.')');
+
+        return ['ok' => true, 'message' => '«'.$p->name.'» در StoqS ساخته شد'];
+    }
+
+    /**
+     * «ساخت در StoqS» for a kit: POST /products with `bundle` (its components, per kit) and no
+     * variants; StoqS makes the one placeholder variant. The kit's list price there is the shop's
+     * kit price. Every component must be linked to StoqS (variant id or barcode) first.
+     *
+     * @return array{ok: bool, message: string}
+     */
+    private static function createKitInStoqs(Product $p): array
+    {
+        $p->load(['categories', 'category', 'bundleItems.variant']);
+        $items = [];
+        foreach ($p->bundleItems as $bi) {
+            $c = $bi->variant;
+            if ($c && $c->stockkeeping_variant_id) {
+                $items[] = ['variant_id' => (int) $c->stockkeeping_variant_id, 'qty' => (int) $bi->quantity];
+            } elseif ($c && (string) $c->sku !== '') {
+                $items[] = ['barcode' => (string) $c->sku, 'qty' => (int) $bi->quantity];
+            } else {
+                return ['ok' => false, 'message' => '«'.$p->name.'» جزئی دارد که به StoqS وصل نیست؛ اول آن را به StoqS وصل کنید'];
+            }
+        }
+        if (! $items) {
+            return ['ok' => false, 'message' => '«'.$p->name.'» هیچ جزئی ندارد'];
+        }
+        $cats = $p->categories->pluck('name')->prepend($p->category?->name)->filter()->unique()->values()->all();
+        $body = [
+            'name' => $p->name, 'base_price' => (int) $p->price, 'description' => (string) $p->description,
+            'short_description' => (string) $p->summary, 'categories' => $cats, 'web_published' => true, 'bundle' => ['items' => $items],
+        ];
+        try {
+            $r = StoqsApi::call('POST', 'products', $body);
+        } catch (StoqsApiError $e) {
+            StockkeeepingLog::record(StockkeeepingLog::TYPE_CONTENT_PUSH, 'out', null, null, ['product_id' => $p->id, 'body' => $e->body], 'failed',
+                error: $e->getMessage(), source: StockkeeepingLog::SOURCE_MANUAL, summary: $p->name.' در StoqS ساخته نشد: '.$e->getMessage());
+
+            return ['ok' => false, 'message' => '«'.$p->name.'» در StoqS ساخته نشد: '.$e->getMessage()];
+        }
+        $spid = (int) ($r['product_id'] ?? 0);
+        $p->forceFill(['stockkeeping_id' => (string) $spid])->saveQuietly();
+        StoqsKits::placeholder($p, ['variants' => $r['variants'] ?? []]);
+        self::remember($p, ['product_id' => $spid, 'variants' => $r['variants'] ?? []] + $body);
+        StockkeeepingLog::record(StockkeeepingLog::TYPE_CONTENT_PUSH, 'out', (string) $spid, null, ['product_id' => $p->id, 'bundle' => count($items)],
+            source: StockkeeepingLog::SOURCE_MANUAL, summary: $p->name.' (کیت) در StoqS ساخته شد (محصول '.$spid.')');
 
         return ['ok' => true, 'message' => '«'.$p->name.'» در StoqS ساخته شد'];
     }

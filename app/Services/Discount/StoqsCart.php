@@ -5,6 +5,7 @@ namespace App\Services\Discount;
 use App\Models\Coupon;
 use App\Models\User;
 use App\Services\StockKeeping\StoqsApi;
+use App\Services\StockKeeping\StoqsKits;
 use App\Services\StockKeeping\StoqsPromotions;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\Log;
  *
  * Both return the engine's result shape (de_evaluate) plus `meta`: per engine line, the
  * local variant id, the list price and the window that prices it now. Only sizes StoqS
- * knows (a StoqS variant id, not a bundle) are cart lines for StoqS; anything else takes
+ * knows (a StoqS variant id, not a kit StoqS lacks) are cart lines for StoqS; anything else takes
  * no discount.
  */
 class StoqsCart
@@ -40,7 +41,7 @@ class StoqsCart
         foreach ($lines as $l) {
             $v = $l['variant'];
             $p = $v->product;
-            if (! $v->stockkeeping_variant_id || ! $p || $p->is_bundle) {
+            if (! $v->stockkeeping_variant_id || ! $p || ($p->is_bundle && ! StoqsKits::linked($p))) {
                 continue;
             }
             $svid = (int) $v->stockkeeping_variant_id;

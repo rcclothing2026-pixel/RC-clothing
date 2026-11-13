@@ -61,7 +61,7 @@ class CampaignApiController extends Controller
             ];
         }
 
-        return response()->json(['shop' => $request->getHost(), 'timezone' => 'Asia/Tehran', 'campaigns' => $out, 'fixed_prices' => self::fixedPrices()]);
+        return response()->json(['shop' => $request->getHost(), 'timezone' => 'Asia/Tehran', 'campaigns' => $out, 'fixed_prices' => self::fixedPrices(), 'bundles' => self::bundles()]);
     }
 
     /**
@@ -103,6 +103,38 @@ class CampaignApiController extends Controller
         }
 
         return [['key' => 'kits', 'name' => 'قیمت ویژهٔ کیت‌ها', 'items' => $items]];
+    }
+
+    /**
+     * Every kit of this shop for StoqS's import (the plan answer's `bundles`): {site_product_id (the
+     * shop product id), key (slug), name, price, compare_at, active, stoqs_product_id|null,
+     * components: [{site_variant_id, stoqs_variant_id|null, qty, name}]}. The price is the kit's own
+     * (the struck price kept at a StoqS switch when there is one). fixed_prices keeps its kits too.
+     */
+    public static function bundles(): array
+    {
+        $saved = [];
+        try {
+            $saved = (array) json_decode((string) (StoqsPromotions::row()->saved_prices ?? ''), true);
+        } catch (\Throwable) {
+        }
+        $out = [];
+        foreach (Product::where('is_bundle', true)->with('bundleItems.variant.product')->orderBy('id')->get() as $p) {
+            [$price, $compare] = isset($saved[$p->id]) && is_array($saved[$p->id]) ? array_map('intval', $saved[$p->id]) : [(int) $p->price, (int) $p->compare_at_price];
+            $out[] = [
+                'site_product_id' => (string) $p->id, 'key' => (string) $p->slug, 'name' => (string) $p->name,
+                'price' => $price, 'compare_at' => $compare ?: null, 'active' => (bool) $p->is_active,
+                'stoqs_product_id' => $p->stockkeeping_id ? (int) $p->stockkeeping_id : null,
+                'components' => $p->bundleItems->filter(fn ($i) => $i->variant)->map(fn ($i) => [
+                    'site_variant_id' => (string) $i->variant->id,
+                    'stoqs_variant_id' => $i->variant->stockkeeping_variant_id ? (int) $i->variant->stockkeeping_variant_id : null,
+                    'qty' => (int) $i->quantity,
+                    'name' => trim(($i->variant->product?->name ?? '').' '.(trim((string) $i->variant->size) !== '—' ? $i->variant->size : '').' '.$i->variant->color),
+                ])->values()->all(),
+            ];
+        }
+
+        return $out;
     }
 
     public function approvals(Request $request): JsonResponse

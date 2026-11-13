@@ -442,7 +442,10 @@ class StoqsPartThreeTest extends TestCase
     {
         $ts = (int) ($r->header('X-Stoqs-Site-Timestamp')[0] ?? 0);
 
-        return abs(time() - $ts) <= 5 && hash_equals(StoqsApi::siteSignature($r->method(), $op, $ts, $r->body(), self::SECRET), (string) ($r->header('X-Stoqs-Site-Signature')[0] ?? ''));
+        $nonce = (string) ($r->header('X-Stoqs-Site-Nonce')[0] ?? '');
+
+        return abs(time() - $ts) <= 5 && preg_match('/^[0-9a-f]{32}$/', $nonce) === 1
+            && hash_equals(StoqsApi::siteSignature($r->method(), $op, $ts, $r->body(), self::SECRET, $nonce), (string) ($r->header('X-Stoqs-Site-Signature')[0] ?? ''));
     }
 
     public function test_every_ack_and_the_switch_are_signed_with_the_webhook_secret(): void

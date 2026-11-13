@@ -174,6 +174,9 @@ class HttpStockKeepingClient implements StockKeepingClient
                 $item['discount_amount'] = (int) collect($disc)->sum('amount');
                 $item['discounts'] = array_map(fn ($d) => array_intersect_key($d, array_flip(['type', 'id', 'code', 'amount', 'plan_id', 'version'])), $disc);
             }
+            if (! empty($line['components'])) {   // a kit line: what was shipped, per kit
+                $item['components'] = array_values(array_map(fn ($c) => ['variant_id' => (int) $c['variant_id'], 'quantity' => (int) $c['quantity']], (array) $line['components']));
+            }
             $items[] = $item;
         }
 

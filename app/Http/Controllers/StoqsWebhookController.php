@@ -36,13 +36,20 @@ class StoqsWebhookController extends Controller
 
     public function __invoke(Request $request): Response
     {
-        $secret = (string) config('stockkeeping.webhook_secret');
         $raw = $request->getContent();
         [$this->eventId, $this->at, $this->subjects] = ['', null, []];   // the route keeps one controller instance
 
+        // site.connect comes before any secret exists: signed with the claim this shop made in hello,
+        // honoured only while that claim is pending, unexpired and unused (so it precedes the secret check).
+        if ($request->header('X-Stoqs-Event') === 'site.connect') {
+            $proof = \App\Services\StockKeeping\StoqsConnect::accept($raw, (string) $request->header('X-Stoqs-Signature', ''));
+
+            return $proof === null ? response('invalid signature', 401) : response()->json($proof);
+        }
+
         // Reject anything we can't verify. A missing secret = integration not
         // configured for inbound, so refuse rather than trust blindly.
-        if ($secret === '' || ! $this->signatureValid($request, $raw, $secret)) {
+        if (! $this->signatureValid($request, $raw)) {
             return response('invalid signature', 401);
         }
 
@@ -110,6 +117,9 @@ class StoqsWebhookController extends Controller
                 }
             } elseif ($event === 'product.content_changed') {
                 $this->applyContentChanged($data);
+            } elseif ($event === 'product.linked') {
+                // A link StoqS made (a kit it created from this shop's plan): adopt it, never re-point.
+                \App\Services\StockKeeping\StoqsLinks::adopt($data);
             } elseif ($event === 'promotions.source_changed') {
                 // Two-way site manager switch: applied at once when its seq is newer, then acknowledged.
                 $this->applySourceChanged($data);
@@ -325,15 +335,10 @@ class StoqsWebhookController extends Controller
         }
     }
 
-    private function signatureValid(Request $request, string $raw, string $secret): bool
+    /** The current secret, or the previous one for an hour after the secret was rotated (site.connect). */
+    private function signatureValid(Request $request, string $raw): bool
     {
-        $header = (string) $request->header('X-Stoqs-Signature', '');
-        if (! str_starts_with($header, 'sha256=')) {
-            return false;
-        }
-        $expected = hash_hmac('sha256', $raw, $secret);
-
-        return hash_equals($expected, substr($header, 7));
+        return \App\Services\StockKeeping\StoqsConnect::bodySignatureOk((string) $request->header('X-Stoqs-Signature', ''), $raw);
     }
 
     private function applyStockChanged(array $data): void

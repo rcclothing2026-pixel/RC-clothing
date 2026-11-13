@@ -25,7 +25,7 @@ class StoqsSites
      *
      * @return string summary line
      */
-    public static function sync(bool $daily = true): string
+    public static function sync(bool $daily = true, bool $forceConnect = false): string
     {
         if (! config('stockkeeping.enabled')) {
             return 'StoqS خاموش است';
@@ -38,14 +38,16 @@ class StoqsSites
         }
 
         try {
-            StoqsApi::call('POST', 'sites/hello', [
-                'kind' => 'laravel', 'url' => rtrim((string) config('app.url'), '/'),
-                'plugin_version' => (string) config('stockkeeping.site_version', '1.0.0'), 'capabilities' => self::capabilities(),
-            ] + (StoqsPromotions::managed() ? ['engine_schema' => 3] : []));
+            self::hello($forceConnect);
+            if ($daily) {
+                self::pullLinks();   // links StoqS made (a kit it created): adopted before the full list goes up
+            }
             $links = self::links();
             $count = 0;
-            foreach (array_chunk($links, 5000) as $chunk) {
-                $count += self::post($chunk);
+            $chunks = array_chunk($links, 5000);
+            foreach ($chunks as $chunk) {
+                // the whole list in one call (daily): links this shop no longer has are dropped in StoqS
+                $count += self::post($chunk, $daily && count($chunks) === 1);
             }
         } catch (StoqsApiError $e) {
             StockkeeepingLog::record(StockkeeepingLog::TYPE_SITES, 'out', 'links', null, ['code' => $e->errorCode], 'failed',
@@ -59,6 +61,74 @@ class StoqsSites
             source: StockkeeepingLog::SOURCE_AUTO, summary: $line);
 
         return $line;
+    }
+
+    /**
+     * POST /sites/hello. Carries `connect` {webhook_url, claim} while this shop has no webhook
+     * secret, after StoqS refused a signature, or when forced («اتصال دوباره»); StoqS then pushes
+     * site.connect to the webhook (StoqsConnect). Returns StoqS's answer.
+     */
+    public static function hello(bool $forceConnect = false): array
+    {
+        $connect = StoqsConnect::block($forceConnect);
+        $res = StoqsApi::call('POST', 'sites/hello', [
+            'kind' => 'laravel', 'url' => rtrim((string) config('app.url'), '/'),
+            'plugin_version' => (string) config('stockkeeping.site_version', '1.0.0'), 'capabilities' => self::capabilities(),
+        ] + (StoqsPromotions::managed() ? ['engine_schema' => 3] : []) + ($connect ? ['connect' => $connect] : []));
+        if ($connect) {
+            StoqsConnect::noteAnswer($res);
+        }
+
+        return $res;
+    }
+
+    /** The «اتصال دوباره» button: hello with `connect`, and what StoqS answered in Persian. */
+    public static function reconnect(): array
+    {
+        if (! config('stockkeeping.enabled')) {
+            return ['ok' => false, 'message' => 'اتصال StoqS خاموش است.'];
+        }
+        try {
+            $res = self::hello(true);
+        } catch (StoqsApiError $e) {
+            return ['ok' => false, 'message' => 'اتصال به StoqS ناموفق بود: '.$e->getMessage()];
+        }
+        $c = (array) ($res['connect'] ?? []);
+        switch ((string) ($c['status'] ?? '')) {
+            case 'pending':
+                return ['ok' => true, 'message' => 'درخواست اتصال فرستاده شد. چند لحظه دیگر همین صفحه را دوباره باز کنید.'];
+            case 'approval_needed':
+                return ['ok' => true, 'message' => 'منتظر تأیید در StoqS: مدیر حساب باید در StoqS روی «تأیید این سایت» بزند.'];
+            case 'refused':
+                $why = match ((string) ($c['reason'] ?? '')) {
+                    'bad_webhook_url' => 'آدرس وبهوک این سایت پذیرفته نشد (باید https و روی همین دامنه باشد).',
+                    'rate_limited' => 'درخواست‌ها زیاد بود؛ کمی بعد دوباره امتحان کنید.',
+                    'not_ready' => 'StoqS هنوز آمادهٔ اتصال نیست.',
+                    default => 'StoqS اتصال را نپذیرفت.',
+                };
+
+                return ['ok' => false, 'message' => $why];
+        }
+
+        return ['ok' => true, 'message' => 'ارتباط با StoqS برقرار است.'];
+    }
+
+    /** GET /sites/links: the links StoqS made for this shop are adopted (a local product with no StoqS id yet). */
+    private static function pullLinks(): void
+    {
+        try {
+            $resp = StoqsApi::client()->get('sites/links', ['site_url' => StoqsPromotions::siteUrl()]);
+            if (! $resp->successful()) {
+                return;
+            }
+            foreach ((array) $resp->json('links', []) as $l) {
+                if (is_array($l) && ($l['origin'] ?? '') === 'stoqs') {
+                    StoqsLinks::adopt($l);
+                }
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[stoqs-sites] links pull failed', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -89,10 +159,11 @@ class StoqsSites
     }
 
     /** Links whose StoqS product no longer exists are dropped and the rest sent again. */
-    private static function post(array $links): int
+    private static function post(array $links, bool $replaceAll = false): int
     {
+        $extra = $replaceAll ? ['replace_all' => true] : [];
         try {
-            return (int) (StoqsApi::call('POST', 'sites/links', ['links' => $links])['count'] ?? count($links));
+            return (int) (StoqsApi::call('POST', 'sites/links', ['links' => $links] + $extra)['count'] ?? count($links));
         } catch (StoqsApiError $e) {
             $bad = array_map('intval', (array) ($e->body['error']['product_ids'] ?? []));
             if ($e->errorCode !== 'unknown_product' || ! $bad) {
@@ -100,7 +171,7 @@ class StoqsSites
             }
             $links = array_values(array_filter($links, fn ($l) => ! in_array((int) $l['product_id'], $bad, true)));
 
-            return $links ? (int) (StoqsApi::call('POST', 'sites/links', ['links' => $links])['count'] ?? count($links)) : 0;
+            return $links ? (int) (StoqsApi::call('POST', 'sites/links', ['links' => $links] + $extra)['count'] ?? count($links)) : 0;
         }
     }
 }

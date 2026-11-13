@@ -106,6 +106,12 @@ class SyncCampaigns extends Command
     private function bundles(): void
     {
         foreach (config('campaigns.bundles', []) as $slug => $b) {
+            // A kit StoqS knows (linked) is StoqS's: its price and components come from there.
+            if (\App\Services\StockKeeping\StoqsKits::linked(Product::where('slug', $slug)->first())) {
+                $this->line("bundle $slug: linked to StoqS, left alone");
+
+                continue;
+            }
             $parts = collect($b['items'])->map(function ($i) {
                 $p = Product::active()->where('slug', $i[0])->with(['variants', 'images'])->first();
                 $v = $p?->variants->where('is_active', true)
