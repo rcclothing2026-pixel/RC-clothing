@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
- * StoqS 5.2.128 automatic secret (the shop side): hello carries `connect` {webhook_url, claim};
+ * StoqS 5.2.129 automatic secret (the shop side): hello carries `connect` {webhook_url, claim};
  * StoqS then pushes site.connect signed with the claim. The shop honours it only while it holds a
  * pending, unexpired, single-use claim, stores the new secret (the old one lives on for an hour)
  * and answers a proof. Signed reports carry a nonce; a 401 signature_* means «connect again».

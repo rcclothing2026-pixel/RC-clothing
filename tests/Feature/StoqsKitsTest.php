@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 /**
- * Kits (bundles) and StoqS, shop side (5.2.128): a kit StoqS knows is priced from /promotions and is
+ * Kits (bundles) and StoqS, shop side (5.2.129): a kit StoqS knows is priced from /promotions and is
  * one cart and sale line; a kit it does not know stays the shop's own (components). Returns and
  * cancels put the right thing back. StoqS-made links are adopted, never re-pointed, never duplicated.
  */
