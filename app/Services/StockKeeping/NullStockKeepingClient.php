@@ -49,6 +49,11 @@ class NullStockKeepingClient implements StockKeepingClient
         return false;
     }
 
+    public function returnSale(array $return): ?array
+    {
+        return null;
+    }
+
     public function inventory(?string $since = null, int $perPage = 500): array
     {
         return [];

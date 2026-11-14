@@ -75,7 +75,9 @@ class ReturnController extends Controller
             array_push($skItems, ...$plan['stoqs']);
         }
 
-        if ($skItems) {
+        if (\App\Services\StockKeeping\StoqsSites::supports('sale_returns')) {
+            \App\Services\StockKeeping\StoqsReturns::receive($return);   // 5.2.133: StoqS restocks itself
+        } elseif ($skItems) {
             $ref = 'RET-'.$return->id;
             $orderId = $return->order_id ?? null;
             try {

@@ -92,6 +92,39 @@ class StoqsKits
     }
 
     /**
+     * 5.2.133 returns API: the lines of ONE order item for POST /sales/returns. A linked kit with a
+     * StoqS id is ONE line (placeholder variant, quantity = kits, never its components); an unlinked
+     * kit was sold as its components, so it goes back as those. Plain line: variant id, else barcode.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function returnLines(?ProductVariant $variant, int $qty, ?int $skVariantId, ?string $sku): array
+    {
+        $product = $variant?->product;
+        if (! $product?->is_bundle) {
+            $line = $skVariantId ? ['variant_id' => $skVariantId] : ($sku ? ['barcode' => $sku] : null);
+
+            return $line ? [$line + ['quantity' => $qty, 'restock' => true]] : [];
+        }
+        $kitId = $skVariantId ?: ($variant->stockkeeping_variant_id ? (int) $variant->stockkeeping_variant_id : null);
+        if (self::linked($product) && $kitId) {
+            return [['variant_id' => $kitId, 'quantity' => $qty, 'restock' => true]];
+        }
+        $product->loadMissing('bundleItems.variant');
+        $out = [];
+        foreach ($product->bundleItems as $bi) {
+            $c = $bi->variant;
+            $n = $qty * (int) $bi->quantity;
+            $line = $c?->stockkeeping_variant_id ? ['variant_id' => (int) $c->stockkeeping_variant_id] : ($c?->sku ? ['barcode' => (string) $c->sku] : null);
+            if ($line) {
+                $out[] = $line + ['quantity' => $n, 'restock' => true];
+            }
+        }
+
+        return $out;
+    }
+
+    /**
      * What a return or a cancel puts back for one order line: the shop's own stock (variant id
      * => pieces) and the StoqS stock-adjust lines. A linked kit goes to StoqS as its placeholder
      * variant (StoqS puts every component back); an unlinked kit, and a linked kit whose

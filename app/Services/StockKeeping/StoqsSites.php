@@ -78,8 +78,16 @@ class StoqsSites
         if ($connect) {
             StoqsConnect::noteAnswer($res);
         }
+        // 5.2.133: what StoqS offers (e.g. sale_returns); an older StoqS sends none, so the list is emptied.
+        Setting::put('stockkeeping.features', array_values(array_filter((array) ($res['features'] ?? []), 'is_string')));
 
         return $res;
+    }
+
+    /** Does the StoqS this shop talks to offer `$feature` (from the last hello)? Missing or unknown = false. */
+    public static function supports(string $feature): bool
+    {
+        return in_array($feature, (array) Setting::get('stockkeeping.features', []), true);
     }
 
     /** The «اتصال دوباره» button: hello with `connect`, and what StoqS answered in Persian. */

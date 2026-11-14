@@ -213,7 +213,9 @@ class OrderController extends Controller
             }
             array_push($skItems, ...$plan['stoqs']);
         }
-        if ($skItems) {
+        if (\App\Services\StockKeeping\StoqsSites::supports('sale_returns')) {
+            \App\Services\StockKeeping\StoqsReturns::cancel($order);   // 5.2.133: StoqS restocks itself
+        } elseif ($skItems) {
             $ref = 'CXL-'.$order->number;
             try {
                 app(\App\Services\StockKeeping\StockKeepingClient::class)

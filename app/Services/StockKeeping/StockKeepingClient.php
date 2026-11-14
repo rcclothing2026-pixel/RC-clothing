@@ -63,6 +63,16 @@ interface StockKeepingClient
     public function adjustStock(array $items, string $reason = 'website_adjust', ?string $externalRef = null): bool;
 
     /**
+     * StoqS 5.2.133: reverse (part of) a reported sale through POST /sales/returns. Returns the decoded
+     * body: 2xx, and also 404/409/422 (`ok:false, error:{code,message}`; answers, never retried).
+     * Network trouble / 5xx throw. Only used when StoqsSites::supports('sale_returns').
+     *
+     * @param  array<string, mixed>  $return
+     * @return array<string, mixed>|null
+     */
+    public function returnSale(array $return): ?array;
+
+    /**
      * Pull the full inventory (catalog + stock) across configured locations.
      *
      * @return array<int, array<string, mixed>>

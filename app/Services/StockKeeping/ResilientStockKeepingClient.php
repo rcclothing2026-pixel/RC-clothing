@@ -100,6 +100,11 @@ class ResilientStockKeepingClient implements StockKeepingClient
         return $this->executeResiliently(fn() => $this->inner->adjustStock($items, $reason, $externalRef), 'adjustStock');
     }
 
+    public function returnSale(array $return): ?array
+    {
+        return $this->executeResiliently(fn() => $this->inner->returnSale($return), 'returnSale');
+    }
+
     public function inventory(?string $since = null, int $perPage = 500): array
     {
         return $this->inner->inventory($since, $perPage);
