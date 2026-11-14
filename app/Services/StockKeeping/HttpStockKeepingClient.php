@@ -248,6 +248,27 @@ class HttpStockKeepingClient implements StockKeepingClient
         return $resp->successful();
     }
 
+    public function returnSale(array $return): ?array
+    {
+        // Only connection trouble and 5xx are retried (the return_id makes a retry safe);
+        // 404/409/422 are StoqS's answers and are returned as they are.
+        $resp = $this->request()
+            ->retry(2, 200, fn ($e) => $e instanceof \Illuminate\Http\Client\ConnectionException
+                || ($e instanceof \Illuminate\Http\Client\RequestException && $e->response->serverError()), throw: false)
+            ->post('/api/v1/sales/returns', $return);
+
+        if ($resp->successful()) {
+            return (array) $resp->json();
+        }
+        if (in_array($resp->status(), [404, 409, 422], true)) {
+            \Illuminate\Support\Facades\Log::warning('[stoqs-returns] refused', ['status' => $resp->status(), 'return_id' => $return['return_id'] ?? null, 'body' => $resp->json()]);
+
+            return (array) $resp->json();
+        }
+
+        throw new RuntimeException('StoqS returns API answered '.$resp->status());
+    }
+
     /**
      * Pull collections/groups from StoqS.
      *

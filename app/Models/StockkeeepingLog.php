@@ -10,6 +10,7 @@ class StockkeeepingLog extends Model
     public const TYPE_SALE_PUSH = 'sale_push';
     public const TYPE_CANCEL_RESTOCK = 'cancel_restock';
     public const TYPE_RETURN_RESTOCK = 'return_restock';
+    public const TYPE_SALE_RETURN = 'sale_return';
     public const TYPE_WEBHOOK_IN = 'webhook_in';
     public const TYPE_STOCK_PULL = 'stock_pull';
     public const TYPE_CATALOG_IMPORT = 'catalog_import';
@@ -27,6 +28,7 @@ class StockkeeepingLog extends Model
         self::TYPE_SALE_PUSH => 'ثبت فروش',
         self::TYPE_CANCEL_RESTOCK => 'بازگشت موجودی (لغو)',
         self::TYPE_RETURN_RESTOCK => 'بازگشت موجودی (مرجوعی)',
+        self::TYPE_SALE_RETURN => 'مرجوعی/لغو فروش در StoqS',
         self::TYPE_WEBHOOK_IN => 'تغییر موجودی (وب‌هوک)',
         self::TYPE_STOCK_PULL => 'همگام‌سازی موجودی',
         self::TYPE_CATALOG_IMPORT => 'وارد کردن کاتالوگ',
