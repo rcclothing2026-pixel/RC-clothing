@@ -78,7 +78,7 @@
              data-product-price="{{ $product->variants->min('price') ?? 0 }}">
         <div class="grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:gap-16">
             {{-- Gallery --}}
-            <div class="flex flex-col-reverse gap-4 sm:flex-row">
+            <div class="flex min-w-0 flex-col-reverse gap-4 sm:flex-row">
                 @if ($product->images->count() > 1)
                     <div class="flex gap-3 overflow-x-auto pb-1 sm:flex-col sm:overflow-visible">
                         @foreach ($product->images as $image)
