@@ -14,6 +14,11 @@ $dry = 'aadd-aorgryp-rakt-klab-super-dry-1482';
 
 return [
 
+    // NJ Focus no longer drives campaigns: off, the plan is this file (a copy saved in NJ Focus is ignored)
+    // and every campaign runs on its own dates below (StoqS decides the discounts). Set
+    // NJ_FOCUS_CAMPAIGNS=true to give NJ Focus its approvals and saved plan back.
+    'nj_focus' => (bool) env('NJ_FOCUS_CAMPAIGNS', false),
+
     // Campaigns approved in NJ Focus. An item tagged 'campaign' runs only once that
     // campaign is approved, inside its approved dates; moving the dates in NJ Focus
     // shifts the item's own dates by the same number of days.

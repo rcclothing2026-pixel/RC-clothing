@@ -231,4 +231,23 @@ class BlackFridayBarTest extends TestCase
         $this->assertSame(config('campaigns.floating_bars'), $back['floating_bars']);
         $this->assertSame([], CampaignPlan::validate($back));
     }
+
+    public function test_without_nj_focus_campaigns_run_on_their_own_dates_and_a_saved_plan_is_ignored(): void
+    {
+        config(['campaigns.nj_focus' => false, 'campaigns_file.nj_focus' => false]);
+        $file = config('campaigns');
+        \DB::table('campaign_plans')->insert(['id' => 1, 'plan' => json_encode(['popups' => ['bf' => ['title' => 'OLD BF', 'campaign' => 'bf']]]), 'created_at' => now(), 'updated_at' => now()]);
+        CampaignPlan::apply();
+        $this->assertSame($file['popups'], config('campaigns.popups'));   // the saved copy is not read
+
+        // no approval row anywhere: the planned window of bf (14 to 30 Nov) is the window
+        $this->on('2026-11-25');
+        $this->assertSame([config('campaigns.campaigns.bf.from'), config('campaigns.campaigns.bf.to')], Campaigns::approvals()['bf']);
+        $this->assertSame(['bf'], $this->ids());
+        $this->assertContains('c-bf', array_column(Campaigns::popups(), 'id'));   // no approval row needed
+
+        $this->on('2026-12-02');
+        $this->assertSame([], Campaigns::floatingBars());
+        $this->assertNotContains('c-bf', array_column(Campaigns::popups(), 'id'));
+    }
 }

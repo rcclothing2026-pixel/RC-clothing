@@ -19,6 +19,7 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="NJ_FOCUS_CAMPAIGNS" value="true"/>
         <env name="APP_DEBUG" value="false"/>
         <env name="PAYMENTS_DEV_GATEWAY" value="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>

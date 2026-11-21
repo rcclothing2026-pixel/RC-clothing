@@ -37,7 +37,8 @@ class Campaigns
 
     /**
      * The campaign windows content follows: key => [from, to] (Tehran Y-m-d).
-     * Shop-managed: the approvals pushed from NJ Focus. Managed by StoqS: the StoqS plans of
+     * Shop-managed: the approvals pushed from NJ Focus when config('campaigns.nj_focus') is on, else the
+     * campaigns' own planned dates. Managed by StoqS: the StoqS plans of
      * this site that carry the campaign's key (site_campaign_key in the pulled payload), so a
      * campaign's banners, pop-ups and badges show only while its StoqS plan is applied and
      * inside its dates. The payload is the last one pulled: when StoqS is unreachable the shop
@@ -46,10 +47,13 @@ class Campaigns
     public static function approvals(): array
     {
         return request()->attributes->get('campaigns.approvals') ?? tap(
-            self::stoqsWindows() ?? (Schema::hasTable('campaign_approvals')
-                ? CampaignApproval::where('approved', true)->get()
-                    ->mapWithKeys(fn ($a) => [$a->key => [$a->starts_on->toDateString(), $a->ends_on->toDateString()]])->all()
-                : []),
+            self::stoqsWindows() ?? (! config('campaigns.nj_focus')
+                // NJ Focus is not connected: the code's own planned windows are the windows
+                ? collect((array) config('campaigns.campaigns', []))->mapWithKeys(fn ($c, $k) => [$k => [$c['from'], $c['to']]])->all()
+                : (Schema::hasTable('campaign_approvals')
+                    ? CampaignApproval::where('approved', true)->get()
+                        ->mapWithKeys(fn ($a) => [$a->key => [$a->starts_on->toDateString(), $a->ends_on->toDateString()]])->all()
+                    : [])),
             fn ($m) => request()->attributes->set('campaigns.approvals', $m),
         );
     }

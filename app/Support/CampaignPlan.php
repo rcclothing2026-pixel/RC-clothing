@@ -65,6 +65,9 @@ class CampaignPlan
         if (config('campaigns_file') === null) {
             config(['campaigns_file' => config('campaigns', [])]);
         }
+        if (! config('campaigns_file.nj_focus')) {
+            return;   // NJ Focus is not connected: config/campaigns.php is the plan, a saved copy is ignored
+        }
         try {
             $json = DB::table('campaign_plans')->where('id', 1)->value('plan');
         } catch (\Throwable) {
