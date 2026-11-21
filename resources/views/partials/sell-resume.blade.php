@@ -12,7 +12,7 @@
         <a href="{{ route('checkout.index') }}"
            x-data="{ lift: false, check() { try { this.lift = ! localStorage.getItem('cookie_consent') } catch (e) {} } }"
            x-init="check()" @click.window="setTimeout(() => check(), 0)"
-           :class="lift ? 'lg:bottom-24' : 'lg:bottom-4'"
+           :class="lift ? 'lg:bottom-24' : 'lg:bottom-4'" style="margin-bottom: var(--bf-lift, 0px)"
            class="fixed inset-x-4 bottom-40 z-[45] flex h-16 items-center justify-between rounded-lg bg-brand-900 px-4 text-white shadow-xl ring-1 ring-white/20 lg:inset-x-auto lg:start-4 lg:w-96">
             <span class="flex flex-col leading-tight">
                 <span class="text-xs text-brand-200">{{ __('Your cart') }} · <span class="fa-num">{{ \App\Support\Money::toPersianDigits((string) $__sellCart->count()) }}</span> {{ __('items') }}</span>

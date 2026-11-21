@@ -32,6 +32,7 @@
             }
          }"
          x-show="visible" x-cloak x-transition
+         style="margin-bottom: var(--bf-lift, 0px)"
          class="fixed bottom-20 end-3 z-40 w-[min(19rem,calc(100vw-1.5rem))] sm:bottom-4 sm:end-4">
         <div class="relative rounded-2xl bg-white p-3.5 shadow-xl ring-1 ring-brand-100">
             <button @click="dismiss()" aria-label="{{ __('Close') }}"

@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\DB;
 class CampaignPlan
 {
     /** Keyed sections (key => item) and list sections, in editor order. */
-    public const KEYED = ['campaigns', 'rules', 'sales', 'coupons', 'bundles', 'sets', 'popups', 'shelves'];
+    public const KEYED = ['campaigns', 'rules', 'sales', 'coupons', 'bundles', 'sets', 'popups', 'floating_bars', 'shelves'];
 
     public const LISTS = ['slides', 'badges'];
 
@@ -285,7 +285,7 @@ class CampaignPlan
             }
         }
 
-        $label = ['rules' => 'تخفیف', 'sales' => 'تخفیف محصولی', 'coupons' => 'کد', 'bundles' => 'بسته', 'sets' => 'ست', 'popups' => 'پاپ‌آپ', 'shelves' => 'صفحه', 'slides' => 'نوار بالا', 'badges' => 'برچسب'];
+        $label = ['rules' => 'تخفیف', 'sales' => 'تخفیف محصولی', 'coupons' => 'کد', 'bundles' => 'بسته', 'sets' => 'ست', 'popups' => 'پاپ‌آپ', 'floating_bars' => 'نوار شناور', 'shelves' => 'صفحه', 'slides' => 'نوار بالا', 'badges' => 'برچسب'];
         foreach ($label as $s => $what) {
             foreach ($plan[$s] ?? [] as $k => $i) {
                 $name = $what.' «'.($i['label'] ?? $i['name'] ?? $i['title'] ?? $i['text'] ?? $k).'»';
@@ -300,7 +300,7 @@ class CampaignPlan
                 if (isset($i['from'], $i['to']) && $i['to'] < $i['from']) {
                     $err[] = "$name: پایان قبل از شروع است.";
                 }
-                if (in_array($s, ['rules', 'sales', 'bundles', 'sets', 'popups', 'shelves'], true) && ! $slug($k)) {
+                if (in_array($s, ['rules', 'sales', 'bundles', 'sets', 'popups', 'floating_bars', 'shelves'], true) && ! $slug($k)) {
                     $err[] = "$name: شناسه فقط حروف کوچک انگلیسی، عدد و خط تیره باشد.";
                 }
             }
@@ -346,6 +346,11 @@ class CampaignPlan
         foreach ($plan['popups'] ?? [] as $k => $p) {
             if (empty($p['html']) && empty($p['title'])) {
                 $err[] = "پاپ‌آپ «{$k}»: عنوان ندارد.";
+            }
+        }
+        foreach ($plan['floating_bars'] ?? [] as $k => $b) {
+            if (empty($b['label']) && empty($b['text'])) {
+                $err[] = "نوار شناور «{$k}»: متن ندارد.";
             }
         }
         foreach (['slides', 'badges'] as $s) {

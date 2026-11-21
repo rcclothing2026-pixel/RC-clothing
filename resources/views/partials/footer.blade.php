@@ -6,7 +6,7 @@
     set in Admin → تنظیمات سایت). Closes with the oversized CHIACO display
     type — kept as the signature brand move — and a small copyright line.
 --}}
-<footer class="mt-24 bg-brand-900 text-brand-100">
+<footer class="mt-24 bg-brand-900 text-brand-100" style="padding-bottom: var(--bf-space, 0px)">
     <div class="mx-auto max-w-7xl px-6 pt-16 pb-10 sm:px-10 sm:pt-20">
 
         {{-- 4-column layout (1 col on mobile, 4 on lg). Brand block spans 2 cols on lg. --}}

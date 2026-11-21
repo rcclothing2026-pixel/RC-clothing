@@ -208,12 +208,12 @@ class Campaigns
             ->with(['images', 'variants'])->inRandomOrder()->take($take)->get();
     }
 
-    /** Live offer lines for the product page (config «badges»). */
-    public static function badgesFor(Product $p): array
+    /** Live «badges» entries that apply to this product. */
+    private static function badgesMatching(Product $p): array
     {
         $cats = self::categorySlugs($p);
 
-        return array_values(array_map(fn ($b) => $b['text'], array_filter(self::live(config('campaigns.badges', [])), function ($b) use ($p, $cats) {
+        return array_values(array_filter(self::live(config('campaigns.badges', [])), function ($b) use ($p, $cats) {
             if (! empty($b['exclude_categories']) && array_intersect($b['exclude_categories'], $cats)) {
                 return false;
             }
@@ -228,7 +228,58 @@ class Campaigns
             }
 
             return true;
-        })));
+        }));
+    }
+
+    /** Live offer lines for the product page (config «badges»). */
+    public static function badgesFor(Product $p): array
+    {
+        return array_values(array_map(fn ($b) => $b['text'], self::badgesMatching($p)));
+    }
+
+    /**
+     * Visible corner tags for a product card and the product image: the «tag» of every live
+     * «badges» entry that applies (campaign-gated and dated like the text lines), then «اوتلت»
+     * when the product is an active outlet item. Each is ['text' => …, 'tone' => bf|quiet|outlet].
+     */
+    public static function tagsFor(Product $p): array
+    {
+        $tags = [];
+        foreach (self::badgesMatching($p) as $b) {
+            if (! empty($b['tag']['text'])) {
+                $tags[] = ['text' => (string) $b['tag']['text'], 'tone' => (string) ($b['tag']['tone'] ?? 'bf')];
+            }
+        }
+        if (Outlet::has((int) $p->id)) {
+            $tags[] = ['text' => 'اوتلت', 'tone' => 'outlet'];
+        }
+
+        return $tags;
+    }
+
+    /** Live floating-bar entries (config «floating_bars»), in config order, ready for partials/bf-bar. */
+    public static function floatingBars(): array
+    {
+        $out = [];
+        foreach (self::live(config('campaigns.floating_bars', [])) as $key => $b) {
+            $url = (string) ($b['url'] ?? '/shop');
+            $out[] = [
+                'id' => (string) $key,
+                'label' => (string) ($b['label'] ?? ''),
+                'text' => (string) ($b['text'] ?? ''),
+                'note' => (string) ($b['note'] ?? ''),
+                'tiers' => array_values(array_map('strval', (array) ($b['tiers'] ?? []))),
+                'steps' => array_values(array_map('strval', (array) ($b['steps'] ?? []))),
+                'exclusion' => (string) ($b['exclusion'] ?? ''),
+                'ends' => (string) ($b['ends'] ?? ''),
+                'mini' => (string) ($b['mini'] ?? ''),
+                'code' => (string) ($b['code'] ?? ''),
+                'cta' => (string) ($b['cta'] ?? 'دیدن فروشگاه'),
+                'url' => str_starts_with($url, '/') || str_starts_with($url, 'https://') ? $url : '/shop',
+            ];
+        }
+
+        return $out;
     }
 
     public static function promoSlides(): array

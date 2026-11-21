@@ -125,9 +125,10 @@
     @include('partials.popups')
     @include('partials.mini-cart')
     @include('partials.free-ship-widget')
+    @include('partials.bf-bar')
     @include('partials.sell-resume')
 
-    <div x-data="{ show: !localStorage.getItem('cookie_consent') }" x-show="show" x-cloak
+    <div id="cookie-banner" x-data="{ show: !localStorage.getItem('cookie_consent') }" x-show="show" x-cloak
          class="fixed inset-x-0 bottom-0 z-50 border-t border-brand-200 bg-white p-4 text-sm shadow-lg">
         <div class="mx-auto flex max-w-5xl items-center justify-between gap-4">
             <p class="text-brand-600">{{ __('We use cookies to improve your experience.') }} <a href="{{ route('page', 'privacy') }}" class="text-accent-600 hover:underline">{{ __('Learn more') }}</a></p>

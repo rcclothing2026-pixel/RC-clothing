@@ -130,8 +130,8 @@ return [
     'badges' => [
         ['categories' => $tees, 'text' => 'سفارش تیمی: ۱۰ تی‌شرت ۱۵٪، ۲۰ تی‌شرت ۲۰٪ تخفیف', 'campaign' => 'always'],
         ['categories' => ['loazm-ganby'], 'text' => 'بسته‌های ۳ و ۶ عددی اورگریپ ارزان‌ترند؛ در «کیت‌ها و بسته‌ها»'],
-        ['from' => '2026-11-24', 'to' => '2026-11-30', 'exclude_categories' => ['gampr'], 'text' => 'بلک فرایدی: از ۹ میلیون ۸٪، از ۱۴ میلیون ۱۲٪، از ۲۰ میلیون ۱۵٪ تخفیف', 'campaign' => 'bf'],
-        ['from' => '2026-11-24', 'to' => '2026-11-30', 'categories' => ['gampr'], 'text' => 'بلک فرایدی: پولو جامپر تخفیف ندارد، اما در مبلغ پله‌ها حساب می‌شود', 'campaign' => 'bf'],
+        ['from' => '2026-11-24', 'to' => '2026-11-30', 'exclude_categories' => ['gampr'], 'text' => 'بلک فرایدی: از ۹ میلیون ۸٪، از ۱۴ میلیون ۱۲٪، از ۲۰ میلیون ۱۵٪ تخفیف', 'tag' => ['text' => 'بلک فرایدی', 'tone' => 'bf'], 'campaign' => 'bf'],
+        ['from' => '2026-11-24', 'to' => '2026-11-30', 'categories' => ['gampr'], 'text' => 'بلک فرایدی: پولو جامپر تخفیف ندارد، اما در مبلغ پله‌ها حساب می‌شود', 'tag' => ['text' => 'بلک فرایدی · حساب در پله‌ها', 'tone' => 'quiet'], 'campaign' => 'bf'],
         ['from' => '2027-01-02', 'to' => '2027-01-22', 'shelf' => 'last-size', 'text' => 'آخرین سایز: ۲۵٪ تخفیف در سبد خرید', 'campaign' => 'last-size'],
         ['from' => '2027-01-30', 'to' => '2027-02-19', 'categories' => $tees, 'text' => 'یار دوبل: دو تی‌شرت بخرید، ۱۰٪ تخفیف بگیرید', 'campaign' => 'partner'],
         ['from' => '2027-02-27', 'to' => '2027-03-16', 'exclude_categories' => ['gampr', 'loazm-ganby'], 'text' => 'نوروز: ۳ قطعه ۸٪، ۵ قطعه ۱۲٪، ۸ قطعه و بیشتر ۱۵٪ تخفیف', 'campaign' => 'nowruz'],
@@ -140,7 +140,7 @@ return [
 
     'slides' => [
         ['from' => '2026-11-07', 'to' => '2026-11-20', 'text' => 'زمین زمستانی: پولو جامپر راکت کلاب رسید', 'url' => '/shop?shelf=court-winter', 'campaign' => 'layer'],
-        ['from' => '2026-11-14', 'to' => '2026-11-20', 'text' => 'بلک فرایدی ۳ آذر شروع می‌شود؛ دسترسی زودهنگام در تلگرام', 'url' => '/shop', 'campaign' => 'bf'],
+        ['from' => '2026-11-14', 'to' => '2026-11-23', 'text' => 'بلک فرایدی ۳ آذر شروع می‌شود؛ دسترسی زودهنگام در تلگرام', 'url' => '/shop', 'campaign' => 'bf'],
         ['from' => '2026-11-24', 'to' => '2026-11-30', 'text' => 'بلک فرایدی: از ۹ میلیون ۸٪ · از ۱۴ میلیون ۱۲٪ · از ۲۰ میلیون ۱۵٪ · ارسال رایگان از ۵ میلیون', 'url' => '/shop', 'campaign' => 'bf'],
         ['from' => '2026-12-05', 'to' => '2026-12-17', 'text' => 'هدیه یلدا برای پدل‌بازها: کیت شروع پدل و کیف بازیکن', 'url' => '/shop?shelf=kits', 'campaign' => 'yalda'],
         ['from' => '2026-12-14', 'to' => '2026-12-17', 'text' => 'برای رسیدن قبل از یلدا تا پنجشنبه ۲۶ آذر سفارش دهید', 'url' => '/shop?shelf=kits', 'campaign' => 'yalda'],
@@ -156,14 +156,33 @@ return [
         ['text' => 'سفارش تیمی برای باشگاه و آکادمی: ۱۰ تی‌شرت ۱۵٪، ۲۰ تی‌شرت ۲۰٪', 'url' => '/shop?shelf=tees', 'campaign' => 'always'],
     ],
 
+    // Floating bottom bar (partials/bf-bar.blade.php): the first live entry shows on every page
+    // except checkout. `code` is shown with a copy button; without one the bar says no code is needed.
+    // `tiers`/`steps`/`exclusion`/`ends` are optional lines; `mini` is the text on the minimised pill.
+    'floating_bars' => [
+        'bf-early' => ['label' => 'بلک فرایدی', 'text' => 'بلک فرایدی ۳ آذر شروع می‌شود', 'note' => 'دسترسی زودهنگام: ۱۲٪ تخفیف با این کد، یک‌بار برای هر کاربر، تا پایان ۲ آذر. کد را در سبد خرید وارد کنید.',
+            'code' => 'EARLYRC', 'mini' => 'کد دسترسی زودهنگام', 'cta' => 'دیدن محصولات', 'url' => '/shop',
+            'from' => '2026-11-21', 'to' => '2026-11-23', 'campaign' => 'bf'],
+        'bf' => ['label' => 'بلک فرایدی', 'text' => 'تخفیف پله‌ای خودکار',
+            'tiers' => ['از ۹ میلیون ۸٪', 'از ۱۴ میلیون ۱۲٪', 'از ۲۰ میلیون ۱۵٪', 'ارسال رایگان از ۵ میلیون'],
+            'note' => 'کد لازم نیست؛ تخفیف در سبد خرید خودکار اعمال می‌شود.',
+            'steps' => ['کالاها را به سبد خرید اضافه کنید', 'تخفیف در سبد خرید خودکار اعمال می‌شود', 'پرداخت کنید'],
+            'exclusion' => 'پولو جامپر تخفیف ندارد، اما در مبلغ پله‌ها حساب می‌شود.',
+            'ends' => 'تا ۹ آذر', 'mini' => 'تا ۹ آذر', 'cta' => 'دیدن محصولات', 'url' => '/shop',
+            'from' => '2026-11-24', 'to' => '2026-11-30', 'campaign' => 'bf'],
+    ],
+
     // Pop-up card look; each pop-up gives title, body, cta, url and an optional code.
     'card' => ['brand' => 'RACKET CLUB', 'accent' => '#1d5c47', 'ink' => '#14213d', 'muted' => '#4a5568', 'tracking' => '.14em'],
 
     'popups' => [
         'welcome' => ['title' => 'به راکت کلاب خوش آمدید', 'body' => '۷٪ تخفیف برای اولین سفارش از ۳ میلیون تومان. کد را در سبد خرید وارد کنید.', 'cta' => 'دیدن کیت‌ها', 'url' => '/shop?shelf=kits', 'code' => 'RCFIRST',
             'trigger' => 'delay', 'delay' => 12, 'frequency' => 'once', 'pages' => 'all', 'campaign' => 'always'],
-        'bf' => ['title' => 'بلک فرایدی راکت کلاب', 'body' => 'از ۹ میلیون ۸٪، از ۱۴ میلیون ۱۲٪ و از ۲۰ میلیون ۱۵٪ تخفیف، با ارسال رایگان از ۵ میلیون. تا ۹ آذر.', 'cta' => 'ساختن کیت کامل', 'url' => '/shop',
-            'from' => '2026-11-24', 'to' => '2026-11-30', 'delay' => 5, 'pages' => 'home', 'campaign' => 'bf'],
+        // 21-23 Nov: teaser + early-access code (no tier is live yet). Both bf pop-ups show once per session.
+        'bf-early' => ['title' => 'بلک فرایدی راکت کلاب ۳ آذر شروع می‌شود', 'body' => 'دسترسی زودهنگام: ۱۲٪ تخفیف با کد زیر، یک‌بار برای هر کاربر، تا پایان ۲ آذر. کد را در سبد خرید وارد کنید.', 'cta' => 'دیدن محصولات', 'url' => '/shop', 'code' => 'EARLYRC',
+            'from' => '2026-11-21', 'to' => '2026-11-23', 'trigger' => 'delay', 'delay' => 5, 'frequency' => 'session', 'pages' => 'all', 'campaign' => 'bf'],
+        'bf' => ['title' => 'بلک فرایدی راکت کلاب', 'body' => 'از ۹ میلیون ۸٪، از ۱۴ میلیون ۱۲٪ و از ۲۰ میلیون ۱۵٪ تخفیف، با ارسال رایگان از ۵ میلیون. بدون کد؛ تخفیف در سبد خرید خودکار اعمال می‌شود. تا ۹ آذر.', 'cta' => 'ساختن کیت کامل', 'url' => '/shop',
+            'from' => '2026-11-24', 'to' => '2026-11-30', 'trigger' => 'delay', 'delay' => 5, 'frequency' => 'session', 'pages' => 'all', 'campaign' => 'bf'],
         'yalda' => ['title' => 'هدیه یلدا برای پدل‌بازها', 'body' => 'کیت شروع پدل و کیف بازیکن، ارزان‌تر از خرید تکی. برای رسیدن قبل از یلدا تا ۲۶ آذر سفارش دهید.', 'cta' => 'دیدن کیت‌ها', 'url' => '/shop?shelf=kits',
             'from' => '2026-12-05', 'to' => '2026-12-17', 'delay' => 6, 'pages' => 'home', 'campaign' => 'yalda'],
         'partner' => ['title' => 'یار دوبل', 'body' => 'پدل دونفره است. دو تی‌شرت راکت کلاب برای شما و یار دوبلتان، با ۱۰٪ تخفیف.', 'cta' => 'دیدن تی‌شرت‌ها', 'url' => '/shop?shelf=tees',

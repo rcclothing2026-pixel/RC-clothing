@@ -338,6 +338,7 @@
         {{-- Scroll-to-top --}}
         <button x-data="{ visible: false }" x-init="window.addEventListener('scroll', () => visible = window.scrollY > 600)" x-show="visible" x-cloak
                 @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+                style="margin-bottom: var(--bf-lift, 0px)"
                 class="fixed bottom-6 start-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-brand-900 text-white shadow-lg transition hover:bg-brand-800 active:scale-95" aria-label="{{ __('Back to top') }}">
             <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg>
         </button>
