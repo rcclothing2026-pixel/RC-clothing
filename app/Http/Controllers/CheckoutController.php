@@ -48,6 +48,7 @@ class CheckoutController extends Controller
                     'points' => (int) ($crm['customer']['loyalty_points'] ?? 0),
                     'toman_per_point' => (float) ($crm['loyalty']['toman_per_point'] ?? 0),
                     'min_redeem' => (int) ($crm['loyalty']['min_redeem_points'] ?? 0),
+                    'blocked' => $this->pointsBlocked($crm['loyalty']),
                 ];
             }
         }
@@ -82,9 +83,54 @@ class CheckoutController extends Controller
     }
 
     /**
+     * StoqS «امتیاز با تخفیف دیگر جمع نشود» (loyalty.redeem_alone): club points are a discount too,
+     * so they are not spent on an order that already has another one: a code or a discount rule,
+     * and a sale / campaign price as well while «قیمت حراج/کمپین هم تخفیف حساب شود»
+     * (redeem_alone_sale, on unless StoqS says 0) is on. A StoqS without the setting sends nothing: off.
+     */
+    private function pointsBlocked(array $loyalty): bool
+    {
+        if (empty($loyalty['redeem_alone'])) {
+            return false;
+        }
+        if ($this->cart->appliedCoupon()) {
+            return true;
+        }
+        $sale = 0;
+        $other = 0;
+        $saleInDiscount = 0; // campaign rules the local engine counts inside combinedDiscount()
+        foreach ($this->cart->lineDiscounts() as $parts) {
+            foreach ($parts as $d) {
+                $amount = (int) ($d['amount'] ?? 0);
+                if (in_array($d['type'] ?? '', ['price_sheet', 'campaign'], true)) {
+                    $sale += $amount;
+                    if (($d['layer'] ?? null) !== 'price') {
+                        $saleInDiscount += $amount;
+                    }
+                } else {
+                    $other += $amount;
+                }
+            }
+        }
+        if (max($other, $this->cart->combinedDiscount() - $saleInDiscount) > 0) {
+            return true;
+        }
+        if ((int) ($loyalty['redeem_alone_sale'] ?? 1) !== 1) {
+            return false;
+        }
+        foreach ($this->cart->lines() as $l) { // a plain «قیمت قبل» markdown with no campaign behind it
+            if ((int) $l['variant']->product->compare_at_price > (int) $l['unit_price']) {
+                $sale++;
+            }
+        }
+
+        return $sale > 0;
+    }
+
+    /**
      * Validate a loyalty redemption against the live StoqS balance.
      *
-     * @return array{0:int,1:int} [points spent, toman discount]
+     * @return array{0:int,1:int,2:bool} [points spent, toman discount, refused because another discount is on]
      */
     private function resolveRedemption(Request $request, StockKeepingClient $stockKeeping, int $cap): array
     {
@@ -100,6 +146,9 @@ class CheckoutController extends Controller
         $balance = (int) ($crm['customer']['loyalty_points'] ?? 0);
         $tpp = (float) ($crm['loyalty']['toman_per_point'] ?? 0);
         $min = (int) ($crm['loyalty']['min_redeem_points'] ?? 0);
+        if ($this->pointsBlocked($crm['loyalty'])) {
+            return [0, 0, true];
+        }
         $points = min($requested, $balance);
         if ($points < $min || $tpp <= 0) {
             return [0, 0];
@@ -204,9 +253,14 @@ class CheckoutController extends Controller
         $shippingCost = $this->cart->hasFreeShipping() ? 0 : $shipping->costFor($subtotal, $address->province);
 
         // Loyalty redemption (re-validated against the live StoqS balance).
-        [$redeemPoints, $loyaltyDiscount] = $this->resolveRedemption(
+        [$redeemPoints, $loyaltyDiscount, $pointsRefused] = $this->resolveRedemption(
             $request, $stockKeeping, max(0, $subtotal - $discount)
-        );
+        ) + [2 => false];
+        if ($pointsRefused) {
+            // The page offered the points, but a discount the page did not know of yet (payment,
+            // city, a code from another tab) is on: say so instead of quietly charging more.
+            return back()->withInput()->with('error', 'امتیاز باشگاه با تخفیف دیگر جمع نمی‌شود. برای استفاده از امتیاز، کد یا تخفیف را بردارید؛ یا بدون امتیاز ادامه دهید.');
+        }
 
         // Gift wrap (admin-configured per-item × items, free over a threshold).
         // Recomputed server-side from current settings — never trust the client.

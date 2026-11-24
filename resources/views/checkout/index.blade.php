@@ -216,7 +216,9 @@
                             <div class="flex justify-between"><span class="text-amber-600">{{ $rd['rule_name'] ?? __('Surcharge') }}</span><span class="text-amber-600">+{{ \App\Support\Money::toman(abs($rda)) }}</span></div>
                         @endif
                     @endforeach
-                    @if ($loyalty && $loyalty['points'] >= $loyalty['min_redeem'] && $loyalty['toman_per_point'] > 0)
+                    @if ($loyalty && ! empty($loyalty['blocked']) && $loyalty['points'] >= $loyalty['min_redeem'] && $loyalty['toman_per_point'] > 0)
+                        <div class="border-t border-brand-100 pt-2 text-xs text-brand-400">امتیاز باشگاه با تخفیف دیگر جمع نمی‌شود. برای استفاده از امتیاز، کد یا تخفیف را بردارید.</div>
+                    @elseif ($loyalty && $loyalty['points'] >= $loyalty['min_redeem'] && $loyalty['toman_per_point'] > 0)
                         <div class="border-t border-brand-100 pt-2">
                             <label class="flex items-center justify-between text-sm">
                                 <span class="text-brand-600">{{ __('Club points') }} ({{ __('balance') }} <span class="fa-num">{{ $loyalty['points'] }}</span>)</span>
