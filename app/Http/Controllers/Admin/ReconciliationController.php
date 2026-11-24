@@ -110,7 +110,7 @@ class ReconciliationController extends Controller
         return Payment::query()
             ->whereIn('status', self::RECONCILABLE)
             ->where('amount', '>', 0)
-            ->where('gateway', '!=', 'gift')
+            ->whereNotIn('gateway', ['gift', 'loyalty', 'free'])
             ->whereNotNull('gateway')
             ->when($fromG, fn ($q) => $q->whereDate('paid_at', '>=', $fromG))
             ->when($toG, fn ($q) => $q->whereDate('paid_at', '<=', $toG))

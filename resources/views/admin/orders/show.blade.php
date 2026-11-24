@@ -1,5 +1,5 @@
 @php
-    $gatewayLabels = ['zarinpal' => 'زرین‌پال', 'zibal' => 'زیبال', 'snapppay' => 'اسنپ‌پی', 'gift' => 'کارت هدیه'];
+    $gatewayLabels = ['zarinpal' => 'زرین‌پال', 'zibal' => 'زیبال', 'snapppay' => 'اسنپ‌پی', 'gift' => 'کارت هدیه', 'loyalty' => 'امتیاز باشگاه', 'free' => 'بدون پرداخت'];
     $paymentLabels = ['pending' => 'در انتظار', 'paid' => 'پرداخت شده', 'failed' => 'ناموفق', 'canceled' => 'لغو شده', 'refunded' => 'بازپرداخت شده'];
     $addr = $order->shipping_address;
 @endphp
@@ -60,7 +60,7 @@
                             <td class="py-2 text-brand-900">
                                 @if ($order->payment && $order->payment->gateway)
                                     @php($gw = $order->payment->gateway)
-                                    {{ $gw === 'gift' ? 'کارت هدیه' : ($gatewayLabels[$gw] ?? $gw) }}
+                                    {{ $gatewayLabels[$gw] ?? $gw }}
                                 @else
                                     <span class="text-brand-400">—</span>
                                 @endif

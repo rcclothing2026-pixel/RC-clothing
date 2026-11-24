@@ -139,4 +139,44 @@ class CheckoutFlowTest extends TestCase
         $this->actingAs(User::factory()->create(['is_admin' => true]));
         $this->get(route('admin.dashboard'))->assertOk();
     }
+
+    public function test_order_paid_in_full_by_club_points_is_labelled_loyalty_not_gift_card(): void
+    {
+        config(['stockkeeping.enabled' => true, 'stockkeeping.base_url' => 'https://stoqs.test', 'stockkeeping.api_key' => 'k']);
+        \Illuminate\Support\Facades\Http::fake([
+            'stoqs.test/api/v1/customers?*' => \Illuminate\Support\Facades\Http::response([
+                'ok' => true,
+                'customer' => ['id' => 'c1', 'loyalty_points' => 1000000],
+                'loyalty' => ['toman_per_point' => 1000, 'min_redeem_points' => 0],
+            ]),
+            '*' => \Illuminate\Support\Facades\Http::response(['id' => 'x', 'data' => ['id' => 'x']]),
+        ]);
+        $user = User::factory()->create(['phone' => '09120003344']);
+        $address = Address::create([
+            'user_id' => $user->id, 'recipient_name' => 'تست', 'phone' => '09120003344',
+            'province' => 'تهران', 'city' => 'تهران', 'line' => 'خیابان نمونه',
+        ]);
+        $shipping = ShippingMethod::first();
+        $shipping->update(['cost_on_delivery' => true]); // shipping 0 → points can cover everything
+        $variant = Product::has('variants')->first()
+            ->variants()->where('stock_qty', '>', 0)->first();
+
+        $this->actingAs($user);
+        $this->post(route('cart.add'), ['variant_id' => $variant->id, 'quantity' => 1])->assertRedirect();
+        $this->post(route('checkout.place'), [
+            'address_id' => (string) $address->id,
+            'shipping_method_id' => $shipping->id,
+            'payment_method' => 'zarinpal',
+            'redeem_points' => 1000000,
+        ])->assertRedirect();
+
+        $order = Order::where('user_id', $user->id)->latest()->first();
+        $this->assertNotNull($order);
+        $this->assertSame(Order::STATUS_PAID, $order->status);
+        $this->assertSame(0, (int) $order->total);
+        $this->assertGreaterThan(0, (int) $order->loyalty_discount);
+        $payment = \App\Models\Payment::where('order_id', $order->id)->first();
+        $this->assertSame('loyalty', $payment->gateway);
+        $this->assertSame('CLUB-'.$order->number, $payment->ref_id);
+    }
 }

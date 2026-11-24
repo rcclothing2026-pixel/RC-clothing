@@ -1322,7 +1322,7 @@ class TelegramNotifier
     public function orderSummary(Order $order, string $heading): string
     {
         $addr = (array) $order->shipping_address;
-        $gwLabels = ['zarinpal' => 'زرین‌پال', 'zibal' => 'زیبال', 'snapppay' => 'اسنپ‌پی', 'gift' => 'کارت هدیه'];
+        $gwLabels = ['zarinpal' => 'زرین‌پال', 'zibal' => 'زیبال', 'snapppay' => 'اسنپ‌پی', 'gift' => 'کارت هدیه', 'loyalty' => 'امتیاز باشگاه', 'free' => 'بدون پرداخت'];
 
         $lines = [
             $heading,

@@ -158,7 +158,7 @@ class OrderController extends Controller
         $payment = $order->payment;
         $gatewayMsg = 'بازپرداخت را در پنل درگاه به‌صورت دستی انجام دهید.';
 
-        if ($payment && $payment->gateway && $payment->gateway !== 'gift' && $payment->authority) {
+        if ($payment && $payment->gateway && ! in_array($payment->gateway, ['gift', 'loyalty', 'free'], true) && $payment->authority) {
             $method = \App\Models\PaymentMethod::where('key', $payment->gateway)->first();
             if ($method) {
                 $gw = $gateways->make($method);

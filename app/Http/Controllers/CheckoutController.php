@@ -308,16 +308,20 @@ class CheckoutController extends Controller
             \App\Models\SellLink::whereKey($sellLinkId)->update(['order_id' => $order->id]);
         }
 
+        // Nothing left to pay: record what covered it (a gift card, club points, or nothing),
+        // so admin, Telegram and reconciliation never call club points a gift card.
+        $coveredBy = $giftUsed > 0 ? 'gift' : ($loyaltyDiscount > 0 ? 'loyalty' : 'free');
         $payment = Payment::create([
             'order_id' => $order->id,
-            'gateway' => $payable <= 0 ? 'gift' : $method->key,
+            'gateway' => $payable <= 0 ? $coveredBy : $method->key,
             'amount' => $payable,
             'status' => Payment::STATUS_PENDING,
         ]);
 
-        // Gift card covers the whole order → no gateway, finalize immediately.
+        // Gift card / club points cover the whole order → no gateway, finalize immediately.
         if ($payable <= 0) {
-            $this->finalizePaidOrder($order, $payment, ['success' => true, 'ref_id' => 'GIFT-'.$order->number]);
+            $refPrefix = ['gift' => 'GIFT', 'loyalty' => 'CLUB', 'free' => 'FREE'][$coveredBy];
+            $this->finalizePaidOrder($order, $payment, ['success' => true, 'ref_id' => $refPrefix.'-'.$order->number]);
             \App\Jobs\ProcessPaidOrder::dispatchSync($order->id); // inline — see callback() note
             $this->cart->clear();
 
