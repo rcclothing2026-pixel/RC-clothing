@@ -87,7 +87,8 @@ class ZibalGateway implements PaymentGateway
     {
         $rial = Money::tomanToRial($amountToman);
 
-        $first = $this->verifyOnce($identifier, $rial);
+        // Budget: 15 s + 8 s + 8 s, so a stuck Zibal cannot hold the order lock for long.
+        $first = $this->verifyOnce($identifier, $rial, 15);
         if ($first['known']) {
             return $first['outcome'];
         }
@@ -97,7 +98,11 @@ class ZibalGateway implements PaymentGateway
         if ($inq === null) {
             return $this->unknown('verify: '.$first['why'].'; inquiry: no answer');
         }
-        $status = (int) ($inq['status'] ?? 0);
+        $status = isset($inq['status']) ? (int) $inq['status'] : null;
+        // -2 = Zibal internal error, -1 = still waiting: neither says the money did not move.
+        if ($status === null || $status === -2 || $status === -1) {
+            return $this->unknown('verify: '.$first['why'].'; inquiry status '.($status ?? 'missing'));
+        }
 
         if ($status === self::PAID_VERIFIED) {
             // The lost verify did settle it.
@@ -111,7 +116,7 @@ class ZibalGateway implements PaymentGateway
             // Paid but not verified yet: the first verify may still be in flight at Zibal,
             // so this is not a "not paid". Verify is idempotent (201 = already verified):
             // try once more, and if that is also unclear, leave the order open.
-            $again = $this->verifyOnce($identifier, $rial);
+            $again = $this->verifyOnce($identifier, $rial, 8);
 
             return $again['known'] ? $again['outcome'] : $this->unknown('verify unclear twice; inquiry status 2');
         }
@@ -126,10 +131,10 @@ class ZibalGateway implements PaymentGateway
      *
      * @return array{known: bool, outcome?: array, why?: string}
      */
-    private function verifyOnce(string $identifier, int $rial): array
+    private function verifyOnce(string $identifier, int $rial, int $timeout): array
     {
         try {
-            $response = Http::acceptJson()->timeout(15)->post(self::BASE.'verify', [
+            $response = Http::acceptJson()->connectTimeout(5)->timeout($timeout)->post(self::BASE.'verify', [
                 'merchant' => $this->merchant(),
                 'trackId' => $identifier,
             ]);
@@ -163,7 +168,7 @@ class ZibalGateway implements PaymentGateway
     private function inquiry(string $identifier): ?array
     {
         try {
-            $response = Http::acceptJson()->timeout(15)->post(self::BASE.'inquiry', [
+            $response = Http::acceptJson()->connectTimeout(5)->timeout(8)->post(self::BASE.'inquiry', [
                 'merchant' => $this->merchant(),
                 'trackId' => $identifier,
             ]);

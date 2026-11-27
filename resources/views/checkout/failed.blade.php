@@ -10,7 +10,7 @@
             </div>
             @if ($retryUrl ?? null)
                 <h1 class="text-xl font-bold text-brand-900">{{ __('Payment not confirmed yet') }}</h1>
-                <p class="mt-2 text-sm text-brand-500">{{ __('Order') }} <span class="font-semibold fa-num" dir="ltr">{{ $order->number }}</span> {{ __('could not be confirmed with the bank yet. If money left your account, check again in a minute; an unconfirmed payment is returned to your card automatically.') }}</p>
+                <p class="mt-2 text-sm text-brand-500">{{ __('Order') }} <span class="font-semibold fa-num" dir="ltr">{{ $order->number }}</span> {{ __('could not be confirmed by the payment gateway yet. If money left your account, do not pay again: check again in a minute. If it is not confirmed, the amount is returned to you.') }}</p>
             @else
                 <h1 class="text-xl font-bold text-brand-900">{{ __('Payment failed') }}</h1>
                 <p class="mt-2 text-sm text-brand-500">{{ __('Order') }} <span class="font-semibold fa-num" dir="ltr">{{ $order->number }}</span> {{ __('was not paid. No amount has been charged to your account.') }}</p>

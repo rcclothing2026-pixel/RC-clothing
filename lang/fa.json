@@ -428,6 +428,6 @@
     "Join the Racket Club Telegram bot": "عضویت در ربات تلگرام راکت کلاب",
     "An item": "یک کالا",
     "Payment not confirmed yet": "پرداخت هنوز تأیید نشده است",
-    "could not be confirmed with the bank yet. If money left your account, check again in a minute; an unconfirmed payment is returned to your card automatically.": "هنوز از سوی بانک تأیید نشده است. اگر مبلغی از حسابتان کسر شده، یک دقیقه دیگر دوباره بررسی کنید؛ پرداخت تأییدنشده خودکار به کارتتان بازمی‌گردد.",
+    "could not be confirmed by the payment gateway yet. If money left your account, do not pay again: check again in a minute. If it is not confirmed, the amount is returned to you.": "هنوز از سوی درگاه پرداخت تأیید نشده است. اگر مبلغی از حسابتان کسر شده، دوباره پرداخت نکنید؛ یک دقیقه دیگر «بررسی دوباره» را بزنید. اگر تأیید نشود، مبلغ به شما بازگردانده می‌شود.",
     "Check again": "بررسی دوباره"
 }

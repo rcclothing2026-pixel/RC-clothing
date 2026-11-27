@@ -425,7 +425,8 @@ class CheckoutController extends Controller
         $gateway = $this->gateways->makeReal($method);
 
         $identifier = $gateway->callbackIdentifier($request);
-        if (! $identifier || ! Payment::where('authority', $identifier)->exists()) {
+        $seen = $identifier ? Payment::where('authority', $identifier)->first(['id', 'updated_at']) : null;
+        if (! $seen) {
             return redirect()->route('home')->with('error', 'تراکنش یافت نشد.');
         }
 
@@ -433,15 +434,28 @@ class CheckoutController extends Controller
         // lock, then sees the order paid, so the order is never finalized twice (coupons,
         // gift card and stock counted twice). Verify runs under the lock for that reason.
         $alert = null;
-        [$order, $outcome] = DB::transaction(function () use ($gateway, $request, $identifier, &$alert) {
+        [$order, $outcome] = DB::transaction(function () use ($gateway, $request, $identifier, $seen, &$alert) {
             $payment = Payment::where('authority', $identifier)->lockForUpdate()->first();
             $order = Order::whereKey($payment->order_id)->lockForUpdate()->first();
 
             if ($order->isPaid()) {
                 return [$order, 'already'];
             }
+            // Only an open order is finalized: never one staff canceled or refunded.
+            if (! in_array($order->status, [Order::STATUS_PENDING, Order::STATUS_FAILED], true)
+                || in_array($payment->status, [Payment::STATUS_PAID, Payment::STATUS_REFUNDED], true)) {
+                return [$order, 'failed'];
+            }
+            $unknownBefore = (bool) ($payment->meta['verify_unknown'] ?? false);
+            // This request waited on the lock while another one handled the payment:
+            // show that result instead of running a second verify chain.
+            if ((string) $payment->updated_at !== (string) $seen->updated_at) {
+                return [$order, $unknownBefore && $order->status === Order::STATUS_PENDING ? 'unknown' : 'failed'];
+            }
 
-            if (! $gateway->callbackApproved($request)) {
+            // After an unclear verify the money may have settled, so a later "not approved"
+            // return must not cancel the order: verify again instead.
+            if (! $unknownBefore && ! $gateway->callbackApproved($request)) {
                 $payment->update(['status' => Payment::STATUS_CANCELED]);
                 $order->update(['status' => Order::STATUS_FAILED]);
 
@@ -449,7 +463,7 @@ class CheckoutController extends Controller
             }
 
             try {
-                $verify = $gateway->verify($identifier, (int) $payment->amount);
+                $verify = $gateway->verify((string) $payment->authority, (int) $payment->amount);
             } catch (Throwable $e) {
                 // A thrown verify says nothing about the money: it may have settled.
                 report($e);
@@ -460,9 +474,13 @@ class CheckoutController extends Controller
                 // Keep the order pending so a retry (same callback URL; verify answers
                 // "already verified" if the money settled) can still finalize it.
                 $payment->update(['meta' => array_merge((array) $payment->meta, [
-                    'verify_unknown' => $verify['error'] ?? true, 'retry_url' => $request->fullUrl(),
+                    'verify_unknown' => true, 'verify_error' => $verify['error'] ?? null,
+                    'retry_url' => $payment->meta['retry_url'] ?? $request->fullUrl(),
                 ])]);
-                $alert = "⚠️ <b>پرداخت تأیید نشد</b>\nسفارش {$order->number} — کد پیگیری {$identifier}\nپاسخ درگاه نامشخص است؛ وضعیت را در پنل درگاه بررسی کنید.";
+                if (! $unknownBefore) {
+                    $alert = '⚠️ <b>پرداخت تأیید نشد</b>'."\nسفارش ".e($order->number).' — کد پیگیری '.e($payment->authority)
+                        ."\nپاسخ درگاه نامشخص است؛ وضعیت را در پنل درگاه بررسی کنید.";
+                }
 
                 return [$order, 'unknown'];
             }
@@ -471,7 +489,8 @@ class CheckoutController extends Controller
                 $payment->update(['status' => Payment::STATUS_FAILED, 'meta' => $verify]);
                 $order->update(['status' => Order::STATUS_FAILED]);
                 if ($verify['amount_mismatch'] ?? false) {
-                    $alert = "⚠️ <b>مبلغ پرداخت با سفارش نمی‌خواند</b>\nسفارش {$order->number} — کد پیگیری {$identifier}\nمبلغ واریزی را بازگردانید.";
+                    $alert = '⚠️ <b>مبلغ پرداخت با سفارش نمی‌خواند</b>'."\nسفارش ".e($order->number).' — کد پیگیری '.e($payment->authority)
+                        ."\nمبلغ واریزی را بازگردانید.";
                 }
 
                 return [$order, 'failed'];

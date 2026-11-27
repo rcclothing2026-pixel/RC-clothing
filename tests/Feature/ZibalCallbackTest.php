@@ -185,4 +185,42 @@ class ZibalCallbackTest extends TestCase
         $verifies = collect(Http::recorded())->filter(fn ($p) => $p[0]->url() === self::VERIFY)->count();
         $this->assertSame(1, $verifies);
     }
+
+    public function test_canceled_order_is_never_finalized(): void
+    {
+        Http::fake([self::VERIFY => Http::response($this->verified()), '*' => Http::response([], 200)]);
+        $order = $this->pendingOrder('1010');
+        $order->update(['status' => Order::STATUS_CANCELED]);
+
+        $this->hitCallback('1010')->assertRedirect(route('checkout.failed', $order->number));
+
+        $this->assertSame(Order::STATUS_CANCELED, $order->fresh()->status);
+        Http::assertNothingSent();
+    }
+
+    public function test_not_approved_after_an_unclear_verify_still_verifies(): void
+    {
+        Http::fake([self::VERIFY => Http::response($this->verified(201)), '*' => Http::response([], 200)]);
+        $order = $this->pendingOrder('1011');
+        $order->payment->update(['meta' => ['verify_unknown' => true]]);
+
+        $this->hitCallback('1011', '0')->assertRedirect(route('checkout.success', $order->number));
+
+        $this->assertSame(Order::STATUS_PAID, $order->fresh()->status);
+    }
+
+    public function test_inquiry_internal_error_keeps_the_order_pending(): void
+    {
+        Http::fake([
+            self::VERIFY => Http::failedConnection(),
+            self::INQUIRY => Http::response(['result' => 100, 'status' => -2]),
+            '*' => Http::response([], 200),
+        ]);
+        $order = $this->pendingOrder('1012');
+
+        $this->hitCallback('1012')->assertRedirect(route('checkout.failed', $order->number));
+
+        $this->assertSame(Order::STATUS_PENDING, $order->fresh()->status);
+        $this->assertTrue($order->payment->fresh()->meta['verify_unknown']);
+    }
 }
