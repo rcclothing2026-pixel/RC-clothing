@@ -426,5 +426,8 @@
     "Order tracking & support on Telegram": "پیگیری و پشتیبانی در تلگرام",
     "We send this order's shipping updates there.": "وضعیت ارسال همین سفارش را آنجا می‌فرستیم.",
     "Join the Racket Club Telegram bot": "عضویت در ربات تلگرام راکت کلاب",
-    "An item": "یک کالا"
+    "An item": "یک کالا",
+    "Payment not confirmed yet": "پرداخت هنوز تأیید نشده است",
+    "could not be confirmed with the bank yet. If money left your account, check again in a minute; an unconfirmed payment is returned to your card automatically.": "هنوز از سوی بانک تأیید نشده است. اگر مبلغی از حسابتان کسر شده، یک دقیقه دیگر دوباره بررسی کنید؛ پرداخت تأییدنشده خودکار به کارتتان بازمی‌گردد.",
+    "Check again": "بررسی دوباره"
 }

@@ -425,55 +425,86 @@ class CheckoutController extends Controller
         $gateway = $this->gateways->makeReal($method);
 
         $identifier = $gateway->callbackIdentifier($request);
-        $payment = $identifier ? Payment::where('authority', $identifier)->first() : null;
-
-        if (! $payment) {
+        if (! $identifier || ! Payment::where('authority', $identifier)->exists()) {
             return redirect()->route('home')->with('error', 'تراکنش یافت نشد.');
         }
 
-        $order = $payment->order;
+        // One callback at a time per payment: a refresh or a second hit waits on the row
+        // lock, then sees the order paid, so the order is never finalized twice (coupons,
+        // gift card and stock counted twice). Verify runs under the lock for that reason.
+        $alert = null;
+        [$order, $outcome] = DB::transaction(function () use ($gateway, $request, $identifier, &$alert) {
+            $payment = Payment::where('authority', $identifier)->lockForUpdate()->first();
+            $order = Order::whereKey($payment->order_id)->lockForUpdate()->first();
 
-        // Idempotent: already finalized.
-        if ($order->isPaid()) {
-            return redirect()->route('checkout.success', $order->number);
+            if ($order->isPaid()) {
+                return [$order, 'already'];
+            }
+
+            if (! $gateway->callbackApproved($request)) {
+                $payment->update(['status' => Payment::STATUS_CANCELED]);
+                $order->update(['status' => Order::STATUS_FAILED]);
+
+                return [$order, 'failed'];
+            }
+
+            try {
+                $verify = $gateway->verify($identifier, (int) $payment->amount);
+            } catch (Throwable $e) {
+                // A thrown verify says nothing about the money: it may have settled.
+                report($e);
+                $verify = ['success' => false, 'unknown' => true, 'error' => $e->getMessage()];
+            }
+
+            if ($verify['unknown'] ?? false) {
+                // Keep the order pending so a retry (same callback URL; verify answers
+                // "already verified" if the money settled) can still finalize it.
+                $payment->update(['meta' => array_merge((array) $payment->meta, [
+                    'verify_unknown' => $verify['error'] ?? true, 'retry_url' => $request->fullUrl(),
+                ])]);
+                $alert = "⚠️ <b>پرداخت تأیید نشد</b>\nسفارش {$order->number} — کد پیگیری {$identifier}\nپاسخ درگاه نامشخص است؛ وضعیت را در پنل درگاه بررسی کنید.";
+
+                return [$order, 'unknown'];
+            }
+
+            if (! ($verify['success'] ?? false)) {
+                $payment->update(['status' => Payment::STATUS_FAILED, 'meta' => $verify]);
+                $order->update(['status' => Order::STATUS_FAILED]);
+                if ($verify['amount_mismatch'] ?? false) {
+                    $alert = "⚠️ <b>مبلغ پرداخت با سفارش نمی‌خواند</b>\nسفارش {$order->number} — کد پیگیری {$identifier}\nمبلغ واریزی را بازگردانید.";
+                }
+
+                return [$order, 'failed'];
+            }
+
+            $this->finalizePaidOrder($order, $payment, $verify);
+
+            return [$order, 'paid'];
+        });
+
+        if ($alert) {
+            try {
+                app(\App\Services\Telegram\TelegramNotifier::class)->notifyAdmins($alert);
+            } catch (Throwable $e) {
+                report($e);
+            }
         }
 
-        if (! $gateway->callbackApproved($request)) {
-            $payment->update(['status' => Payment::STATUS_CANCELED]);
-            $order->update(['status' => Order::STATUS_FAILED]);
-
-            return redirect()->route('checkout.failed', $order->number);
+        if ($outcome === 'paid') {
+            // Sale report (StoqS) + customer SMS + admin Telegram. Run INLINE via
+            // dispatchSync so the customer SMS + receipt side effects fire the moment
+            // the gateway callback lands — even on shared hosting with no queue worker
+            // (QUEUE_CONNECTION=database would otherwise leave the job unran). Each
+            // effect is independently try/caught inside the job, so a slow/failed SMS
+            // or StoqS call can't break the callback or the others. After commit, and
+            // only for the request that finalized the order.
+            \App\Jobs\ProcessPaidOrder::dispatchSync($order->id);
+            $this->cart->clear();
         }
 
-        try {
-            $verify = $gateway->verify($identifier, (int) $payment->amount);
-        } catch (Throwable $e) {
-            $payment->update(['status' => Payment::STATUS_FAILED, 'meta' => ['error' => $e->getMessage()]]);
-            $order->update(['status' => Order::STATUS_FAILED]);
-
-            return redirect()->route('checkout.failed', $order->number);
-        }
-
-        if (! ($verify['success'] ?? false)) {
-            $payment->update(['status' => Payment::STATUS_FAILED, 'meta' => $verify]);
-            $order->update(['status' => Order::STATUS_FAILED]);
-
-            return redirect()->route('checkout.failed', $order->number);
-        }
-
-        $this->finalizePaidOrder($order, $payment, $verify);
-
-        // Sale report (StoqS) + customer SMS + admin Telegram. Run INLINE via
-        // dispatchSync so the customer SMS + receipt side effects fire the moment
-        // the gateway callback lands — even on shared hosting with no queue worker
-        // (QUEUE_CONNECTION=database would otherwise leave the job unran). Each
-        // effect is independently try/caught inside the job, so a slow/failed SMS
-        // or StoqS call can't break the callback or the others.
-        \App\Jobs\ProcessPaidOrder::dispatchSync($order->id);
-
-        $this->cart->clear();
-
-        return redirect()->route('checkout.success', $order->number);
+        return in_array($outcome, ['paid', 'already'], true)
+            ? redirect()->route('checkout.success', $order->number)
+            : redirect()->route('checkout.failed', $order->number);
     }
 
     private function finalizePaidOrder(Order $order, Payment $payment, array $verify): void
@@ -557,7 +588,12 @@ class CheckoutController extends Controller
     {
         abort_unless($order->user_id === auth()->id(), 403);
 
-        return view('checkout.failed', ['order' => $order]);
+        // A verify with no clear answer leaves the order pending: offer to check again.
+        $payment = $order->payment;
+        $retryUrl = $order->status === Order::STATUS_PENDING && ($payment?->meta['verify_unknown'] ?? false)
+            ? ($payment->meta['retry_url'] ?? null) : null;
+
+        return view('checkout.failed', ['order' => $order, 'retryUrl' => $retryUrl]);
     }
 
     public function cities(string $province): \Illuminate\Http\JsonResponse

@@ -6,13 +6,24 @@ use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Throwable;
 
 /**
  * Zibal gateway (https://help.zibal.ir/IPG/API/). Amounts in Rial.
  * Use merchant "zibal" for sandbox testing.
+ *
+ * verify() never turns "no answer" into "not paid": a verify that timed out may still
+ * have settled the money at Zibal. It asks Zibal (inquiry) what happened, and when that
+ * does not settle it either, it reports the outcome as unknown so the order stays open.
  */
 class ZibalGateway implements PaymentGateway
 {
+    private const BASE = 'https://gateway.zibal.ir/v1/';
+
+    // Inquiry statuses.
+    private const PAID_VERIFIED = 1;
+    private const PAID_UNVERIFIED = 2;
+
     public function __construct(
         private readonly ?string $merchant,
         private readonly bool $sandbox = false,
@@ -37,13 +48,14 @@ class ZibalGateway implements PaymentGateway
     public function request(int $amountToman, string $callbackUrl, string $description, array $metadata = []): array
     {
         $response = Http::acceptJson()->timeout(15)
-            ->post('https://gateway.zibal.ir/v1/request', array_filter([
+            ->post(self::BASE.'request', array_filter([
                 'merchant' => $this->merchant(),
                 'amount' => Money::tomanToRial($amountToman),
                 'callbackUrl' => $callbackUrl,
                 'description' => $description,
                 'mobile' => $metadata['mobile'] ?? null,
-                'orderId' => $metadata['order'] ?? null,
+                // Checkout passes order_id; the order number shows in the Zibal panel.
+                'orderId' => $metadata['order_id'] ?? $metadata['order'] ?? null,
             ]))
             ->throw();
 
@@ -73,20 +85,122 @@ class ZibalGateway implements PaymentGateway
 
     public function verify(string $identifier, int $amountToman): array
     {
-        $response = Http::acceptJson()->timeout(15)
-            ->post('https://gateway.zibal.ir/v1/verify', [
+        $rial = Money::tomanToRial($amountToman);
+
+        $first = $this->verifyOnce($identifier, $rial);
+        if ($first['known']) {
+            return $first['outcome'];
+        }
+
+        // No usable verify answer. Ask Zibal what state the payment is in.
+        $inq = $this->inquiry($identifier);
+        if ($inq === null) {
+            return $this->unknown('verify: '.$first['why'].'; inquiry: no answer');
+        }
+        $status = (int) ($inq['status'] ?? 0);
+
+        if ($status === self::PAID_VERIFIED) {
+            // The lost verify did settle it.
+            if ((int) ($inq['amount'] ?? 0) !== $rial) {
+                return $this->mismatch($identifier, $rial, $inq);
+            }
+
+            return $this->paid($inq);
+        }
+        if ($status === self::PAID_UNVERIFIED) {
+            // Paid but not verified yet: the first verify may still be in flight at Zibal,
+            // so this is not a "not paid". Verify is idempotent (201 = already verified):
+            // try once more, and if that is also unclear, leave the order open.
+            $again = $this->verifyOnce($identifier, $rial);
+
+            return $again['known'] ? $again['outcome'] : $this->unknown('verify unclear twice; inquiry status 2');
+        }
+
+        // Zibal answered and the payment is not paid (pending at the bank, failed, returned…).
+        return ['success' => false, 'ref_id' => null, 'card_pan' => null, 'zibal_status' => $status];
+    }
+
+    /**
+     * One verify call. known=false means the answer does not tell us whether the money
+     * moved (no reply, an HTTP error, or a code Zibal does not document for this).
+     *
+     * @return array{known: bool, outcome?: array, why?: string}
+     */
+    private function verifyOnce(string $identifier, int $rial): array
+    {
+        try {
+            $response = Http::acceptJson()->timeout(15)->post(self::BASE.'verify', [
                 'merchant' => $this->merchant(),
                 'trackId' => $identifier,
-            ])
-            ->throw();
+            ]);
+        } catch (Throwable $e) {
+            return ['known' => false, 'why' => $e->getMessage()];
+        }
+        if (! $response->successful()) {
+            return ['known' => false, 'why' => 'HTTP '.$response->status()];
+        }
 
         $result = (int) $response->json('result');
 
+        // 100 = verified, 201 = already verified.
+        if (in_array($result, [100, 201], true)) {
+            $amount = $response->json('amount');
+            if ($amount !== null && (int) $amount !== $rial) {
+                return ['known' => true, 'outcome' => $this->mismatch($identifier, $rial, (array) $response->json())];
+            }
+
+            return ['known' => true, 'outcome' => $this->paid((array) $response->json(), $identifier)];
+        }
+        // 202 = not paid or failed, 203 = unknown trackId.
+        if (in_array($result, [202, 203], true)) {
+            return ['known' => true, 'outcome' => ['success' => false, 'ref_id' => null, 'card_pan' => null, 'zibal_result' => $result]];
+        }
+
+        return ['known' => false, 'why' => 'result '.$result.' '.$response->json('message')];
+    }
+
+    /** Zibal's view of the payment, or null when it could not be read. */
+    private function inquiry(string $identifier): ?array
+    {
+        try {
+            $response = Http::acceptJson()->timeout(15)->post(self::BASE.'inquiry', [
+                'merchant' => $this->merchant(),
+                'trackId' => $identifier,
+            ]);
+        } catch (Throwable) {
+            return null;
+        }
+        if (! $response->successful() || (int) $response->json('result') !== 100) {
+            return null;
+        }
+
+        return (array) $response->json();
+    }
+
+    private function paid(array $data, ?string $identifier = null): array
+    {
+        $ref = $data['refNumber'] ?? null;
+
         return [
-            // 100 = verified, 201 = already verified.
-            'success' => in_array($result, [100, 201], true),
-            'ref_id' => $response->json('refNumber') ? (string) $response->json('refNumber') : $identifier,
-            'card_pan' => $response->json('cardNumber'),
+            'success' => true,
+            'ref_id' => $ref ? (string) $ref : ($identifier ?? (string) ($data['trackId'] ?? '')),
+            'card_pan' => $data['cardNumber'] ?? null,
         ];
+    }
+
+    /** Money settled for a different amount than the order: never a sale, staff must refund. */
+    private function mismatch(string $identifier, int $rial, array $data): array
+    {
+        report(new RuntimeException("Zibal trackId {$identifier}: settled ".($data['amount'] ?? '?')." rial, order expects {$rial}"));
+
+        return [
+            'success' => false, 'ref_id' => isset($data['refNumber']) ? (string) $data['refNumber'] : null,
+            'card_pan' => $data['cardNumber'] ?? null, 'amount_mismatch' => true, 'settled_rial' => $data['amount'] ?? null,
+        ];
+    }
+
+    private function unknown(string $why): array
+    {
+        return ['success' => false, 'unknown' => true, 'ref_id' => null, 'card_pan' => null, 'error' => $why];
     }
 }

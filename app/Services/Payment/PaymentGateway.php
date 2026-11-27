@@ -33,7 +33,10 @@ interface PaymentGateway
     /**
      * Verify a transaction after the callback.
      *
-     * @return array{success: bool, ref_id: ?string, card_pan: ?string}
+     * unknown=true means the gateway gave no clear answer (the money may have settled):
+     * the caller must keep the order pending, never fail it.
+     *
+     * @return array{success: bool, ref_id: ?string, card_pan: ?string, unknown?: bool}
      */
     public function verify(string $identifier, int $amountToman): array;
 }
