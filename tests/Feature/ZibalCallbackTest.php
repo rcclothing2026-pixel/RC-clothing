@@ -223,4 +223,99 @@ class ZibalCallbackTest extends TestCase
         $this->assertSame(Order::STATUS_PENDING, $order->fresh()->status);
         $this->assertTrue($order->payment->fresh()->meta['verify_unknown']);
     }
+
+    public function test_decline_after_an_unclear_verify_keeps_the_order_open(): void
+    {
+        // SnappPay-style: a second verify is refused even when the first captured the money.
+        Http::fake([self::VERIFY => Http::response(['result' => 202]), '*' => Http::response([], 200)]);
+        $order = $this->pendingOrder('1013');
+        $order->payment->update(['meta' => ['verify_unknown' => true, 'retry_url' => 'https://x.test/r']]);
+
+        $this->hitCallback('1013')->assertRedirect(route('checkout.failed', $order->number));
+
+        $this->assertSame(Order::STATUS_PENDING, $order->fresh()->status);
+        $this->assertSame(Payment::STATUS_PENDING, $order->payment->fresh()->status);
+        $this->assertTrue($order->payment->fresh()->meta['declined_after_unknown']);
+    }
+
+    public function test_another_gateways_token_is_not_found(): void
+    {
+        Http::fake();
+        $order = $this->pendingOrder('1014');
+        $order->payment->update(['gateway' => 'zarinpal']);
+
+        $this->hitCallback('1014')->assertRedirect(route('home'));
+
+        $this->assertSame(Order::STATUS_PENDING, $order->fresh()->status);
+        Http::assertNothingSent();
+    }
+
+    public function test_closed_order_with_an_unclear_verify_is_never_shown_as_not_charged(): void
+    {
+        Http::fake();
+        $order = $this->pendingOrder('1015');
+        $order->payment->update(['meta' => ['verify_unknown' => true, 'retry_url' => 'https://x.test/r']]);
+        $order->update(['status' => Order::STATUS_CANCELED]);
+
+        $this->hitCallback('1015')->assertRedirect(route('checkout.failed', $order->number));
+
+        $this->withoutVite()->actingAs($order->user)->get(route('checkout.failed', $order->number))
+            ->assertOk()->assertDontSee(__('was not paid. No amount has been charged to your account.'));
+    }
+
+    public function test_paid_order_never_overdraws_a_gift_card_or_a_coupon_limit(): void
+    {
+        Http::fake([self::VERIFY => Http::response($this->verified()), '*' => Http::response([], 200)]);
+        $order = $this->pendingOrder('1016');
+        // Another order already spent the card and the last coupon use.
+        $card = \App\Models\GiftCard::create(['code' => 'G-1', 'initial_balance' => 1000, 'balance' => 100, 'is_active' => true]);
+        $coupon = \App\Models\Coupon::create(['code' => 'C-1', 'type' => 'fixed', 'value' => 10, 'usage_limit' => 1, 'used_count' => 1]);
+        $order->update(['gift_card_code' => 'G-1', 'gift_used' => 500, 'coupon_code' => 'C-1']);
+
+        $this->hitCallback('1016')->assertRedirect(route('checkout.success', $order->number));
+
+        // Paid (the money moved), but the card and the coupon are not driven past their limit.
+        $this->assertSame(Order::STATUS_PAID, $order->fresh()->status);
+        $this->assertSame(100, $card->fresh()->balance);
+        $this->assertSame(1, $coupon->fresh()->used_count);
+    }
+
+    public function test_gift_card_and_coupon_are_drawn_down_normally(): void
+    {
+        Http::fake([self::VERIFY => Http::response($this->verified()), '*' => Http::response([], 200)]);
+        $order = $this->pendingOrder('1017');
+        $card = \App\Models\GiftCard::create(['code' => 'G-2', 'initial_balance' => 1000, 'balance' => 1000, 'is_active' => true]);
+        $coupon = \App\Models\Coupon::create(['code' => 'C-2', 'type' => 'fixed', 'value' => 10, 'usage_limit' => 5, 'used_count' => 1]);
+        $order->update(['gift_card_code' => 'G-2', 'gift_used' => 400, 'coupon_code' => 'C-2']);
+
+        $this->hitCallback('1017')->assertRedirect(route('checkout.success', $order->number));
+
+        $this->assertSame(600, $card->fresh()->balance);
+        $this->assertSame(2, $coupon->fresh()->used_count);
+    }
+
+    public function test_zarinpal_and_snapppay_only_leave_no_answer_unknown(): void
+    {
+        Http::fake([
+            '*zarinpal.com/*' => Http::sequence()->push([], 500)->pushFailedConnection()
+                ->push(['errors' => ['code' => -51, 'message' => 'failed']], 400),
+            'sp.test/api/online/v1/oauth/token' => Http::response(['access_token' => 't']),
+            'sp.test/api/online/payment/v1/verify' => Http::sequence()->push(['successful' => true, 'response' => []])
+                ->push(['successful' => false], 400),
+            'sp.test/api/online/payment/v1/settle' => Http::response([], 503),
+        ]);
+        $zp = new \App\Services\Payment\ZarinpalGateway('m-test', false);
+        $sp = new \App\Services\Payment\SnappPayGateway('https://sp.test', 'c', 's', 'u', 'p');
+
+        $this->assertTrue($zp->verify('A1', 1000)['unknown'] ?? false);   // HTTP 500
+        $this->assertTrue($zp->verify('A1', 1000)['unknown'] ?? false);   // no answer
+        $declined = $zp->verify('A1', 1000);                               // a clear refusal
+        $this->assertFalse($declined['success']);
+        $this->assertArrayNotHasKey('unknown', $declined);
+
+        $this->assertTrue($sp->verify('T1', 1000)['unknown'] ?? false);   // settle HTTP 503
+        $declined = $sp->verify('T1', 1000);                               // verify refused
+        $this->assertFalse($declined['success']);
+        $this->assertArrayNotHasKey('unknown', $declined);
+    }
 }

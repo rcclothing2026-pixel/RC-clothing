@@ -8,7 +8,7 @@
             <div class="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-full bg-red-100 text-red-600">
                 <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </div>
-            @if ($retryUrl ?? null)
+            @if (($retryUrl ?? null) || ($unclear ?? false))
                 <h1 class="text-xl font-bold text-brand-900">{{ __('Payment not confirmed yet') }}</h1>
                 <p class="mt-2 text-sm text-brand-500">{{ __('Order') }} <span class="font-semibold fa-num" dir="ltr">{{ $order->number }}</span> {{ __('could not be confirmed by the payment gateway yet. If money left your account, do not pay again: check again in a minute. If it is not confirmed, the amount is returned to you.') }}</p>
             @else

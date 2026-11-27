@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Support\Money;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -94,15 +95,23 @@ class ZarinpalGateway implements PaymentGateway
 
     public function verify(string $identifier, int $amountToman): array
     {
-        $response = Http::acceptJson()
-            ->withUserAgent(self::USER_AGENT)
-            ->timeout(15)
-            ->post($this->apiBase().'/pg/v4/payment/verify.json', [
-                'merchant_id' => $this->merchantId,
-                'amount' => Money::tomanToRial($amountToman),
-                'authority' => $identifier,
-            ])
-            ->throw();
+        // No answer, a server error or a rate limit says nothing about the money: unknown,
+        // and verify is repeatable (101 = already verified). Any other answer is final.
+        try {
+            $response = Http::acceptJson()
+                ->withUserAgent(self::USER_AGENT)
+                ->connectTimeout(5)->timeout(15)
+                ->post($this->apiBase().'/pg/v4/payment/verify.json', [
+                    'merchant_id' => $this->merchantId,
+                    'amount' => Money::tomanToRial($amountToman),
+                    'authority' => $identifier,
+                ]);
+        } catch (ConnectionException $e) {
+            return ['success' => false, 'unknown' => true, 'ref_id' => null, 'card_pan' => null, 'error' => $e->getMessage()];
+        }
+        if ($response->serverError() || $response->status() === 429) {
+            return ['success' => false, 'unknown' => true, 'ref_id' => null, 'card_pan' => null, 'error' => 'HTTP '.$response->status()];
+        }
 
         $code = (int) $response->json('data.code');
 

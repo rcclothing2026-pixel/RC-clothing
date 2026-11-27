@@ -375,7 +375,21 @@ class CheckoutController extends Controller
         // Gift card / club points cover the whole order → no gateway, finalize immediately.
         if ($payable <= 0) {
             $refPrefix = ['gift' => 'GIFT', 'loyalty' => 'CLUB', 'free' => 'FREE'][$coveredBy];
-            $this->finalizePaidOrder($order, $payment, ['success' => true, 'ref_id' => $refPrefix.'-'.$order->number]);
+            try {
+                $short = $this->finalizePaidOrder($order, $payment, ['success' => true, 'ref_id' => $refPrefix.'-'.$order->number]);
+            } catch (\RuntimeException $e) {
+                $payment->update(['status' => Payment::STATUS_FAILED]);
+                $order->update(['status' => Order::STATUS_FAILED]);
+
+                return redirect()->route('cart.index')->with('error', 'موجودی کارت هدیه کافی نیست.');
+            }
+            if ($short) {
+                try {
+                    app(\App\Services\Telegram\TelegramNotifier::class)->notifyAdmins($short);
+                } catch (Throwable $e) {
+                    report($e);
+                }
+            }
             \App\Jobs\ProcessPaidOrder::dispatchSync($order->id); // inline — see callback() note
             $this->cart->clear();
 
@@ -425,7 +439,8 @@ class CheckoutController extends Controller
         $gateway = $this->gateways->makeReal($method);
 
         $identifier = $gateway->callbackIdentifier($request);
-        $seen = $identifier ? Payment::where('authority', $identifier)->first(['id', 'updated_at']) : null;
+        // The gateway too: another gateway's token that happens to match must not hit this payment.
+        $seen = $identifier ? Payment::where('gateway', $method->key)->where('authority', $identifier)->first(['id', 'updated_at']) : null;
         if (! $seen) {
             return redirect()->route('home')->with('error', 'تراکنش یافت نشد.');
         }
@@ -434,19 +449,25 @@ class CheckoutController extends Controller
         // lock, then sees the order paid, so the order is never finalized twice (coupons,
         // gift card and stock counted twice). Verify runs under the lock for that reason.
         $alert = null;
-        [$order, $outcome] = DB::transaction(function () use ($gateway, $request, $identifier, $seen, &$alert) {
-            $payment = Payment::where('authority', $identifier)->lockForUpdate()->first();
+        [$order, $outcome] = DB::transaction(function () use ($gateway, $method, $request, $identifier, $seen, &$alert) {
+            $payment = Payment::where('gateway', $method->key)->where('authority', $identifier)->lockForUpdate()->first();
             $order = Order::whereKey($payment->order_id)->lockForUpdate()->first();
 
             if ($order->isPaid()) {
                 return [$order, 'already'];
             }
+            $unknownBefore = (bool) ($payment->meta['verify_unknown'] ?? false);
             // Only an open order is finalized: never one staff canceled or refunded.
             if (! in_array($order->status, [Order::STATUS_PENDING, Order::STATUS_FAILED], true)
                 || in_array($payment->status, [Payment::STATUS_PAID, Payment::STATUS_REFUNDED], true)) {
+                if ($unknownBefore) {
+                    // Closed while its verify was unclear: the money may have settled.
+                    $alert = '⚠️ <b>پرداخت نامشخص روی سفارش بسته</b>'."\nسفارش ".e($order->number).' — کد پیگیری '.e($payment->authority)
+                        ."\nمشتری دوباره پرداخت را بررسی کرد؛ اگر پول واریز شده، بازگردانید.";
+                }
+
                 return [$order, 'failed'];
             }
-            $unknownBefore = (bool) ($payment->meta['verify_unknown'] ?? false);
             // This request waited on the lock while another one handled the payment:
             // show that result instead of running a second verify chain.
             if ((string) $payment->updated_at !== (string) $seen->updated_at) {
@@ -485,6 +506,19 @@ class CheckoutController extends Controller
                 return [$order, 'unknown'];
             }
 
+            if (! ($verify['success'] ?? false) && $unknownBefore && ! ($verify['amount_mismatch'] ?? false)) {
+                // A decline after an unclear verify is not proof: a gateway whose verify is
+                // not repeatable (SnappPay verify + settle) refuses a second one even when the
+                // first captured the money. Keep the order open and let staff check.
+                if (! ($payment->meta['declined_after_unknown'] ?? false)) {
+                    $payment->update(['meta' => array_merge((array) $payment->meta, ['declined_after_unknown' => true, 'decline' => $verify])]);
+                    $alert = '⚠️ <b>پرداخت نامشخص رد شد</b>'."\nسفارش ".e($order->number).' — کد پیگیری '.e($payment->authority)
+                        ."\nبررسی قبلی نامشخص بود و اکنون درگاه رد می‌کند؛ وضعیت را در پنل درگاه بررسی کنید.";
+                }
+
+                return [$order, 'unknown'];
+            }
+
             if (! ($verify['success'] ?? false)) {
                 $payment->update(['status' => Payment::STATUS_FAILED, 'meta' => $verify]);
                 $order->update(['status' => Order::STATUS_FAILED]);
@@ -496,7 +530,7 @@ class CheckoutController extends Controller
                 return [$order, 'failed'];
             }
 
-            $this->finalizePaidOrder($order, $payment, $verify);
+            $alert = $this->finalizePaidOrder($order, $payment, $verify);
 
             return [$order, 'paid'];
         });
@@ -526,9 +560,11 @@ class CheckoutController extends Controller
             : redirect()->route('checkout.failed', $order->number);
     }
 
-    private function finalizePaidOrder(Order $order, Payment $payment, array $verify): void
+    /** @return ?string an admin alert when a coupon or gift card was already used up */
+    private function finalizePaidOrder(Order $order, Payment $payment, array $verify): ?string
     {
-        DB::transaction(function () use ($order, $payment, $verify) {
+        return DB::transaction(function () use ($order, $payment, $verify) {
+            $short = [];
             $payment->update([
                 'status' => Payment::STATUS_PAID,
                 'ref_id' => $verify['ref_id'] ?? null,
@@ -542,10 +578,16 @@ class CheckoutController extends Controller
             // (promo_eval set) used StoqS's code and rules: StoqS counts them from the sale, and
             // the local copy is counted too when the code is this shop's own coupon (registered
             // by this key, external_id = its id).
+            // Counted only under its limit: two orders racing for the last use both pass the cart check.
+            $coupon = null;
             if ($order->coupon_code && $order->promo_eval === null) {
-                \App\Models\Coupon::where('code', $order->coupon_code)->increment('used_count');
+                $coupon = \App\Models\Coupon::where('code', $order->coupon_code);
             } elseif ($order->coupon_code && ($own = \App\Services\Discount\StoqsCart::ownCouponId((string) $order->coupon_code)) !== null) {
-                \App\Models\Coupon::whereKey($own)->increment('used_count');
+                $coupon = \App\Models\Coupon::whereKey($own);
+            }
+            if ($coupon && $coupon->clone()->exists()
+                && ! $coupon->where(fn ($q) => $q->whereNull('usage_limit')->orWhereColumn('used_count', '<', 'usage_limit'))->increment('used_count')) {
+                $short[] = 'کد تخفیف '.e($order->coupon_code).' از سقف استفاده گذشته بود';
             }
 
             // Count discount rule usage.
@@ -554,8 +596,14 @@ class CheckoutController extends Controller
             }
 
             // Draw down the gift card balance.
-            if ($order->gift_card_code && $order->gift_used > 0) {
-                \App\Models\GiftCard::where('code', $order->gift_card_code)->decrement('balance', $order->gift_used);
+            // Only from a balance that still covers it: two orders can spend the same card.
+            if ($order->gift_card_code && $order->gift_used > 0
+                && ! \App\Models\GiftCard::where('code', $order->gift_card_code)->where('balance', '>=', $order->gift_used)->decrement('balance', $order->gift_used)) {
+                if ((int) $payment->amount <= 0) {
+                    // Nothing was paid at a gateway: the card alone covered it, so no sale.
+                    throw new \RuntimeException('gift card balance already spent');
+                }
+                $short[] = 'موجودی کارت هدیه '.e($order->gift_card_code).' کافی نبود';
             }
 
             // Decrement local cached stock (authoritative qty lives in stock-keeping).
@@ -583,6 +631,8 @@ class CheckoutController extends Controller
                 }
                 $variant->decrement('stock_qty', min($item->quantity, max(0, (int) $variant->stock_qty)));
             }
+
+            return $short ? '⚠️ <b>سفارش پرداخت‌شده با تخفیف تکراری</b>'."\nسفارش ".e($order->number)."\n".implode("\n", $short) : null;
         });
     }
 
@@ -612,7 +662,9 @@ class CheckoutController extends Controller
         $retryUrl = $order->status === Order::STATUS_PENDING && ($payment?->meta['verify_unknown'] ?? false)
             ? ($payment->meta['retry_url'] ?? null) : null;
 
-        return view('checkout.failed', ['order' => $order, 'retryUrl' => $retryUrl]);
+        $unclear = (bool) ($payment?->meta['verify_unknown'] ?? false);
+
+        return view('checkout.failed', ['order' => $order, 'retryUrl' => $retryUrl, 'unclear' => $unclear]);
     }
 
     public function cities(string $province): \Illuminate\Http\JsonResponse

@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Support\Money;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -122,24 +123,39 @@ class SnappPayGateway implements PaymentGateway, SupportsRefund
         $token = $this->token();
         $base = rtrim((string) $this->baseUrl, '/');
 
-        $verify = Http::acceptJson()->timeout(20)->withToken($token)
-            ->post($base.'/api/online/payment/v1/verify', ['paymentToken' => $identifier])
-            ->throw();
-
+        // No answer, a server error or a rate limit says nothing about the money: unknown.
+        // Any other answer is final.
+        $verify = $this->call($token, $base.'/api/online/payment/v1/verify', $identifier);
+        if (is_string($verify)) {
+            return ['success' => false, 'unknown' => true, 'ref_id' => null, 'card_pan' => null, 'error' => 'verify: '.$verify];
+        }
         if (! $verify->json('successful')) {
             return ['success' => false, 'ref_id' => null, 'card_pan' => null];
         }
 
         // Settle to actually capture the funds.
-        $settle = Http::acceptJson()->timeout(20)->withToken($token)
-            ->post($base.'/api/online/payment/v1/settle', ['paymentToken' => $identifier])
-            ->throw();
+        $settle = $this->call($token, $base.'/api/online/payment/v1/settle', $identifier);
+        if (is_string($settle)) {
+            return ['success' => false, 'unknown' => true, 'ref_id' => null, 'card_pan' => null, 'error' => 'settle: '.$settle];
+        }
 
         return [
             'success' => (bool) $settle->json('successful'),
             'ref_id' => $settle->json('response.transactionId') ? (string) $settle->json('response.transactionId') : $identifier,
             'card_pan' => null,
         ];
+    }
+
+    /** The response, or why it says nothing (no answer, HTTP 5xx or 429). */
+    private function call(string $token, string $url, string $identifier): \Illuminate\Http\Client\Response|string
+    {
+        try {
+            $response = Http::acceptJson()->connectTimeout(5)->timeout(20)->withToken($token)->post($url, ['paymentToken' => $identifier]);
+        } catch (ConnectionException $e) {
+            return $e->getMessage();
+        }
+
+        return $response->serverError() || $response->status() === 429 ? 'HTTP '.$response->status() : $response;
     }
 
     /**
