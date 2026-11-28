@@ -32,7 +32,7 @@ class ZibalCallbackTest extends TestCase
 
     private function pendingOrder(string $trackId): Order
     {
-        $user = User::factory()->create(['phone' => '09121110000']);
+        $user = User::factory()->create(['phone' => '0912'.str_pad($trackId, 7, '0', STR_PAD_LEFT)]);
         $order = Order::create([
             'number' => 'Z-'.$trackId, 'user_id' => $user->id, 'status' => Order::STATUS_PENDING,
             'subtotal' => self::AMOUNT, 'total' => self::AMOUNT,
@@ -224,18 +224,23 @@ class ZibalCallbackTest extends TestCase
         $this->assertTrue($order->payment->fresh()->meta['verify_unknown']);
     }
 
-    public function test_decline_after_an_unclear_verify_keeps_the_order_open(): void
+    public function test_zibal_decline_after_an_unclear_verify_is_final(): void
     {
-        // SnappPay-style: a second verify is refused even when the first captured the money.
+        // Zibal answers 201 on a repeat verify, so a 202 now proves the money never settled.
         Http::fake([self::VERIFY => Http::response(['result' => 202]), '*' => Http::response([], 200)]);
         $order = $this->pendingOrder('1013');
         $order->payment->update(['meta' => ['verify_unknown' => true, 'retry_url' => 'https://x.test/r']]);
 
         $this->hitCallback('1013')->assertRedirect(route('checkout.failed', $order->number));
 
-        $this->assertSame(Order::STATUS_PENDING, $order->fresh()->status);
-        $this->assertSame(Payment::STATUS_PENDING, $order->payment->fresh()->status);
-        $this->assertTrue($order->payment->fresh()->meta['declined_after_unknown']);
+        $this->assertSame(Order::STATUS_FAILED, $order->fresh()->status);
+        $this->assertSame(Payment::STATUS_FAILED, $order->payment->fresh()->status);
+    }
+
+    private function expectAlerts(int $times): void
+    {
+        $this->mock(\App\Services\Telegram\TelegramNotifier::class)
+            ->shouldReceive('notifyAdmins')->times($times)->andReturn(1);
     }
 
     public function test_another_gateways_token_is_not_found(): void
@@ -263,9 +268,78 @@ class ZibalCallbackTest extends TestCase
             ->assertOk()->assertDontSee(__('was not paid. No amount has been charged to your account.'));
     }
 
+    public function test_closed_order_alert_goes_out_once_and_never_for_a_refund(): void
+    {
+        Http::fake();
+        $this->expectAlerts(1);
+        $order = $this->pendingOrder('1018');
+        $order->payment->update(['meta' => ['verify_unknown' => true]]);
+        $order->update(['status' => Order::STATUS_CANCELED]);
+        $refunded = $this->pendingOrder('1019');
+        $refunded->payment->update(['status' => Payment::STATUS_REFUNDED, 'meta' => ['verify_unknown' => true]]);
+        $refunded->update(['status' => Order::STATUS_CANCELED]);
+
+        $this->hitCallback('1018');
+        $this->hitCallback('1018'); // back button: no second alert
+        $this->hitCallback('1019'); // staff already refunded: no alert
+
+        Http::assertNothingSent();
+    }
+
+    /** Place a real checkout covered in full by gift card G-F; $race runs as the order is created. */
+    private function placeCoveredByCard(\Closure $race): Order
+    {
+        $user = User::factory()->create(['phone' => '09120005566']);
+        $address = \App\Models\Address::create([
+            'user_id' => $user->id, 'recipient_name' => 'تست', 'phone' => '09120005566',
+            'province' => 'تهران', 'city' => 'تهران', 'line' => 'خیابان نمونه',
+        ]);
+        $shipping = \App\Models\ShippingMethod::first();
+        $shipping->update(['cost_on_delivery' => true]);
+        $variant = \App\Models\Product::has('variants')->first()->variants()->where('stock_qty', '>', 0)->first();
+        \App\Models\GiftCard::create(['code' => 'G-F', 'initial_balance' => 100000000, 'balance' => 100000000, 'is_active' => true]);
+
+        $this->actingAs($user);
+        $this->post(route('cart.add'), ['variant_id' => $variant->id, 'quantity' => 1]);
+        $this->post(route('cart.gift.apply'), ['code' => 'G-F']);
+        Order::created($race); // another order spends the card (or the code) meanwhile
+        $this->post(route('checkout.place'), [
+            'address_id' => (string) $address->id, 'shipping_method_id' => $shipping->id, 'payment_method' => 'zibal',
+        ])->assertRedirect(route('cart.index'));
+
+        return Order::where('user_id', $user->id)->latest()->first();
+    }
+
+    public function test_card_only_order_whose_card_was_spent_meanwhile_is_no_sale(): void
+    {
+        Http::fake();
+        $order = $this->placeCoveredByCard(fn () => \App\Models\GiftCard::where('code', 'G-F')->update(['balance' => 10]));
+
+        $this->assertSame(Order::STATUS_FAILED, $order->status);
+        $this->assertSame(Payment::STATUS_FAILED, $order->payment->status);
+        $this->assertNull($order->paid_at);
+        $this->assertSame(10, \App\Models\GiftCard::where('code', 'G-F')->value('balance'));
+    }
+
+    public function test_card_only_order_whose_coupon_ran_out_meanwhile_is_no_sale(): void
+    {
+        Http::fake();
+        $coupon = \App\Models\Coupon::create(['code' => 'C-F', 'type' => 'fixed', 'value' => 10, 'usage_limit' => 1, 'used_count' => 0, 'is_active' => true]);
+        $order = $this->placeCoveredByCard(function (Order $o) use ($coupon) {
+            $o->updateQuietly(['coupon_code' => 'C-F']);
+            $coupon->update(['used_count' => 1]);
+        });
+
+        $this->assertSame(Order::STATUS_FAILED, $order->status);
+        $this->assertSame(1, $coupon->fresh()->used_count);
+        // Rolled back whole: the card was not drawn down either.
+        $this->assertSame(100000000, \App\Models\GiftCard::where('code', 'G-F')->value('balance'));
+    }
+
     public function test_paid_order_never_overdraws_a_gift_card_or_a_coupon_limit(): void
     {
         Http::fake([self::VERIFY => Http::response($this->verified()), '*' => Http::response([], 200)]);
+        $this->expectAlerts(1); // one alert naming both
         $order = $this->pendingOrder('1016');
         // Another order already spent the card and the last coupon use.
         $card = \App\Models\GiftCard::create(['code' => 'G-1', 'initial_balance' => 1000, 'balance' => 100, 'is_active' => true]);
@@ -274,9 +348,10 @@ class ZibalCallbackTest extends TestCase
 
         $this->hitCallback('1016')->assertRedirect(route('checkout.success', $order->number));
 
-        // Paid (the money moved), but the card and the coupon are not driven past their limit.
+        // Paid (the money moved), but the card and the coupon are not driven past their limit,
+        // and what was left on the card cannot be spent again.
         $this->assertSame(Order::STATUS_PAID, $order->fresh()->status);
-        $this->assertSame(100, $card->fresh()->balance);
+        $this->assertSame(0, $card->fresh()->balance);
         $this->assertSame(1, $coupon->fresh()->used_count);
     }
 

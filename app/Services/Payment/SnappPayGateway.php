@@ -139,8 +139,13 @@ class SnappPayGateway implements PaymentGateway, SupportsRefund
             return ['success' => false, 'unknown' => true, 'ref_id' => null, 'card_pan' => null, 'error' => 'settle: '.$settle];
         }
 
+        // Verify approved the purchase but settle refused it: final, and staff must check Snapp.
+        if (! $settle->json('successful')) {
+            return ['success' => false, 'ref_id' => null, 'card_pan' => null, 'settle_refused' => true];
+        }
+
         return [
-            'success' => (bool) $settle->json('successful'),
+            'success' => true,
             'ref_id' => $settle->json('response.transactionId') ? (string) $settle->json('response.transactionId') : $identifier,
             'card_pan' => null,
         ];

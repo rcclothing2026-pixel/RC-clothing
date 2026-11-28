@@ -152,4 +152,38 @@ class SnappPayCallbackTest extends TestCase
         // No re-verify on an already-finalised order.
         Http::assertNothingSent();
     }
+
+    public function test_decline_after_an_unclear_verify_keeps_the_order_open_and_alerts_once(): void
+    {
+        // A second SnappPay verify is refused even when the first one captured the money.
+        Http::fake([
+            self::BASE.'/api/online/v1/oauth/token' => Http::response(['access_token' => 't']),
+            self::BASE.'/api/online/payment/v1/verify' => Http::response(['successful' => false], 400),
+        ]);
+        $this->mock(\App\Services\Telegram\TelegramNotifier::class)->shouldReceive('notifyAdmins')->once()->andReturn(1);
+        $order = $this->pendingOrder('SP-U');
+        $order->payment->update(['meta' => ['verify_unknown' => true]]);
+
+        $this->get($this->callbackUrl(['paymentToken' => 'SP-U', 'state' => 'OK']))->assertRedirect(route('checkout.failed', $order->number));
+        $this->get($this->callbackUrl(['paymentToken' => 'SP-U', 'state' => 'OK']));
+
+        $this->assertSame(Order::STATUS_PENDING, $order->fresh()->status);
+        $this->assertSame(Payment::STATUS_PENDING, $order->payment->fresh()->status);
+        $this->assertTrue($order->payment->fresh()->meta['declined_after_unknown']);
+    }
+
+    public function test_settle_refused_after_verify_fails_the_order_and_alerts_staff(): void
+    {
+        Http::fake([
+            self::BASE.'/api/online/v1/oauth/token' => Http::response(['access_token' => 't']),
+            self::BASE.'/api/online/payment/v1/verify' => Http::response(['successful' => true, 'response' => []]),
+            self::BASE.'/api/online/payment/v1/settle' => Http::response(['successful' => false], 400),
+        ]);
+        $this->mock(\App\Services\Telegram\TelegramNotifier::class)->shouldReceive('notifyAdmins')->once()->andReturn(1);
+        $order = $this->pendingOrder('SP-S');
+
+        $this->get($this->callbackUrl(['paymentToken' => 'SP-S', 'state' => 'OK']))->assertRedirect(route('checkout.failed', $order->number));
+
+        $this->assertSame(Order::STATUS_FAILED, $order->fresh()->status);
+    }
 }

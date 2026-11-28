@@ -377,11 +377,11 @@ class CheckoutController extends Controller
             $refPrefix = ['gift' => 'GIFT', 'loyalty' => 'CLUB', 'free' => 'FREE'][$coveredBy];
             try {
                 $short = $this->finalizePaidOrder($order, $payment, ['success' => true, 'ref_id' => $refPrefix.'-'.$order->number]);
-            } catch (\RuntimeException $e) {
+            } catch (\UnderflowException $e) {
                 $payment->update(['status' => Payment::STATUS_FAILED]);
                 $order->update(['status' => Order::STATUS_FAILED]);
 
-                return redirect()->route('cart.index')->with('error', 'موجودی کارت هدیه کافی نیست.');
+                return redirect()->route('cart.index')->with('error', $e->getMessage());
             }
             if ($short) {
                 try {
@@ -460,8 +460,9 @@ class CheckoutController extends Controller
             // Only an open order is finalized: never one staff canceled or refunded.
             if (! in_array($order->status, [Order::STATUS_PENDING, Order::STATUS_FAILED], true)
                 || in_array($payment->status, [Payment::STATUS_PAID, Payment::STATUS_REFUNDED], true)) {
-                if ($unknownBefore) {
-                    // Closed while its verify was unclear: the money may have settled.
+                if ($unknownBefore && $payment->status !== Payment::STATUS_REFUNDED && ! ($payment->meta['closed_alerted'] ?? false)) {
+                    // Closed while its verify was unclear: the money may have settled. Once only.
+                    $payment->update(['meta' => array_merge((array) $payment->meta, ['closed_alerted' => true])]);
                     $alert = '⚠️ <b>پرداخت نامشخص روی سفارش بسته</b>'."\nسفارش ".e($order->number).' — کد پیگیری '.e($payment->authority)
                         ."\nمشتری دوباره پرداخت را بررسی کرد؛ اگر پول واریز شده، بازگردانید.";
                 }
@@ -506,10 +507,12 @@ class CheckoutController extends Controller
                 return [$order, 'unknown'];
             }
 
-            if (! ($verify['success'] ?? false) && $unknownBefore && ! ($verify['amount_mismatch'] ?? false)) {
-                // A decline after an unclear verify is not proof: a gateway whose verify is
-                // not repeatable (SnappPay verify + settle) refuses a second one even when the
-                // first captured the money. Keep the order open and let staff check.
+            if (! ($verify['success'] ?? false) && $unknownBefore && ! ($verify['amount_mismatch'] ?? false)
+                && $gateway instanceof \App\Services\Payment\SnappPayGateway) {
+                // A decline after an unclear verify is not proof on SnappPay: its verify + settle
+                // cannot be repeated, so a second one is refused even when the first captured the
+                // money. Keep the order open and let staff check. Zibal and Zarinpal answer
+                // "already verified" on a repeat, so their decline is final.
                 if (! ($payment->meta['declined_after_unknown'] ?? false)) {
                     $payment->update(['meta' => array_merge((array) $payment->meta, ['declined_after_unknown' => true, 'decline' => $verify])]);
                     $alert = '⚠️ <b>پرداخت نامشخص رد شد</b>'."\nسفارش ".e($order->number).' — کد پیگیری '.e($payment->authority)
@@ -525,6 +528,9 @@ class CheckoutController extends Controller
                 if ($verify['amount_mismatch'] ?? false) {
                     $alert = '⚠️ <b>مبلغ پرداخت با سفارش نمی‌خواند</b>'."\nسفارش ".e($order->number).' — کد پیگیری '.e($payment->authority)
                         ."\nمبلغ واریزی را بازگردانید.";
+                } elseif ($verify['settle_refused'] ?? false) {
+                    $alert = '⚠️ <b>تسویه اسنپ‌پی رد شد</b>'."\nسفارش ".e($order->number).' — کد پیگیری '.e($payment->authority)
+                        ."\nخرید تأیید شده بود؛ در پنل اسنپ‌پی بررسی و در صورت نیاز لغو کنید.";
                 }
 
                 return [$order, 'failed'];
@@ -585,8 +591,14 @@ class CheckoutController extends Controller
             } elseif ($order->coupon_code && ($own = \App\Services\Discount\StoqsCart::ownCouponId((string) $order->coupon_code)) !== null) {
                 $coupon = \App\Models\Coupon::whereKey($own);
             }
+            // Nothing was paid at a gateway (amount 0): a used-up code or card means no sale,
+            // and the throw rolls this whole finalize back.
+            $free = (int) $payment->amount <= 0;
             if ($coupon && $coupon->clone()->exists()
                 && ! $coupon->where(fn ($q) => $q->whereNull('usage_limit')->orWhereColumn('used_count', '<', 'usage_limit'))->increment('used_count')) {
+                if ($free) {
+                    throw new \UnderflowException('کد تخفیف به سقف استفاده رسیده است.');
+                }
                 $short[] = 'کد تخفیف '.e($order->coupon_code).' از سقف استفاده گذشته بود';
             }
 
@@ -599,10 +611,11 @@ class CheckoutController extends Controller
             // Only from a balance that still covers it: two orders can spend the same card.
             if ($order->gift_card_code && $order->gift_used > 0
                 && ! \App\Models\GiftCard::where('code', $order->gift_card_code)->where('balance', '>=', $order->gift_used)->decrement('balance', $order->gift_used)) {
-                if ((int) $payment->amount <= 0) {
-                    // Nothing was paid at a gateway: the card alone covered it, so no sale.
-                    throw new \RuntimeException('gift card balance already spent');
+                if ($free) {
+                    throw new \UnderflowException('موجودی کارت هدیه کافی نیست.');
                 }
+                // The money moved, so the sale stands: take what is left so it cannot be spent again.
+                \App\Models\GiftCard::where('code', $order->gift_card_code)->update(['balance' => 0]);
                 $short[] = 'موجودی کارت هدیه '.e($order->gift_card_code).' کافی نبود';
             }
 
